@@ -2,7 +2,7 @@
 // src/app/page.tsx
 "use client";
 
-import React, { useState, Suspense } from "react";
+import React, { useState } from "react"; // Removed Suspense
 import { AppHeader } from "@/components/app/header";
 import { CoinCard } from "@/components/app/coin-card";
 import { AiCoinPicksForm } from "@/components/app/forms/ai-coin-picks-form";
@@ -132,7 +132,7 @@ export default function QuantumLeapPage() {
 
       <main className="mt-12">
         <Tabs defaultValue="aiPicks" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mx-auto bg-background/50 border border-border/50 md:w-3/4 lg:w-1/2">
+          <TabsList className="grid w-full grid-cols-3 mx-auto bg-background/50 border border-border/50 md:max-w-xl lg:max-w-2xl">
             <TabsTrigger value="aiPicks" className="text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <TrendingUpIcon className="mr-1 sm:mr-2 h-4 w-4" /> AI Coin Picks
             </TabsTrigger>
@@ -145,24 +145,24 @@ export default function QuantumLeapPage() {
           </TabsList>
 
           <TabsContent value="aiPicks" className="mt-8">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
-              <div className="md:col-span-1 p-6 rounded-xl bg-card/30 border border-border/20 shadow-lg">
+            <div className="flex flex-col items-center gap-12">
+              <div className="w-full md:max-w-md lg:max-w-lg p-6 rounded-xl bg-card/30 border border-border/20 shadow-xl">
                 <h2 className="text-2xl font-semibold mb-6 text-primary flex items-center">
                   <TrendingUpIcon className="mr-2 h-6 w-6" /> Configure AI Picks
                 </h2>
                 <AiCoinPicksForm onSubmit={handleAiCoinPicksSubmit} isLoading={isLoadingAiPicks} />
               </div>
-              <div className="md:col-span-2">
+              <div className="w-full">
                 {isLoadingAiPicks && <LoadingDots className="mt-10" size="lg" />}
                 {aiPicksError && (
-                  <Alert variant="destructive" className="mt-6">
+                  <Alert variant="destructive" className="mt-6 max-w-2xl mx-auto">
                     <Terminal className="h-4 w-4" />
                     <AlertTitle>Error</AlertTitle>
                     <AlertDescription>{aiPicksError}</AlertDescription>
                   </Alert>
                 )}
                 {aiCoinPicksResults && aiCoinPicksResults.picks.length > 0 && (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {aiCoinPicksResults.picks.map((pick, index) => (
                       <CoinCard 
                         key={`${pick.coin}-${index}`} 
@@ -184,24 +184,24 @@ export default function QuantumLeapPage() {
           </TabsContent>
 
           <TabsContent value="profitGoal" className="mt-8">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
-              <div className="md:col-span-1 p-6 rounded-xl bg-card/30 border border-border/20 shadow-lg">
+            <div className="flex flex-col items-center gap-12">
+              <div className="w-full md:max-w-md lg:max-w-lg p-6 rounded-xl bg-card/30 border border-border/20 shadow-xl">
                  <h2 className="text-2xl font-semibold mb-6 text-accent flex items-center">
                   <BarChartIcon className="mr-2 h-6 w-6" /> Set Your Profit Goal
                 </h2>
                 <QuickProfitGoalForm onSubmit={handleQuickProfitGoalSubmit} isLoading={isLoadingQuickProfit} />
               </div>
-              <div className="md:col-span-2">
+              <div className="w-full">
                 {isLoadingQuickProfit && <LoadingDots className="mt-10" size="lg" />}
                 {quickProfitError && (
-                  <Alert variant="destructive" className="mt-6">
+                  <Alert variant="destructive" className="mt-6 max-w-2xl mx-auto">
                     <Terminal className="h-4 w-4" />
                     <AlertTitle>Error</AlertTitle>
                     <AlertDescription>{quickProfitError}</AlertDescription>
                   </Alert>
                 )}
                 {quickProfitResults && quickProfitResults.recommendedCoins.length > 0 && (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {quickProfitResults.recommendedCoins.map((coin, index) => (
                       <CoinCard 
                         key={`${coin.coinName}-${index}`} 
@@ -224,8 +224,8 @@ export default function QuantumLeapPage() {
           </TabsContent>
 
           <TabsContent value="memeFlip" className="mt-8">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
-              <div className="md:col-span-1 p-6 rounded-xl bg-card/30 border border-border/20 shadow-lg">
+            <div className="flex flex-col items-center gap-12">
+              <div className="w-full md:max-w-md lg:max-w-lg p-6 rounded-xl bg-card/30 border border-border/20 shadow-xl">
                  <h2 className="text-2xl font-semibold mb-6 text-orange-500 flex items-center">
                   <RocketIcon className="mr-2 h-6 w-6" /> Meme Coin Hunter
                 </h2>
@@ -238,10 +238,10 @@ export default function QuantumLeapPage() {
                     </AlertDescription>
                   </Alert>
               </div>
-              <div className="md:col-span-2">
+              <div className="w-full">
                 {isLoadingMemeFlip && <LoadingDots className="mt-10" size="lg" />}
                 {memeFlipError && (
-                  <Alert variant="destructive" className="mt-6">
+                  <Alert variant="destructive" className="mt-6 max-w-2xl mx-auto">
                     <Terminal className="h-4 w-4" />
                     <AlertTitle>Meme Hunter Error</AlertTitle>
                     <AlertDescription>{memeFlipError}</AlertDescription>
@@ -249,12 +249,12 @@ export default function QuantumLeapPage() {
                 )}
                 {memeFlipResults && memeFlipResults.picks.length > 0 && (
                   <>
-                    <Alert variant="default" className="mb-4 bg-background/30 border-amber-500/50">
+                    <Alert variant="default" className="mb-4 bg-background/30 border-amber-500/50 max-w-3xl mx-auto">
                       <AlertTriangle className="h-4 w-4 text-amber-500" />
                       <AlertTitle className="text-amber-500">Overall Meme Disclaimer</AlertTitle>
                       <AlertDescription className="text-muted-foreground">{memeFlipResults.overallDisclaimer}</AlertDescription>
                     </Alert>
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {memeFlipResults.picks.map((pick, index) => (
                         <CoinCard 
                           key={`${pick.coinName}-${index}`} 
@@ -285,5 +285,3 @@ export default function QuantumLeapPage() {
     </div>
   );
 }
-
-    
