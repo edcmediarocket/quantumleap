@@ -12,22 +12,22 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const PriceRangeSchema = z.object({
-  low: z.number().describe('The lower bound of the price range.'),
-  high: z.number().describe('The upper bound of the price range.'),
+  low: z.number().describe('Lower price bound.'),
+  high: z.number().describe('Upper price bound.'),
 });
 
 const CandlestickDataPointSchema = z.object({
-  time: z.string().describe("The date for the data point, format 'YYYY-MM-DD'."),
-  open: z.number().describe('Opening price.'),
-  high: z.number().describe('Highest price.'),
-  low: z.number().describe('Lowest price.'),
-  close: z.number().describe('Closing price.'),
+  time: z.string().describe("Date 'YYYY-MM-DD'."),
+  open: z.number().describe('Open price.'),
+  high: z.number().describe('High price.'),
+  low: z.number().describe('Low price.'),
+  close: z.number().describe('Close price.'),
 });
 
 // Input might be simple, as meme coin hunting is often less about user parameters
 // and more about the AI's "scan" of the market.
 const MemeCoinQuickFlipInputSchema = z.object({
-  trigger: z.boolean().default(true).describe('A trigger to initiate the meme coin scan.'),
+  trigger: z.boolean().default(true).describe('Trigger for meme coin scan.'),
   // Optional: Could add a general risk appetite confirmation later if needed
   // riskConfirmation: z.boolean().refine(val => val === true, { message: "User must confirm understanding of extreme risk."}),
 });
@@ -36,25 +36,21 @@ export type MemeCoinQuickFlipInput = z.infer<typeof MemeCoinQuickFlipInputSchema
 const MemeCoinQuickFlipOutputSchema = z.object({
   picks: z.array(
     z.object({
-      coinName: z.string().describe('The name of the meme coin, often including its ticker if available (e.g., "CrazyFrog (CFG)").'),
-      predictedPumpPotential: z.string().describe('A qualitative assessment of pump potential (e.g., "High", "Very High", "Extreme").'),
-      suggestedBuyInWindow: z.string().describe('A very short-term window for considering entry (e.g., "Next 1-4 hours", "ASAP - extreme vigilance required").'),
-      quickFlipSellTargetPercentage: z.number().describe('A suggested percentage gain for a quick flip exit (e.g., 50 for 50% gain, 100 for 100% gain).'),
-      entryPriceRange: PriceRangeSchema.describe('The approximate current or very recent entry price range (low/high), understanding this can be highly volatile.'),
-      // Exit price range might be too volatile for meme coins, target percentage is more practical.
-      // exitPriceRange: PriceRangeSchema.describe('The approximate target exit price range (low/high).'),
-      confidenceScore: z.number().min(0).max(1).describe('A value between 0 and 1 indicating the AI\'s "confidence" in this speculative pick, acknowledging high uncertainty.'),
-      rationale: z.string().describe('A detailed rationale (2-3 paragraphs) for why this meme coin might pump. Focus on meme-specific factors: social media hype (Twitter, Telegram, Reddit mentions), influencer shilling, new exchange listings, very low market cap, tokenomics (e.g., burn mechanisms, low float), narrative, community engagement, recent unusual volume spikes. CRITICALLY: This rationale MUST heavily emphasize the EXTREME risk, speculative nature, and likelihood of losing invested capital. Use phrases like "Highly speculative," "Extreme risk of capital loss," "Potential for rug pull," "DYOR thoroughly."'),
-      riskLevel: z.enum(["Extreme", "Very High"]).default("Extreme").describe('Explicit risk level classification, almost always "Extreme" for meme coins.'),
-      mockCandlestickData: z.array(CandlestickDataPointSchema).length(30).describe("A list of 30 mock daily candlestick data points (each containing 'time', 'open', 'high', 'low', 'close') for this coin for the last 30 days leading up to a plausible recent date in 2025. Prices should be extremely small, typical for new meme coins (e.g., many zeros after decimal). The chart should show extreme volatility."),
-      estimatedDuration: z.string().describe('Estimated duration for the quick flip (e.g., "Few hours to 2 days", "Within 24 hours"). This is highly speculative.'),
-      // Adding predictedGainPercentage for consistency with CoinCard, derived from quickFlipSellTargetPercentage
-      predictedGainPercentage: z.number().describe('The predicted percentage gain for this coin, same as quickFlipSellTargetPercentage.'),
-      // Adding exitPriceRange, calculated from entry and target percentage
-      exitPriceRange: PriceRangeSchema.describe('The calculated exit price range based on entry and target percentage.'),
+      coinName: z.string().describe('Meme coin name & ticker (e.g., "CrazyFrog (CFG)").'),
+      predictedPumpPotential: z.string().describe('Pump potential (e.g., "High", "Extreme").'),
+      suggestedBuyInWindow: z.string().describe('Short-term entry window (e.g., "Next 1-4 hours").'),
+      quickFlipSellTargetPercentage: z.number().describe('Target % gain for quick flip (e.g., 50 for 50%).'),
+      entryPriceRange: PriceRangeSchema.describe('Volatile entry price range (low/high).'),
+      confidenceScore: z.number().min(0).max(1).describe('Speculative confidence score (0-1).'),
+      rationale: z.string().describe('Rationale for pump potential, focusing on meme factors (hype, low cap, listings) and EXTREME RISK. Must include phrases like "Highly speculative," "Extreme risk of capital loss," "Potential for rug pull," "DYOR thoroughly." (2-3 paragraphs).'),
+      riskLevel: z.enum(["Extreme", "Very High"]).default("Extreme").describe('Risk level ("Extreme" or "Very High").'),
+      mockCandlestickData: z.array(CandlestickDataPointSchema).length(30).describe("30 mock daily candlestick data points (time, o, h, l, c) for last 30 days in 2025. Extremely volatile, very low prices."),
+      estimatedDuration: z.string().describe('Estimated duration for quick flip (e.g., "Few hours to 2 days"). Highly speculative.'),
+      predictedGainPercentage: z.number().describe('Predicted % gain, same as quickFlipSellTargetPercentage.'),
+      exitPriceRange: PriceRangeSchema.describe('Calculated exit price range from entry & target %.'),
     })
-  ).describe('An array of recommended meme coin quick flip picks.'),
-  overallDisclaimer: z.string().default("Meme coins are EXTREMELY RISKY and highly speculative. Prices are driven by hype and can collapse to zero without warning. Invest only what you are absolutely prepared to lose. This is not financial advice. DYOR!").describe("An overall disclaimer about the extreme risks of meme coin trading.")
+  ).describe('Array of meme coin quick flip picks.'),
+  overallDisclaimer: z.string().default("Meme coins are EXTREMELY RISKY and highly speculative. Prices are driven by hype and can collapse to zero without warning. Invest only what you are absolutely prepared to lose. This is not financial advice. DYOR!").describe("Overall disclaimer on extreme risks of meme coin trading.")
 });
 export type MemeCoinQuickFlipOutput = z.infer<typeof MemeCoinQuickFlipOutputSchema>;
 
@@ -147,7 +143,7 @@ const memeCoinQuickFlipFlow = ai.defineFlow(
                dp.time = `2025-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
             } else {
                const fallbackDate = new Date(2025,0,1); 
-               fallbackDate.setDate(fallbackDate.getDate() + pick.mockCandlestickData!.indexOf(dp) - 29); // Try to keep sequence
+               fallbackDate.setDate(fallbackDate.getDate() + (pick.mockCandlestickData?.indexOf(dp) ?? 0) - 29); // Try to keep sequence
                dp.time = fallbackDate.toISOString().split('T')[0];
             }
           }
@@ -179,7 +175,3 @@ const memeCoinQuickFlipFlow = ai.defineFlow(
     return output;
   }
 );
-
-    
-
-    
