@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from 'react';
@@ -12,7 +13,7 @@ const GlassCardRoot = React.forwardRef<HTMLDivElement, GlassCardRootProps>(
     <div
       ref={ref}
       className={cn(
-        "glass-effect glass-effect-hover p-6 flex flex-col h-full", // Apply utility, padding, and flex for layout
+        "glass-effect glass-effect-interactive-hover p-6 flex flex-col h-full", // Updated hover class
         className
       )}
       {...props}

@@ -8,42 +8,42 @@ import { CoinCard } from "@/components/app/coin-card";
 import { AiCoinPicksForm } from "@/components/app/forms/ai-coin-picks-form";
 import { QuickProfitGoalForm } from "@/components/app/forms/quick-profit-goal-form";
 import { MemeCoinQuickFlipForm } from "@/components/app/forms/meme-coin-quick-flip-form";
-import { AiCoachAvatarPanel } from "@/components/app/ai-coach-avatar-panel"; // New Component
+import { AiCoachAvatarPanel } from "@/components/app/ai-coach-avatar-panel";
 import { LoadingDots } from "@/components/ui/loading-dots";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Terminal, TrendingUpIcon, BarChartIcon, RocketIcon, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 // AI Flow Imports
 import { aiCoinPicks, type AiCoinPicksInput, type AiCoinPicksOutput } from "@/ai/flows/ai-coin-picks";
 import { recommendCoinsForProfitTarget, type RecommendCoinsForProfitTargetInput, type RecommendCoinsForProfitTargetOutput } from "@/ai/flows/quick-profit-goal";
 import { memeCoinQuickFlip, type MemeCoinQuickFlipInput, type MemeCoinQuickFlipOutput } from "@/ai/flows/meme-coin-quick-flip";
-import { getCoachQuickTip, type GetCoachQuickTipInput, type GetCoachQuickTipOutput } from "@/ai/flows/get-coach-quick-tip"; // New Flow
+import { getCoachQuickTip, type GetCoachQuickTipInput, type GetCoachQuickTipOutput } from "@/ai/flows/get-coach-quick-tip";
 
 
 export default function QuantumLeapPage() {
   const [aiCoinPicksResults, setAiCoinPicksResults] = useState<AiCoinPicksOutput | null>(null);
   const [quickProfitResults, setQuickProfitResults] = useState<RecommendCoinsForProfitTargetOutput | null>(null);
   const [memeFlipResults, setMemeFlipResults] = useState<MemeCoinQuickFlipOutput | null>(null);
-  const [coachQuickTip, setCoachQuickTip] = useState<GetCoachQuickTipOutput | null>(null); // New State
+  const [coachQuickTip, setCoachQuickTip] = useState<GetCoachQuickTipOutput | null>(null);
   
   const [isLoadingAiPicks, setIsLoadingAiPicks] = useState(false);
   const [isLoadingQuickProfit, setIsLoadingQuickProfit] = useState(false);
   const [isLoadingMemeFlip, setIsLoadingMemeFlip] = useState(false);
-  const [isLoadingCoachQuickTip, setIsLoadingCoachQuickTip] = useState(false); // New State
+  const [isLoadingCoachQuickTip, setIsLoadingCoachQuickTip] = useState(false);
   
   const [aiPicksError, setAiPicksError] = useState<string | null>(null);
   const [quickProfitError, setQuickProfitError] = useState<string | null>(null);
   const [memeFlipError, setMemeFlipError] = useState<string | null>(null);
-  const [coachQuickTipError, setCoachQuickTipError] = useState<string | null>(null); // New State
+  const [coachQuickTipError, setCoachQuickTipError] = useState<string | null>(null);
 
   const [currentAiPicksInput, setCurrentAiPicksInput] = useState<AiCoinPicksInput | null>(null);
   const [currentQuickProfitInput, setCurrentQuickProfitInput] = useState<RecommendCoinsForProfitTargetInput | null>(null);
 
   const { toast } = useToast();
 
-  // Fetch initial coach tip on mount
   useEffect(() => {
     const fetchInitialTip = async () => {
       setIsLoadingCoachQuickTip(true);
@@ -203,7 +203,10 @@ export default function QuantumLeapPage() {
 
           <TabsContent value="aiPicks" className="mt-8">
             <div className="flex flex-col items-center gap-12">
-              <div className="w-full md:max-w-md lg:max-w-lg p-6 rounded-xl bg-card/30 border border-border/20 shadow-xl">
+              <div className={cn(
+                  "w-full md:max-w-md lg:max-w-lg p-6",
+                  "glass-effect glass-effect-interactive-hover hover-glow-primary"
+                )}>
                 <h2 className="text-2xl font-semibold mb-6 text-primary flex items-center">
                   <TrendingUpIcon className="mr-2 h-6 w-6" /> Configure AI Picks
                 </h2>
@@ -242,7 +245,10 @@ export default function QuantumLeapPage() {
 
           <TabsContent value="profitGoal" className="mt-8">
             <div className="flex flex-col items-center gap-12">
-              <div className="w-full md:max-w-md lg:max-w-lg p-6 rounded-xl bg-card/30 border border-border/20 shadow-xl">
+              <div className={cn(
+                  "w-full md:max-w-md lg:max-w-lg p-6",
+                  "glass-effect glass-effect-interactive-hover hover-glow-accent"
+                )}>
                  <h2 className="text-2xl font-semibold mb-6 text-accent flex items-center">
                   <BarChartIcon className="mr-2 h-6 w-6" /> Set Your Profit Goal
                 </h2>
@@ -282,7 +288,10 @@ export default function QuantumLeapPage() {
 
           <TabsContent value="memeFlip" className="mt-8">
             <div className="flex flex-col items-center gap-12">
-              <div className="w-full md:max-w-md lg:max-w-lg p-6 rounded-xl bg-card/30 border border-border/20 shadow-xl">
+              <div className={cn(
+                  "w-full md:max-w-md lg:max-w-lg p-6",
+                  "glass-effect glass-effect-interactive-hover hover-glow-orange"
+                )}>
                  <h2 className="text-2xl font-semibold mb-6 text-orange-500 flex items-center">
                   <RocketIcon className="mr-2 h-6 w-6" /> Meme Coin Hunter
                 </h2>
