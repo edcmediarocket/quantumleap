@@ -180,8 +180,8 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance }: CoinCa
         </div>
         {isMemeFlipCoin(coinData, type) && (
           <>
-            <p className="text-xs text-amber-500"><span className="font-semibold">Pump Potential:</span> {coinData.predictedPumpPotential}</p>
-            <p className="text-xs text-red-500 flex items-center"><AlertTriangle className="h-3 w-3 mr-1"/> <span className="font-semibold">Risk:</span> {coinData.riskLevel}</p>
+            <p className="text-xs text-amber-500"><span className="font-semibold">Pump Potential:</span> {predictedPumpPotential}</p>
+            <p className="text-xs text-red-500 flex items-center"><AlertTriangle className="h-3 w-3 mr-1"/> <span className="font-semibold">Risk:</span> {riskLevel}</p>
           </>
         )}
       </GlassCardHeader>
