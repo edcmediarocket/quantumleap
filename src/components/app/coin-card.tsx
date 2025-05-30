@@ -11,6 +11,8 @@ import {
   GlassCardFooter
 } from "./glass-card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import {
   Dialog,
@@ -24,44 +26,38 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { LoadingDots } from "@/components/ui/loading-dots";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { TrendingUp, HelpCircle, Gauge, Target, Clock, DollarSign, Info, Brain, Terminal, RocketIcon, AlertTriangle } from "lucide-react";
+import { TrendingUp, HelpCircle, Gauge, Target, Clock, DollarSign, Info, Brain, Terminal, RocketIcon, AlertTriangle, Calculator } from "lucide-react";
 
 import type { AiCoinPicksOutput } from "@/ai/flows/ai-coin-picks";
 import type { RecommendCoinsForProfitTargetOutput } from "@/ai/flows/quick-profit-goal";
-import type { MemeCoinQuickFlipOutput } from "@/ai/flows/meme-coin-quick-flip"; // New Type
+import type { MemeCoinQuickFlipOutput } from "@/ai/flows/meme-coin-quick-flip";
 import { aiCoachStrategies, type AiCoachStrategiesInput, type AiCoachStrategiesOutput } from "@/ai/flows/ai-coach-strategies";
-// CoinCandlestickChart is no longer imported
 
 type AiPick = AiCoinPicksOutput['picks'][0];
 type ProfitGoalCoin = RecommendCoinsForProfitTargetOutput['recommendedCoins'][0];
-type MemeFlipCoin = MemeCoinQuickFlipOutput['picks'][0]; // New Type
+type MemeFlipCoin = MemeCoinQuickFlipOutput['picks'][0];
 
-// Remove mockCandlestickData from type definitions
-type AnyCoinData = 
-  Omit<AiPick, 'mockCandlestickData'> | 
-  Omit<ProfitGoalCoin, 'mockCandlestickData'> | 
-  Omit<MemeFlipCoin, 'mockCandlestickData'>;
-
+type AnyCoinData = AiPick | ProfitGoalCoin | MemeFlipCoin;
 type PriceRange = { low: number; high: number };
 
 interface CoinCardProps {
-  coinData: AnyCoinData; // Updated type
+  coinData: AnyCoinData;
   type: 'aiPick' | 'profitGoal' | 'memeFlip'; 
   profitTarget?: number; 
   riskTolerance?: 'low' | 'medium' | 'high';
 }
 
-function isAiPick(coinData: AnyCoinData, type: CoinCardProps['type']): coinData is Omit<AiPick, 'mockCandlestickData'> {
+function isAiPick(coinData: AnyCoinData, type: CoinCardProps['type']): coinData is AiPick {
   return type === 'aiPick';
 }
-function isProfitGoalCoin(coinData: AnyCoinData, type: CoinCardProps['type']): coinData is Omit<ProfitGoalCoin, 'mockCandlestickData'> {
+function isProfitGoalCoin(coinData: AnyCoinData, type: CoinCardProps['type']): coinData is ProfitGoalCoin {
   return type === 'profitGoal';
 }
-function isMemeFlipCoin(coinData: AnyCoinData, type: CoinCardProps['type']): coinData is Omit<MemeFlipCoin, 'mockCandlestickData'> {
+function isMemeFlipCoin(coinData: AnyCoinData, type: CoinCardProps['type']): coinData is MemeFlipCoin {
   return type === 'memeFlip';
 }
 
-const formatPrice = (price: number): string => {
+const formatPrice = (price: number | undefined | null): string => {
   if (typeof price !== 'number' || isNaN(price)) return "$N/A";
   if (price === 0) return "$0.00";
 
@@ -69,34 +65,41 @@ const formatPrice = (price: number): string => {
     return `$${price.toExponential(2)}`;
   }
   if (Math.abs(price) < 0.01) { 
-    const priceStr = price.toFixed(12); 
-    const [integerPart, decimalPart] = priceStr.split('.');
+    let priceStr = price.toFixed(12); 
+    let [integerPart, decimalPart] = priceStr.split('.');
+
     if (decimalPart) {
         let significantDecimal = "";
         let nonZeroFound = false;
         let nonZeroCount = 0;
+        let leadingZeros = "";
+
         for (const char of decimalPart) {
-            if (char !== '0') nonZeroFound = true;
+            if (char !== '0') {
+                nonZeroFound = true;
+            }
             if (nonZeroFound) {
                  significantDecimal += char;
                  nonZeroCount++;
-            } else if (significantDecimal.length < 6) { 
-                significantDecimal += char;
+            } else if (leadingZeros.length < 6) { // Limit leading zeros shown
+                leadingZeros += char;
             }
-            if (nonZeroCount >= 6 && significantDecimal.length >=8) break; 
-             if (significantDecimal.length >= 8) break;
+            if (nonZeroCount >= 4 && (leadingZeros + significantDecimal).length >=6 ) break; // Show at least 4 sig-figs, up to 6 total after decimal
+             if ((leadingZeros + significantDecimal).length >= 8) break; // Hard cap for length
         }
         
-        significantDecimal = significantDecimal.replace(/0+$/, '');
-        if (significantDecimal.length === 0 && integerPart === '0') return `$0.00...`; // Avoid $0. if all decimals are zero
+        significantDecimal = (leadingZeros + significantDecimal).replace(/0+$/, '');
+        if (significantDecimal.length === 0 && integerPart === '0') return `$0.00...`;
         if (significantDecimal.length === 0) return `$${integerPart}.00`;
-        return `$${integerPart}.${significantDecimal}`;
+        return `$${integerPart}.${significantDecimal.substring(0,8)}`; // Cap total decimal length
+    } else {
+         return `$${integerPart}.00`;
     }
   }
   if (Math.abs(price) < 1) { 
     return `$${price.toFixed(4).replace(/0+$/, '').replace(/\.$/,'.00')}`; 
   }
-  return `$${price.toFixed(2)}`; 
+  return `$${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`; 
 };
 
 
@@ -117,6 +120,12 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance }: CoinCa
   let entryPriceRange: PriceRange | undefined;
   let exitPriceRange: PriceRange | undefined;
   let estimatedDuration: string | undefined;
+
+  // State for profit estimator
+  const [purchaseQuantity, setPurchaseQuantity] = useState<number | null>(null);
+  const [estimatedSellPrice, setEstimatedSellPrice] = useState<number | null>(null);
+  const [calculatedProfit, setCalculatedProfit] = useState<number | null>(null);
+  const [averageEntryPrice, setAverageEntryPrice] = useState<number | null>(null);
 
 
   if (isAiPick(coinData, type)) {
@@ -147,12 +156,29 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance }: CoinCa
     exitPriceRange = coinData.exitPriceRange;
     estimatedDuration = coinData.estimatedDuration;
   } else {
-    // Fallback for unknown type, though this shouldn't happen with proper props
     name = "Unknown Coin";
     gain = 0;
     confidence = 0;
     rationale = "No rationale available.";
   }
+
+  useEffect(() => {
+    if (isMemeFlipCoin(coinData, type) && coinData.entryPriceRange) {
+      const avgEntry = (coinData.entryPriceRange.low + coinData.entryPriceRange.high) / 2;
+      setAverageEntryPrice(avgEntry);
+    }
+  }, [coinData, type]);
+
+  useEffect(() => {
+    if (purchaseQuantity !== null && estimatedSellPrice !== null && averageEntryPrice !== null && purchaseQuantity > 0 && estimatedSellPrice > 0 && averageEntryPrice > 0) {
+      const totalCost = purchaseQuantity * averageEntryPrice;
+      const totalRevenue = purchaseQuantity * estimatedSellPrice;
+      setCalculatedProfit(totalRevenue - totalCost);
+    } else {
+      setCalculatedProfit(null);
+    }
+  }, [purchaseQuantity, estimatedSellPrice, averageEntryPrice]);
+
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [coachStrategies, setCoachStrategies] = useState<AiCoachStrategiesOutput | null>(null);
@@ -280,7 +306,64 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance }: CoinCa
           </div>
         )}
 
-         {/* Chart Preview section removed */}
+        {isMemeFlipCoin(coinData, type) && (
+          <>
+            <Separator className="my-3 border-orange-500/30" />
+            <div className="space-y-3">
+              <h4 className="text-sm font-semibold text-orange-400 flex items-center">
+                <Calculator className="h-4 w-4 mr-2" />
+                Quick Flip Profit Estimator
+              </h4>
+              <div className="grid grid-cols-2 gap-3 items-end">
+                <div>
+                  <Label htmlFor={`quantity-${name.replace(/\s+/g, '-')}`} className="text-xs text-muted-foreground">Quantity to Buy</Label>
+                  <Input
+                    id={`quantity-${name.replace(/\s+/g, '-')}`}
+                    type="number"
+                    placeholder="e.g., 1000000"
+                    value={purchaseQuantity === null ? '' : purchaseQuantity}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value);
+                      setPurchaseQuantity(isNaN(val) || val < 0 ? null : val);
+                    }}
+                    className="h-8 text-xs mt-1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor={`sellPrice-${name.replace(/\s+/g, '-')}`} className="text-xs text-muted-foreground">Est. Sell Price ($)</Label>
+                  <Input
+                    id={`sellPrice-${name.replace(/\s+/g, '-')}`}
+                    type="number"
+                    placeholder={formatPrice(coinData.exitPriceRange?.high)}
+                    value={estimatedSellPrice === null ? '' : estimatedSellPrice}
+                     onChange={(e) => {
+                      const val = parseFloat(e.target.value);
+                      setEstimatedSellPrice(isNaN(val) || val < 0 ? null : val);
+                    }}
+                    className="h-8 text-xs mt-1"
+                  />
+                </div>
+              </div>
+              {calculatedProfit !== null && averageEntryPrice !== null && purchaseQuantity !== null && purchaseQuantity > 0 && (
+                <div className="mt-2 text-center p-3 rounded-md bg-green-500/10 border border-green-500/30">
+                  <p className="text-xs text-muted-foreground">Estimated Quick Flip Profit:</p>
+                  <p className={`text-xl font-bold ${calculatedProfit >= 0 ? 'text-green-400' : 'text-red-500'}`}>
+                    {formatPrice(calculatedProfit)}
+                  </p>
+                  {purchaseQuantity > 0 && averageEntryPrice > 0 && (
+                     <p className="text-xs text-muted-foreground mt-1">
+                        (Buying {purchaseQuantity.toLocaleString()} @ avg. {formatPrice(averageEntryPrice)}/unit)
+                     </p>
+                  )}
+                </div>
+              )}
+               <p className="text-[10px] text-muted-foreground/60 text-center pt-1">
+                This estimator is for illustrative purposes only. Actual profits or losses can vary significantly due to extreme volatility.
+              </p>
+            </div>
+          </>
+        )}
+
       </GlassCardContent>
       <GlassCardFooter>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -342,7 +425,7 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance }: CoinCa
                             <h4 className="font-semibold text-primary-foreground">{strategy.name}</h4>
                             <p className="text-xs text-muted-foreground mt-1">{strategy.description}</p>
                             {strategy.optimalBuyPrice && <p className="text-xs text-muted-foreground mt-1"><span className="font-medium text-green-400">Optimal Buy:</span> {formatPrice(strategy.optimalBuyPrice)}</p>}
-                            {strategy.targetSellPrices && strategy.targetSellPrices.length > 0 && <p className="text-xs text-muted-foreground mt-1"><span className="font-medium text-red-400">Target Sells:</span> {strategy.targetSellPrices.map(formatPrice).join(', ')}</p>}
+                            {strategy.targetSellPrices && strategy.targetSellPrices.length > 0 && <p className="text-xs text-muted-foreground mt-1"><span className="font-medium text-red-400">Target Sells:</span> {strategy.targetSellPrices.map(p => formatPrice(p)).join(', ')}</p>}
                             <p className="text-xs text-muted-foreground mt-2"><span className="font-medium text-accent/90">Reasoning:</span> {strategy.reasoning}</p>
                             <ul className="list-disc list-inside text-xs text-muted-foreground mt-2 space-y-1">
                               {strategy.actionableSteps.map((step, i) => <li key={i}>{step}</li>)}
@@ -370,3 +453,4 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance }: CoinCa
     </GlassCardRoot>
   );
 }
+
