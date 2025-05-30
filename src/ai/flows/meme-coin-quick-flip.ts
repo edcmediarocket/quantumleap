@@ -44,7 +44,7 @@ const MemeCoinQuickFlipOutputSchema = z.object({
       confidenceScore: z.number().min(0).max(1).describe('Confidence (0-1)'),
       rationale: z.string().describe('Rationale & risk. 2-3 paras. Incl: "Highly speculative," "Extreme risk," "Rug pull," "DYOR."'),
       riskLevel: z.enum(["Extreme", "Very High"]).default("Extreme").describe('Risk level'),
-      mockCandlestickData: z.array(CandlestickDataPointSchema).length(30).describe("30 mock daily OHLC, 2025. Volatile, low prices."),
+      mockCandlestickData: z.array(CandlestickDataPointSchema).length(15).describe("15 mock daily OHLC, 2025. Volatile, low prices."), // Reduced from 30 to 15
       estimatedDuration: z.string().describe('Est. duration (speculative)'),
       predictedGainPercentage: z.number().describe('Predicted % gain'),
       exitPriceRange: PriceRangeSchema.describe('Exit price range (calc.)'),
@@ -77,7 +77,7 @@ For each potential meme coin (recommend 2-4):
     *   Focus on: social media hype (Twitter, Telegram, Reddit), influencer mentions, new/imminent CEX/DEX listings, extremely low market cap, tokenomics (supply, burn), strong narrative, high community engagement, recent volume spikes.
     *   MANDATORY: Include strong warnings like "This is a degen play," "EXTREMELY SPECULATIVE," "HIGH RISK OF TOTAL CAPITAL LOSS," "Possibility of rug pull or scam is significant," "Only invest funds you can afford to lose entirely," "Thoroughly Do Your Own Research (DYOR) before considering." Ensure this matches 'Rationale & risk. 2-3 paras. Incl: "Highly speculative," "Extreme risk," "Rug pull," "DYOR."' schema.
 8.  **Risk Level**: Must be "Extreme" or "Very High". THIS IS A REQUIRED FIELD. Ensure this matches 'Risk level' schema.
-9.  **Mock Candlestick Data**: Generate 30 mock daily candlestick data points for the last 30 days leading up to a plausible RECENT date in 2025. Each data point object MUST contain 'time' (YYYY-MM-DD), 'open', 'high', 'low', and 'close' numeric values. Data must show EXTREME volatility and very low prices typical of meme coins (e.g., values like 0.000000XX). Ensure this matches '30 mock daily OHLC, 2025. Volatile, low prices.' schema for the array and individual points ('Date YYYY-MM-DD', 'Open price', 'High price', 'Low price', 'Close price').
+9.  **Mock Candlestick Data**: Generate 15 mock daily candlestick data points for the last 15 days leading up to a plausible RECENT date in 2025. Each data point object MUST contain 'time' (YYYY-MM-DD), 'open', 'high', 'low', and 'close' numeric values. Data must show EXTREME volatility and very low prices typical of meme coins (e.g., values like 0.000000XX). Ensure this matches '15 mock daily OHLC, 2025. Volatile, low prices.' schema for the array and individual points ('Date YYYY-MM-DD', 'Open price', 'High price', 'Low price', 'Close price').
 10. **Estimated Duration**: Speculative timeframe for the flip (e.g., "Few hours to 2 days"). Ensure this matches 'Est. duration (speculative)' schema.
 
 Based on the 'Entry Price Range' and 'Quick Flip Sell Target Percentage', calculate and provide an 'Exit Price Range' (low and high). For example, if entry is {low: 0.1, high: 0.11} and target is 50%, exit would be {low: 0.15, high: 0.165}. Ensure this matches 'Exit price range (calc.)' schema.
@@ -85,7 +85,7 @@ Also, set 'predictedGainPercentage' to be the same as 'Quick Flip Sell Target Pe
 
 Output format MUST strictly follow MemeCoinQuickFlipOutputSchema.
 Provide an 'overallDisclaimer' as defined in the schema ('Overall risk disclaimer.').
-Ensure all numeric values are numbers. Dates in mock data MUST be in 2025.
+Ensure all numeric values are numbers. Dates in mock data MUST be in 2025. Mock candlestick data array must contain exactly 15 data points.
 Mock candlestick data must be plausible for highly volatile, very low-priced meme coins.
 `,
 });
@@ -116,13 +116,13 @@ const memeCoinQuickFlipFlow = ai.defineFlow(
         high: parseFloat((pick.entryPriceRange.high * gainFactor).toPrecision(6)),
       };
       
-      if (!pick.mockCandlestickData || pick.mockCandlestickData.length !== 30) {
-        console.warn(`Mock candlestick data for ${pick.coinName} was invalid or missing. Generating default for 2025.`);
-        pick.mockCandlestickData = Array(30).fill(null).map((_, i) => {
-          const date = new Date(2025, 0, 15); // Use a fixed recent date in 2025 as base for mock
-          date.setDate(date.getDate() + i - 29);
+      if (!pick.mockCandlestickData || pick.mockCandlestickData.length !== 15) { // Adjusted to 15
+        console.warn(`Mock candlestick data for ${pick.coinName} was invalid or missing. Generating default 15 points for 2025.`);
+        pick.mockCandlestickData = Array(15).fill(null).map((_, i) => { // Adjusted to 15
+          const date = new Date(2025, 0, 15); 
+          date.setDate(date.getDate() + i - 14); // Adjusted for 15 days
           const basePrice = pick.entryPriceRange && typeof pick.entryPriceRange.low === 'number' ? pick.entryPriceRange.low : 0.000001;
-          const open = basePrice * (1 + (Math.random() - 0.5) * 0.8); // Higher volatility
+          const open = basePrice * (1 + (Math.random() - 0.5) * 0.8); 
           const close = open * (1 + (Math.random() - 0.5) * 0.7);
           const high = Math.max(open, close) * (1 + Math.random() * 0.5);
           const low = Math.min(open, close) * (1 - Math.random() * 0.5);
@@ -143,29 +143,25 @@ const memeCoinQuickFlipFlow = ai.defineFlow(
                dp.time = `2025-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
             } else {
                const fallbackDate = new Date(2025,0,1); 
-               fallbackDate.setDate(fallbackDate.getDate() + (pick.mockCandlestickData?.indexOf(dp) ?? 0) - 29); // Try to keep sequence
+               fallbackDate.setDate(fallbackDate.getDate() + (pick.mockCandlestickData?.indexOf(dp) ?? 0) - 14); // Adjusted for 15 days
                dp.time = fallbackDate.toISOString().split('T')[0];
             }
           }
-          // Ensure prices are very small for meme coins in AI provided data too
-          // And ensure all OHLC values exist and are numbers
           dp.open = parseFloat(Number(dp.open || 0).toPrecision(6));
           dp.high = parseFloat(Number(dp.high || 0).toPrecision(6));
           dp.low = parseFloat(Number(dp.low || 0).toPrecision(6));
           dp.close = parseFloat(Number(dp.close || 0).toPrecision(6));
-           // Ensure high is highest and low is lowest
           const o = dp.open;
           const c = dp.close;
           dp.high = Math.max(o, c, dp.high);
           dp.low = Math.min(o, c, dp.low);
-          if (dp.low === 0 && dp.high === 0 && o === 0 && c === 0){ // if all are zero, try to make it a bit realistic based on entry
+          if (dp.low === 0 && dp.high === 0 && o === 0 && c === 0){ 
              const baseEntry = pick.entryPriceRange?.low || 0.000001;
              dp.open = baseEntry * (1 + (Math.random() - 0.5) * 0.1);
              dp.close = dp.open * (1 + (Math.random() - 0.5) * 0.1);
              dp.high = Math.max(dp.open, dp.close) * (1 + Math.random() * 0.05);
              dp.low = Math.min(dp.open, dp.close) * (1 - Math.random() * 0.05);
           }
-
         });
       }
     });
@@ -176,3 +172,5 @@ const memeCoinQuickFlipFlow = ai.defineFlow(
   }
 );
 
+
+    
