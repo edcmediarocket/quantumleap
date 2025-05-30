@@ -17,11 +17,11 @@ const PriceRangeSchema = z.object({
 });
 
 const CandlestickDataPointSchema = z.object({
-  time: z.string().describe("Date YYYY-MM-DD"),
-  open: z.number().describe('Open price'),
-  high: z.number().describe('High price'),
-  low: z.number().describe('Low price'),
-  close: z.number().describe('Close price'),
+  time: z.string().describe("Date YYYY-MM-DD"), // Shortest possible: "Date"
+  open: z.number().describe('Open price'), // Shortest: "Open"
+  high: z.number().describe('High price'), // Shortest: "High"
+  low: z.number().describe('Low price'), // Shortest: "Low"
+  close: z.number().describe('Close price'), // Shortest: "Close"
 });
 
 // Input might be simple, as meme coin hunting is often less about user parameters
@@ -41,10 +41,10 @@ const MemeCoinQuickFlipOutputSchema = z.object({
       suggestedBuyInWindow: z.string().describe('Buy window'),
       quickFlipSellTargetPercentage: z.number().describe('Target % gain'),
       entryPriceRange: PriceRangeSchema.describe('Entry price range'),
-      confidenceScore: z.number().min(0).max(1).describe('Confidence (0-1)'),
+      confidenceScore: z.number().describe('Confidence (0-1)'), // REMOVED .min(0).max(1)
       rationale: z.string().describe('Rationale & risk. 2-3 paras. Incl: "Highly speculative," "Extreme risk," "Rug pull," "DYOR."'),
       riskLevel: z.enum(["Extreme", "Very High"]).default("Extreme").describe('Risk level'),
-      mockCandlestickData: z.array(CandlestickDataPointSchema).length(15).describe("15 mock daily OHLC, 2025. Volatile, low prices."), // Reduced from 30 to 15
+      mockCandlestickData: z.array(CandlestickDataPointSchema).length(15).describe("15 mock daily OHLC, 2025. Volatile, low prices."),
       estimatedDuration: z.string().describe('Est. duration (speculative)'),
       predictedGainPercentage: z.number().describe('Predicted % gain'),
       exitPriceRange: PriceRangeSchema.describe('Exit price range (calc.)'),
@@ -116,11 +116,11 @@ const memeCoinQuickFlipFlow = ai.defineFlow(
         high: parseFloat((pick.entryPriceRange.high * gainFactor).toPrecision(6)),
       };
       
-      if (!pick.mockCandlestickData || pick.mockCandlestickData.length !== 15) { // Adjusted to 15
+      if (!pick.mockCandlestickData || pick.mockCandlestickData.length !== 15) {
         console.warn(`Mock candlestick data for ${pick.coinName} was invalid or missing. Generating default 15 points for 2025.`);
-        pick.mockCandlestickData = Array(15).fill(null).map((_, i) => { // Adjusted to 15
+        pick.mockCandlestickData = Array(15).fill(null).map((_, i) => { 
           const date = new Date(2025, 0, 15); 
-          date.setDate(date.getDate() + i - 14); // Adjusted for 15 days
+          date.setDate(date.getDate() + i - 14); 
           const basePrice = pick.entryPriceRange && typeof pick.entryPriceRange.low === 'number' ? pick.entryPriceRange.low : 0.000001;
           const open = basePrice * (1 + (Math.random() - 0.5) * 0.8); 
           const close = open * (1 + (Math.random() - 0.5) * 0.7);
@@ -143,18 +143,22 @@ const memeCoinQuickFlipFlow = ai.defineFlow(
                dp.time = `2025-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
             } else {
                const fallbackDate = new Date(2025,0,1); 
-               fallbackDate.setDate(fallbackDate.getDate() + (pick.mockCandlestickData?.indexOf(dp) ?? 0) - 14); // Adjusted for 15 days
+               fallbackDate.setDate(fallbackDate.getDate() + (pick.mockCandlestickData?.indexOf(dp) ?? 0) - 14);
                dp.time = fallbackDate.toISOString().split('T')[0];
             }
           }
-          dp.open = parseFloat(Number(dp.open || 0).toPrecision(6));
-          dp.high = parseFloat(Number(dp.high || 0).toPrecision(6));
-          dp.low = parseFloat(Number(dp.low || 0).toPrecision(6));
-          dp.close = parseFloat(Number(dp.close || 0).toPrecision(6));
-          const o = dp.open;
-          const c = dp.close;
-          dp.high = Math.max(o, c, dp.high);
-          dp.low = Math.min(o, c, dp.low);
+          // Ensure numeric precision and valid OHLC
+          const o = parseFloat(Number(dp.open || 0).toPrecision(6));
+          const h = parseFloat(Number(dp.high || 0).toPrecision(6));
+          const l = parseFloat(Number(dp.low || 0).toPrecision(6));
+          const c = parseFloat(Number(dp.close || 0).toPrecision(6));
+
+          dp.open = o;
+          dp.close = c;
+          dp.high = Math.max(o, c, h); // High must be at least open or close
+          dp.low = Math.min(o, c, l, dp.high); // Low must be at most open, close, or high
+
+          // If all are zero (potentially bad data from LLM), generate some plausible values
           if (dp.low === 0 && dp.high === 0 && o === 0 && c === 0){ 
              const baseEntry = pick.entryPriceRange?.low || 0.000001;
              dp.open = baseEntry * (1 + (Math.random() - 0.5) * 0.1);
@@ -172,5 +176,6 @@ const memeCoinQuickFlipFlow = ai.defineFlow(
   }
 );
 
+    
 
     
