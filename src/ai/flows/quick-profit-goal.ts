@@ -17,14 +17,6 @@ const PriceRangeSchema = z.object({
   high: z.number().describe('The upper bound of the price range.'),
 });
 
-const CandlestickDataPointSchema = z.object({
-  time: z.string().describe("The date for the data point, format 'YYYY-MM-DD'."),
-  open: z.number().describe('Opening price.'),
-  high: z.number().describe('Highest price.'),
-  low: z.number().describe('Lowest price.'),
-  close: z.number().describe('Closing price.'),
-});
-
 const RecommendCoinsForProfitTargetInputSchema = z.object({
   profitTarget: z.number().describe('The desired profit target in USD.'),
   riskTolerance: z
@@ -47,11 +39,9 @@ const RecommendedCoinSchema = z.object({
   targetSellPrices: z.array(z.number()).optional().describe('One or more specific target sell prices to consider for taking profits.'),
   tradeConfidence: z
     .number()
-    .min(0).max(1)
     .optional() 
     .describe('A number from 0 to 1 indicating the confidence in this trade. Defaults to 0.5 if not provided by AI.'),
   rationale: z.string().describe('A detailed rationale (at least 3-4 paragraphs, targeting an advanced user) behind recommending this coin. Cover technical and fundamental aspects, market sentiment, relevant news/events, potential catalysts, risks, and how it aligns with the user\'s risk tolerance and profit target to maximize gains.'),
-  mockCandlestickData: z.array(CandlestickDataPointSchema).length(30).describe("A list of 30 mock daily candlestick data points (time, open, high, low, close) for this coin for the last 30 days leading up to a plausible recent date in May 2025. The data should look plausible for a volatile cryptocurrency. 'time' should be a date string like 'YYYY-MM-DD'. Ensure prices are realistic for the coin type.")
 });
 
 const RecommendCoinsForProfitTargetOutputSchema = z.object({
@@ -86,18 +76,16 @@ For each recommended coin, provide:
 5.  **Exit Price Range**: As an object with 'low' and 'high' numeric values (e.g., { low: 55000, high: 56000 }).
 6.  **Optimal Buy Price**: (Optional) A specific suggested buy price that represents a particularly good entry point.
 7.  **Target Sell Prices**: (Optional) One or more specific price targets for selling and taking profit.
-8.  **Trade Confidence**: A score from 0.0 to 1.0. THIS IS A REQUIRED FIELD.
+8.  **Trade Confidence**: A score from 0.0 to 1.0 (optional, will default to 0.5 if not provided).
 9.  **Detailed Rationale**: An in-depth explanation (at least 3-4 paragraphs, targeting an advanced user) for this recommendation, including:
     *   Relevant technical analysis (support/resistance levels, chart patterns, indicators like RSI, MACD).
     *   Key fundamental factors (project developments, news, adoption, tokenomics).
     *   Current market sentiment and significant whale/social media activity.
     *   How it aligns with the user's risk tolerance and profit target, focusing on profit maximization.
     *   Potential catalysts for price movement and key risks or invalidation points.
-10. **Mock Candlestick Data**: Generate a list of 30 mock daily candlestick data points (each an object with 'time' as 'YYYY-MM-DD', 'open', 'high', 'low', 'close' numeric values) for this coin, representing the last 30 days leading up to a plausible recent date in May 2025 (e.g., if today is May 20, 2025, data should span roughly April 21, 2025 - May 20, 2025). This data must look plausible for a volatile cryptocurrency, showing realistic price fluctuations. Ensure the price levels in the mock data are appropriate for the type of coin being recommended.
 
 Format the output strictly according to the RecommendCoinsForProfitTargetOutputSchema.
 Ensure all numeric values are indeed numbers, not strings.
-The mockCandlestickData array must contain exactly 30 data points, with dates in May 2025 or an appropriate preceding month if spanning into April 2025.
 Example for a single recommended coin:
 {
   "coinName": "ExampleCoin (EXM)",
@@ -108,12 +96,7 @@ Example for a single recommended coin:
   "optimalBuyPrice": 2.51,
   "targetSellPrices": [3.10, 3.15],
   "tradeConfidence": 0.75,
-  "rationale": "Multi-paragraph detailed rationale targeting advanced users, covering TA, FA, market sentiment, profit maximization for user's goal...",
-  "mockCandlestickData": [
-    {"time": "2025-04-21", "open": 2.30, "high": 2.35, "low": 2.28, "close": 2.32},
-    // ... 28 more data points ...
-    {"time": "2025-05-20", "open": 2.52, "high": 2.56, "low": 2.51, "close": 2.55}
-  ]
+  "rationale": "Multi-paragraph detailed rationale targeting advanced users, covering TA, FA, market sentiment, profit maximization for user's goal..."
 }
 `,
 });
@@ -131,45 +114,7 @@ const recommendCoinsForProfitTargetFlow = ai.defineFlow(
     }
     output.recommendedCoins.forEach(coin => {
       if (coin.tradeConfidence === undefined) {
-        coin.tradeConfidence = 0.5; 
-      }
-
-      if (!coin.mockCandlestickData || coin.mockCandlestickData.length !== 30) {
-         console.warn(`Mock candlestick data for ${coin.coinName} was invalid or missing. Generating default for May 2025.`);
-        const endDate = new Date(2025, 4, 20); // Target May 20, 2025 (month is 0-indexed for May)
-        coin.mockCandlestickData = Array(30).fill(null).map((_, i) => {
-          const date = new Date(endDate);
-          date.setDate(endDate.getDate() - (29 - i)); // Generate 30 days leading up to endDate
-          const basePrice = coin.entryPriceRange && typeof coin.entryPriceRange.low === 'number' ? coin.entryPriceRange.low : 1;
-          const open = basePrice * (1 + (Math.random() - 0.5) * 0.1);
-          const close = open * (1 + (Math.random() - 0.1) * 0.05);
-          const high = Math.max(open, close) * (1 + Math.random() * 0.03);
-          const low = Math.min(open, close) * (1 - Math.random() * 0.03);
-          return {
-            time: date.toISOString().split('T')[0], 
-            open: parseFloat(open.toFixed(6)),
-            high: parseFloat(high.toFixed(6)),
-            low: parseFloat(low.toFixed(6)),
-            close: parseFloat(close.toFixed(6)),
-          };
-        });
-      } else {
-        coin.mockCandlestickData.forEach(dp => {
-          if (!dp.time || !dp.time.startsWith('2025')) {
-            console.warn(`Correcting date for ${coin.coinName} to 2025. Original: ${dp.time}`);
-            const parts = dp.time ? dp.time.split('-') : [];
-            if (parts.length === 3 && !isNaN(parseInt(parts[1])) && !isNaN(parseInt(parts[2]))) {
-               dp.time = `2025-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
-            } else {
-               const fallbackEndDate = new Date(2025, 4, 20);
-               const fallbackDate = new Date(fallbackEndDate);
-                // Create a sequence within the 30 days relative to its original position if possible
-               const originalIndex = coin.mockCandlestickData.indexOf(dp);
-               fallbackDate.setDate(fallbackEndDate.getDate() - (29 - (originalIndex % 30)) ); 
-               dp.time = fallbackDate.toISOString().split('T')[0];
-            }
-          }
-        });
+        coin.tradeConfidence = 0.5;
       }
     });
     return output!;

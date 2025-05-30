@@ -30,29 +30,34 @@ import type { AiCoinPicksOutput } from "@/ai/flows/ai-coin-picks";
 import type { RecommendCoinsForProfitTargetOutput } from "@/ai/flows/quick-profit-goal";
 import type { MemeCoinQuickFlipOutput } from "@/ai/flows/meme-coin-quick-flip"; // New Type
 import { aiCoachStrategies, type AiCoachStrategiesInput, type AiCoachStrategiesOutput } from "@/ai/flows/ai-coach-strategies";
-import { CoinCandlestickChart } from "./charts/coin-candlestick-chart";
+// CoinCandlestickChart is no longer imported
 
 type AiPick = AiCoinPicksOutput['picks'][0];
 type ProfitGoalCoin = RecommendCoinsForProfitTargetOutput['recommendedCoins'][0];
 type MemeFlipCoin = MemeCoinQuickFlipOutput['picks'][0]; // New Type
 
-type AnyCoinData = AiPick | ProfitGoalCoin | MemeFlipCoin; // Union type
+// Remove mockCandlestickData from type definitions
+type AnyCoinData = 
+  Omit<AiPick, 'mockCandlestickData'> | 
+  Omit<ProfitGoalCoin, 'mockCandlestickData'> | 
+  Omit<MemeFlipCoin, 'mockCandlestickData'>;
+
 type PriceRange = { low: number; high: number };
 
 interface CoinCardProps {
-  coinData: AnyCoinData;
-  type: 'aiPick' | 'profitGoal' | 'memeFlip'; // Added 'memeFlip'
+  coinData: AnyCoinData; // Updated type
+  type: 'aiPick' | 'profitGoal' | 'memeFlip'; 
   profitTarget?: number; 
   riskTolerance?: 'low' | 'medium' | 'high';
 }
 
-function isAiPick(coinData: AnyCoinData, type: CoinCardProps['type']): coinData is AiPick {
+function isAiPick(coinData: AnyCoinData, type: CoinCardProps['type']): coinData is Omit<AiPick, 'mockCandlestickData'> {
   return type === 'aiPick';
 }
-function isProfitGoalCoin(coinData: AnyCoinData, type: CoinCardProps['type']): coinData is ProfitGoalCoin {
+function isProfitGoalCoin(coinData: AnyCoinData, type: CoinCardProps['type']): coinData is Omit<ProfitGoalCoin, 'mockCandlestickData'> {
   return type === 'profitGoal';
 }
-function isMemeFlipCoin(coinData: AnyCoinData, type: CoinCardProps['type']): coinData is MemeFlipCoin {
+function isMemeFlipCoin(coinData: AnyCoinData, type: CoinCardProps['type']): coinData is Omit<MemeFlipCoin, 'mockCandlestickData'> {
   return type === 'memeFlip';
 }
 
@@ -60,13 +65,11 @@ const formatPrice = (price: number): string => {
   if (typeof price !== 'number' || isNaN(price)) return "$N/A";
   if (price === 0) return "$0.00";
 
-  if (Math.abs(price) < 0.00000001 && price !== 0) { // Extremely small non-zero numbers
+  if (Math.abs(price) < 0.00000001 && price !== 0) { 
     return `$${price.toExponential(2)}`;
   }
-  if (Math.abs(price) < 0.01) { // Small fractions of a cent
-    // Show more precision for very small numbers
-    // Attempt to show up to 8 significant non-zero digits after decimal
-    const priceStr = price.toFixed(12); // Go to a high number of decimal places
+  if (Math.abs(price) < 0.01) { 
+    const priceStr = price.toFixed(12); 
     const [integerPart, decimalPart] = priceStr.split('.');
     if (decimalPart) {
         let significantDecimal = "";
@@ -77,22 +80,23 @@ const formatPrice = (price: number): string => {
             if (nonZeroFound) {
                  significantDecimal += char;
                  nonZeroCount++;
-            } else if (significantDecimal.length < 6) { // keep leading zeros if few
+            } else if (significantDecimal.length < 6) { 
                 significantDecimal += char;
             }
-            if (nonZeroCount >= 6 && significantDecimal.length >=8) break; // Max 8 total chars, at least 6 non-zero
+            if (nonZeroCount >= 6 && significantDecimal.length >=8) break; 
              if (significantDecimal.length >= 8) break;
         }
-        // Remove trailing zeros from our custom precision part
+        
         significantDecimal = significantDecimal.replace(/0+$/, '');
-        if (significantDecimal.length === 0) return `$${integerPart}.00`; // Should not happen if price isn't 0
+        if (significantDecimal.length === 0 && integerPart === '0') return `$0.00...`; // Avoid $0. if all decimals are zero
+        if (significantDecimal.length === 0) return `$${integerPart}.00`;
         return `$${integerPart}.${significantDecimal}`;
     }
   }
-  if (Math.abs(price) < 1) { // Between $0.01 and $1
-    return `$${price.toFixed(4).replace(/0+$/, '').replace(/\.$/,'.00')}`; // Up to 4 decimal places, remove trailing zeros
+  if (Math.abs(price) < 1) { 
+    return `$${price.toFixed(4).replace(/0+$/, '').replace(/\.$/,'.00')}`; 
   }
-  return `$${price.toFixed(2)}`; // Standard two decimal places for larger numbers
+  return `$${price.toFixed(2)}`; 
 };
 
 
@@ -109,26 +113,45 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance }: CoinCa
   let riskRoiGauge: number | undefined;
   let predictedPumpPotential: string | undefined;
   let riskLevel: string | undefined;
+  let rationale: string;
+  let entryPriceRange: PriceRange | undefined;
+  let exitPriceRange: PriceRange | undefined;
+  let estimatedDuration: string | undefined;
+
 
   if (isAiPick(coinData, type)) {
     name = coinData.coin;
     gain = coinData.predictedGainPercentage;
     confidence = coinData.confidenceMeter;
     riskRoiGauge = coinData.riskRoiGauge;
+    rationale = coinData.rationale;
+    entryPriceRange = coinData.entryPriceRange;
+    exitPriceRange = coinData.exitPriceRange;
+    estimatedDuration = coinData.estimatedDuration;
   } else if (isProfitGoalCoin(coinData, type)) {
     name = coinData.coinName;
     gain = coinData.estimatedGain;
     confidence = coinData.tradeConfidence;
+    rationale = coinData.rationale;
+    entryPriceRange = coinData.entryPriceRange;
+    exitPriceRange = coinData.exitPriceRange;
+    estimatedDuration = coinData.estimatedDuration;
   } else if (isMemeFlipCoin(coinData, type)) {
     name = coinData.coinName;
     gain = coinData.predictedGainPercentage; 
     confidence = coinData.confidenceScore;
     predictedPumpPotential = coinData.predictedPumpPotential;
     riskLevel = coinData.riskLevel;
+    rationale = coinData.rationale;
+    entryPriceRange = coinData.entryPriceRange;
+    exitPriceRange = coinData.exitPriceRange;
+    estimatedDuration = coinData.estimatedDuration;
   } else {
+    // Fallback for unknown type, though this shouldn't happen with proper props
     name = "Unknown Coin";
     gain = 0;
     confidence = 0;
+    rationale = "No rationale available.";
   }
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -144,16 +167,16 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance }: CoinCa
         setIsLoadingCoach(true);
         setCoachError(null);
         try {
-          if (!coinData.entryPriceRange || !coinData.exitPriceRange) {
+          if (!entryPriceRange || !exitPriceRange) {
             throw new Error("Entry or exit price range is missing for AI Coach.");
           }
           const input: AiCoachStrategiesInput = {
             coinName: name,
-            currentRationale: coinData.rationale,
+            currentRationale: rationale,
             predictedGainPercentage: gain,
-            entryPriceRange: coinData.entryPriceRange,
-            exitPriceRange: coinData.exitPriceRange,
-            estimatedDuration: coinData.estimatedDuration || "Not specified",
+            entryPriceRange: entryPriceRange,
+            exitPriceRange: exitPriceRange,
+            estimatedDuration: estimatedDuration || "Not specified",
             ...(profitTarget && { profitTarget }),
             ...(riskTolerance && { riskTolerance }),
           };
@@ -169,7 +192,7 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance }: CoinCa
       };
       fetchCoachStrategies();
     }
-  }, [isDialogOpen, coinData, name, gain, type, coachStrategies, isLoadingCoach, profitTarget, riskTolerance, canShowCoach]);
+  }, [isDialogOpen, name, gain, type, coachStrategies, isLoadingCoach, profitTarget, riskTolerance, canShowCoach, rationale, entryPriceRange, exitPriceRange, estimatedDuration]);
 
 
   const cardTitleColor = type === 'memeFlip' ? 'text-orange-400' : 'text-primary-foreground group-hover:text-primary transition-colors';
@@ -211,7 +234,7 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance }: CoinCa
       <GlassCardContent className="space-y-3">
         <div className="grid grid-cols-[auto,1fr] items-center gap-x-2">
           <p className="text-xs text-muted-foreground justify-self-start">Entry Price:</p>
-          <p className="font-medium text-foreground justify-self-end text-right">{formatPriceRange(coinData.entryPriceRange)}</p>
+          <p className="font-medium text-foreground justify-self-end text-right">{formatPriceRange(entryPriceRange)}</p>
         </div>
 
         { (isAiPick(coinData, type) || isProfitGoalCoin(coinData, type) || (isMemeFlipCoin(coinData, type) && coinData.exitPriceRange)) &&
@@ -219,7 +242,7 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance }: CoinCa
             <p className="text-xs text-muted-foreground justify-self-start">
               {isMemeFlipCoin(coinData, type) ? "Flip Target:" : "Exit Price:"}
             </p>
-            <p className="font-medium text-foreground justify-self-end text-right">{formatPriceRange(coinData.exitPriceRange)}</p>
+            <p className="font-medium text-foreground justify-self-end text-right">{formatPriceRange(exitPriceRange)}</p>
           </div>
         }
 
@@ -237,10 +260,10 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance }: CoinCa
           </div>
         )}
 
-        {coinData.estimatedDuration && (
+        {estimatedDuration && (
           <div className="flex items-center gap-2 text-sm">
             <Clock className="h-4 w-4 text-muted-foreground" />
-            <p><span className="text-muted-foreground">Est. Duration:</span> {coinData.estimatedDuration}</p>
+            <p><span className="text-muted-foreground">Est. Duration:</span> {estimatedDuration}</p>
           </div>
         )}
         
@@ -257,10 +280,7 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance }: CoinCa
           </div>
         )}
 
-         <div className="pt-2">
-            <p className="text-xs text-muted-foreground mb-1">Chart Preview (Mock Data - May 2025):</p>
-            <CoinCandlestickChart data={coinData.mockCandlestickData} />
-          </div>
+         {/* Chart Preview section removed */}
       </GlassCardContent>
       <GlassCardFooter>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -292,7 +312,7 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance }: CoinCa
                   </Alert>
                 )}
                 <div className="text-sm leading-relaxed whitespace-pre-line bg-background/30 p-4 rounded-md border border-border/30">
-                  {coinData.rationale}
+                  {rationale}
                 </div>
               </div>
 
@@ -350,5 +370,3 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance }: CoinCa
     </GlassCardRoot>
   );
 }
-
-    
