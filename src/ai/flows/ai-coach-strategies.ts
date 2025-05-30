@@ -28,17 +28,20 @@ const AiCoachStrategiesInputSchema = z.object({
 export type AiCoachStrategiesInput = z.infer<typeof AiCoachStrategiesInputSchema>;
 
 const InvestmentStrategySchema = z.object({
-  name: z.string().describe('The name of the investment strategy (e.g., "Dollar-Cost Averaging", "Swing Trading Confirmation").'),
-  description: z.string().describe('A detailed description of the strategy.'),
-  reasoning: z.string().describe('Why this strategy is suitable for this specific coin and current context, considering its volatility, potential, and the user\'s parameters if available.'),
-  actionableSteps: z.array(z.string()).describe('A few actionable steps for implementing this strategy.'),
+  name: z.string().describe('The name of the investment strategy (e.g., "Aggressive Profit Maximization", "Calculated Swing for Max Gain").'),
+  description: z.string().describe('A detailed description of the strategy focusing on profit maximization.'),
+  reasoning: z.string().describe('Why this strategy is suitable for this specific coin and current context to maximize profit, considering its volatility, potential, and the user\'s parameters if available. Explain how it leverages the predicted gain, entry/exit points, or duration for optimal returns.'),
+  optimalBuyPrice: z.number().optional().describe('A specific suggested optimal buy price for initiating this strategy.'),
+  targetSellPrices: z.array(z.number()).min(1).describe('One or more specific target sell prices for taking profits at different levels. Could include an initial target and stretch targets.'),
+  actionableSteps: z.array(z.string()).describe('A few concrete, actionable steps for implementing this strategy, including setting buy orders at the optimal price and sell orders/alerts at target prices.'),
+  stopLossSuggestion: z.string().optional().describe('A suggestion for a stop-loss level or strategy to manage risk for this specific approach.'),
 });
 
 const AiCoachStrategiesOutputSchema = z.object({
-  coinSpecificAdvice: z.string().describe("General advice tailored to this coin's characteristics (e.g., known volatility, upcoming events)."),
-  investmentStrategies: z.array(InvestmentStrategySchema).min(1).max(3).describe('An array of 1-3 recommended investment strategies.'),
-  overallCoachSOutlook: z.string().describe('The AI coach\'s overall outlook and final thoughts for investing in this coin, including risk management tips.'),
-  disclaimer: z.string().describe('A brief disclaimer that this is AI-generated advice and not financial gospel.'),
+  coinSpecificAdvice: z.string().describe("Advanced advice tailored to this coin's characteristics (e.g., known volatility patterns, upcoming catalysts/events that could be leveraged, liquidity considerations)."),
+  investmentStrategies: z.array(InvestmentStrategySchema).min(1).max(3).describe('An array of 1-3 recommended investment strategies geared towards maximizing profit.'),
+  overallCoachSOutlook: z.string().describe('The AI coach\'s overall outlook and final thoughts for investing in this coin with a profit maximization mindset. Include crucial risk management tips (e.g., position sizing for aggressive trades, when to re-evaluate, dynamic stop-loss strategies).'),
+  disclaimer: z.string().default('Remember, these AI-generated insights are for informational purposes and not financial advice. Cryptocurrency investments are subject to high market risk. Past performance is not indicative of future results. Always do your own research (DYOR).').describe('A brief disclaimer that this is AI-generated advice and not financial gospel.'),
 });
 export type AiCoachStrategiesOutput = z.infer<typeof AiCoachStrategiesOutputSchema>;
 
@@ -50,7 +53,8 @@ const prompt = ai.definePrompt({
   name: 'aiCoachStrategiesPrompt',
   input: {schema: AiCoachStrategiesInputSchema},
   output: {schema: AiCoachStrategiesOutputSchema},
-  prompt: `You are an expert AI Trading Coach. Your goal is to provide actionable investment strategies and advice for a specific cryptocurrency pick.
+  prompt: `You are an expert AI Trading Coach specializing in profit maximization for advanced users.
+Your goal is to provide highly actionable investment strategies and sophisticated advice for a specific cryptocurrency pick.
 
 Coin: {{{coinName}}}
 Initial Rationale for Pick: {{{currentRationale}}}
@@ -61,18 +65,20 @@ Estimated Duration: {{{estimatedDuration}}}
 {{#if profitTarget}}User's Profit Target: \${{{profitTarget}}}{{/if}}
 {{#if riskTolerance}}User's Risk Tolerance: {{{riskTolerance}}}{{/if}}
 
-Based on the information above:
-1.  **Coin-Specific Advice**: Provide some general advice tailored to the known characteristics of {{{coinName}}} (e.g., "Given its high volatility, consider setting tighter stop-losses." or "Watch out for major news expected next month regarding X project update.").
-2.  **Investment Strategies**: Recommend 1 to 3 distinct investment strategies suitable for {{{coinName}}} given its profile and the user's parameters (if available). For each strategy:
-    *   **Name**: A clear name (e.g., "Aggressive Entry & Scalp", "Conservative DCA Accumulation").
-    *   **Description**: Explain the strategy in detail.
-    *   **Reasoning**: Justify why this strategy is appropriate for {{{coinName}}} and the current market context. How does it leverage the predicted gain, entry/exit points, or duration?
-    *   **Actionable Steps**: Provide 2-3 concrete, actionable steps a user can take to implement this strategy.
-3.  **Overall Coach's Outlook**: Summarize your overall outlook for investing in {{{coinName}}}. Include crucial risk management tips (e.g., position sizing, stop-loss strategies, not investing more than one can afford to lose).
-4.  **Disclaimer**: Include a short disclaimer: "Remember, these AI-generated insights are for informational purposes and not financial advice. Cryptocurrency investments are subject to high market risk."
+Based on the information above, provide the following with a strong focus on maximizing profit:
+1.  **Coin-Specific Advice**: Offer advanced insights specific to {{{coinName}}}. Think about unique volatility patterns, upcoming catalysts (e.g., mainnet launch, token burn) that could be exploited, liquidity considerations for larger trades, or specific indicators that work well for this coin.
+2.  **Investment Strategies (Profit Maximization Focus)**: Recommend 1 to 3 distinct investment strategies designed to maximize profit for {{{coinName}}}, considering its profile and the user's parameters. For each strategy:
+    *   **Name**: A clear, compelling name (e.g., "Alpha Scalp & Compound", "Momentum Surge Ride", "Breakout & Hold for Multi-Targets").
+    *   **Description**: Explain the strategy in detail, emphasizing how it targets profit maximization.
+    *   **Reasoning**: Justify why this strategy is optimal for {{{coinName}}} in the current market context to achieve maximum gains. How does it leverage the predicted gain, entry/exit points, or duration for superior returns?
+    *   **Optimal Buy Price**: (Optional) Suggest a specific, optimal buy price to enter the trade for this strategy. This should be a precise figure.
+    *   **Target Sell Prices**: Provide at least one, preferably multiple, specific target sell prices. These could represent different levels for taking partial or full profits (e.g., initial target, secondary target, moonshot target).
+    *   **Actionable Steps**: Provide 2-4 concrete, actionable steps. Examples: "Set a limit buy order at \${{{optimalBuyPrice}}}.", "Place take-profit orders at \${{{targetSellPrices.[0]}}} and \${{{targetSellPrices.[1]}}}.", "Monitor [specific indicator] for confirmation before entry."
+    *   **Stop-Loss Suggestion**: (Optional) Provide a concrete stop-loss price or a strategy for setting one (e.g., "Set a stop-loss at \${some_price_level_based_on_support}", or "Use a 5% trailing stop-loss once in profit").
+3.  **Overall Coach's Outlook (Profit Max Focus)**: Summarize your overall outlook for investing in {{{coinName}}} with the primary goal of maximizing profit. Include crucial risk management tips tailored for aggressive strategies (e.g., position sizing relative to conviction and risk, when to cut losses quickly, importance of not being greedy, how to adjust strategy if market conditions change).
+4.  **Disclaimer**: Include the standard disclaimer.
 
-Format the output strictly according to the AiCoachStrategiesOutputSchema. Ensure the strategies are practical and well-explained.
-Focus on providing high-quality, insightful coaching.
+Format the output strictly according to the AiCoachStrategiesOutputSchema. Ensure strategies are practical, well-explained, and focused on maximizing returns while managing associated risks. Be bold and intelligent in your suggestions.
 `,
 });
 
@@ -87,6 +93,11 @@ const aiCoachStrategiesFlow = ai.defineFlow(
     if (!output) {
       throw new Error("AI coach failed to generate strategies.");
     }
+    // Ensure disclaimer is present
+    if (!output.disclaimer) {
+      output.disclaimer = 'Remember, these AI-generated insights are for informational purposes and not financial advice. Cryptocurrency investments are subject to high market risk. Past performance is not indicative of future results. Always do your own research (DYOR).';
+    }
     return output!;
   }
 );
+
