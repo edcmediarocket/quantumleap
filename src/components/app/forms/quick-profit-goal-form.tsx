@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -20,12 +21,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { BarChart, ShieldAlert } from "lucide-react";
+import { BarChart, ShieldAlert, DollarSign } from "lucide-react";
 import type { RecommendCoinsForProfitTargetInput } from "@/ai/flows/quick-profit-goal";
 
 const formSchema = z.object({
   profitTarget: z.coerce.number().positive({ message: "Profit target must be positive." }),
   riskTolerance: z.enum(["low", "medium", "high"]),
+  investmentAmount: z.coerce.number().positive({ message: "Investment amount must be positive." }).optional(),
 });
 
 type QuickProfitGoalFormValues = z.infer<typeof formSchema>;
@@ -41,6 +43,7 @@ export function QuickProfitGoalForm({ onSubmit, isLoading }: QuickProfitGoalForm
     defaultValues: {
       profitTarget: 100,
       riskTolerance: "medium",
+      investmentAmount: undefined,
     },
   });
 
@@ -57,7 +60,7 @@ export function QuickProfitGoalForm({ onSubmit, isLoading }: QuickProfitGoalForm
           render={({ field }) => (
             <FormItem>
               <FormLabel className="flex items-center">
-                <BarChart className="mr-2 h-4 w-4 text-primary" />
+                <BarChart className="mr-2 h-4 w-4 text-accent" />
                 Desired Profit Target (USD)
               </FormLabel>
               <FormControl>
@@ -69,11 +72,27 @@ export function QuickProfitGoalForm({ onSubmit, isLoading }: QuickProfitGoalForm
         />
         <FormField
           control={form.control}
+          name="investmentAmount"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="flex items-center">
+                <DollarSign className="mr-2 h-4 w-4 text-accent" />
+                Your Investment Amount (USD) <span className="text-xs text-muted-foreground ml-1">(Optional)</span>
+              </FormLabel>
+              <FormControl>
+                <Input type="number" placeholder="e.g., 1000" {...field} onChange={(e) => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
           name="riskTolerance"
           render={({ field }) => (
             <FormItem>
               <FormLabel className="flex items-center">
-                <ShieldAlert className="mr-2 h-4 w-4 text-primary" />
+                <ShieldAlert className="mr-2 h-4 w-4 text-accent" />
                 Risk Tolerance
               </FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>

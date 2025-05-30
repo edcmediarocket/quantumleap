@@ -20,8 +20,8 @@ const PriceRangeSchema = z.object({
 const AiCoinPicksInputSchema = z.object({
   profitTarget: z
     .number()
-    .describe('The desired profit target in USD.'),
-  strategy: z.enum(['short-term', 'swing', 'scalp']).default('short-term').describe('The trading strategy to use.'),
+    .describe('Desired profit in USD.'), // Shorter
+  strategy: z.enum(['short-term', 'swing', 'scalp']).default('short-term').describe('Trading strategy.'), // Shorter
 });
 export type AiCoinPicksInput = z.infer<typeof AiCoinPicksInputSchema>;
 
@@ -37,7 +37,7 @@ const AiCoinPicksOutputSchema = z.object({
       confidenceMeter: z.number().describe('Confidence score (0-1).'), // No min/max for schema simplicity
       rationale: z.string().describe('Advanced rationale: TA, FA, sentiment, whale/social, catalysts, risks. Profit focus.'),
       estimatedDuration: z.string().describe('Estimated duration to profit.'),
-      riskRoiGauge: z.number().describe('Risk/ROI score (0-1).'), // No min/max for schema simplicity
+      riskRoiGauge: z.number().describe('Risk/ROI score (0-1).'), // New field
       predictedEntryWindowDescription: z.string().optional().describe('AI textual description of ideal entry window/conditions.'),
       predictedExitWindowDescription: z.string().optional().describe('AI textual description of ideal exit window/conditions/signals.'),
       simulatedEntryCountdownText: z.string().optional().describe('Textual suggestion for a countdown, e.g., "approx. 30 minutes", "around 1 hour".'),
@@ -70,9 +70,9 @@ For each recommended coin, provide:
 5.  **Optimal Buy Price (optimalBuyPrice)**: (Optional) Specific suggested buy price.
 6.  **Target Sell Prices (targetSellPrices)**: (Optional) Array of specific target sell prices.
 7.  **Confidence Meter (confidenceMeter)**: Score 0.0 to 1.0.
-8.  **Detailed Rationale (rationale)**: In-depth (3-4 paragraphs, advanced user focus) covering: TA (RSI, MACD, patterns), FA (updates, tokenomics, news), market sentiment, whale activity, social media trends, profit opportunity synthesis, catalysts, risks.
-9.  **Estimated Duration (estimatedDuration)**: Timeframe (e.g., "3-7 days").
-10. **Risk/ROI Gauge (riskRoiGauge)**: Score 0.0 to 1.0.
+8.  **Detailed Rationale (rationale)**: In-depth (3-4 paragraphs, advanced user focus) covering: TA (RSI, MACD, patterns), FA (updates, tokenomics, news), market sentiment, whale activity, social media trends, profit opportunity synthesis, catalysts, risks. Focus on profit maximization.
+9.  **Estimated Duration (estimatedDuration)**: Timeframe (e.g., "3-7 days", "1-2 weeks").
+10. **Risk/ROI Gauge (riskRoiGauge)**: Score 0.0 to 1.0, where 0 is very low risk/low ROI, and 1.0 is very high risk/high ROI.
 11. **Predicted Entry Window Description (predictedEntryWindowDescription)**: (Optional) Textual description of the ideal entry window or conditions (e.g., "Entry favorable in next 1-2h, watch for X signal", "Consider entry if price consolidates above Y for 30 mins").
 12. **Predicted Exit Window Description (predictedExitWindowDescription)**: (Optional) Textual description of ideal exit signals or windows (e.g., "Exit on clear momentum loss on 15m chart or after 25% gain", "Target $Z, then re-evaluate").
 13. **Simulated Entry Countdown Text (simulatedEntryCountdownText)**: (Optional) A textual suggestion for a countdown to an ideal entry (e.g., "approx. 25 minutes", "around 1 hour 10 minutes", "potentially 3 hours"). Be specific with units.
@@ -112,7 +112,7 @@ const aiCoinPicksFlow = ai.defineFlow(
     }
     output.picks.forEach(pick => {
       if (pick.confidenceMeter === undefined) pick.confidenceMeter = 0.5;
-      if (pick.riskRoiGauge === undefined) pick.riskRoiGauge = 0.5;
+      if (pick.riskRoiGauge === undefined) pick.riskRoiGauge = 0.5; // Default if missing
     });
     return output!;
   }

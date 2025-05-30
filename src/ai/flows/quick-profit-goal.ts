@@ -22,6 +22,7 @@ const RecommendCoinsForProfitTargetInputSchema = z.object({
   riskTolerance: z
     .enum(['low', 'medium', 'high'])
     .describe('The user\'s risk tolerance: low, medium, or high.'),
+  investmentAmount: z.number().optional().describe('User\'s intended investment amount in USD (if provided).'),
 });
 export type RecommendCoinsForProfitTargetInput = z.infer<
   typeof RecommendCoinsForProfitTargetInputSchema
@@ -41,6 +42,7 @@ const RecommendedCoinSchema = z.object({
     .number()
     .optional()
     .describe('A number from 0 to 1 indicating the confidence in this trade. Defaults to 0.5 if not provided by AI.'),
+  riskRoiGauge: z.number().optional().describe('Risk/ROI score (0-1, optional, defaults to 0.5).'), // New field
   rationale: z.string().describe('A detailed rationale (at least 3-4 paragraphs, targeting an advanced user) behind recommending this coin. Cover technical and fundamental aspects, market sentiment, relevant news/events, potential catalysts, risks, and how it aligns with the user\'s risk tolerance and profit target to maximize gains.'),
   predictedEntryWindowDescription: z.string().optional().describe('AI textual description of ideal entry window/conditions.'),
   predictedExitWindowDescription: z.string().optional().describe('AI textual description of ideal exit window/conditions/signals.'),
@@ -68,6 +70,7 @@ const prompt = ai.definePrompt({
   output: {schema: RecommendCoinsForProfitTargetOutputSchema},
   prompt: `You are an AI trading coach for advanced users. A user wants to reach a profit target of {{{profitTarget}}} USD.
 The user's risk tolerance is {{{riskTolerance}}}.
+{{#if investmentAmount}}The user has indicated a potential investment amount of \${{{investmentAmount}}} USD. Keep this in mind as context, but focus on recommending coins that can achieve the *profitTarget*.{{/if}}
 Strive to provide the smartest, most accurate, and actionable advice possible to maximize their profit.
 
 Based on current market conditions, recommend 3-5 coins to trade that could help the user reach their profit target.
@@ -81,16 +84,17 @@ For each recommended coin, provide:
 6.  **Optimal Buy Price**: (Optional) A specific suggested buy price that represents a particularly good entry point.
 7.  **Target Sell Prices**: (Optional) One or more specific price targets for selling and taking profit.
 8.  **Trade Confidence**: A score from 0.0 to 1.0 (optional, will default to 0.5 if not provided).
-9.  **Detailed Rationale**: An in-depth explanation (at least 3-4 paragraphs, targeting an advanced user) for this recommendation, including:
+9.  **Risk/ROI Gauge (riskRoiGauge)**: (Optional) Score 0.0 to 1.0, where 0 is very low risk/low ROI, and 1.0 is very high risk/high ROI. Default to 0.5 if unsure.
+10. **Detailed Rationale**: An in-depth explanation (at least 3-4 paragraphs, targeting an advanced user) for this recommendation, including:
     *   Relevant technical analysis (support/resistance levels, chart patterns, indicators like RSI, MACD).
     *   Key fundamental factors (project developments, news, adoption, tokenomics).
     *   Current market sentiment and significant whale/social media activity.
     *   How it aligns with the user's risk tolerance and profit target, focusing on profit maximization.
     *   Potential catalysts for price movement and key risks or invalidation points.
-10. **Predicted Entry Window Description (predictedEntryWindowDescription)**: (Optional) Textual description of the ideal entry window or conditions (e.g., "Entry favorable in next 2-4h, if BTC holds $60k", "Consider entry on a pullback to the 0.618 Fib level").
-11. **Predicted Exit Window Description (predictedExitWindowDescription)**: (Optional) Textual description of ideal exit signals or windows (e.g., "Exit if daily candle closes below $X support", "Target $Y for 50% profit, then trail stop for rest").
-12. **Simulated Entry Countdown Text (simulatedEntryCountdownText)**: (Optional) A textual suggestion for a countdown to an ideal entry (e.g., "approx. 1 hour 45 minutes", "potentially 4 hours", "around 20 minutes"). Be specific with units.
-13. **Simulated Post-Buy Drop Alert Text (simulatedPostBuyDropAlertText)**: (Optional) Text for a hypothetical critical drop alert after entry (e.g., "SIMULATED ALERT: If {{coinName}} falls 8% sharply post-entry, AI recommends immediate risk assessment."). This text will be used for a simulated alert.
+11. **Predicted Entry Window Description (predictedEntryWindowDescription)**: (Optional) Textual description of the ideal entry window or conditions (e.g., "Entry favorable in next 2-4h, if BTC holds $60k", "Consider entry on a pullback to the 0.618 Fib level").
+12. **Predicted Exit Window Description (predictedExitWindowDescription)**: (Optional) Textual description of ideal exit signals or windows (e.g., "Exit if daily candle closes below $X support", "Target $Y for 50% profit, then trail stop for rest").
+13. **Simulated Entry Countdown Text (simulatedEntryCountdownText)**: (Optional) A textual suggestion for a countdown to an ideal entry (e.g., "approx. 1 hour 45 minutes", "potentially 4 hours", "around 20 minutes"). Be specific with units.
+14. **Simulated Post-Buy Drop Alert Text (simulatedPostBuyDropAlertText)**: (Optional) Text for a hypothetical critical drop alert after entry (e.g., "SIMULATED ALERT: If {{coinName}} falls 8% sharply post-entry, AI recommends immediate risk assessment."). This text will be used for a simulated alert.
 
 Format the output strictly according to the RecommendCoinsForProfitTargetOutputSchema.
 Ensure all numeric values are indeed numbers, not strings.
@@ -104,6 +108,7 @@ Example for a single recommended coin:
   "optimalBuyPrice": 2.51,
   "targetSellPrices": [3.10, 3.15],
   "tradeConfidence": 0.75,
+  "riskRoiGauge": 0.6,
   "rationale": "Multi-paragraph detailed rationale targeting advanced users, covering TA, FA, market sentiment, profit maximization for user's goal...",
   "predictedEntryWindowDescription": "Entry looks good on a test of the $2.50 support level.",
   "predictedExitWindowDescription": "Take profit at $3.10, consider a stop-loss below $2.40.",
@@ -127,6 +132,9 @@ const recommendCoinsForProfitTargetFlow = ai.defineFlow(
     output.recommendedCoins.forEach(coin => {
       if (coin.tradeConfidence === undefined) {
         coin.tradeConfidence = 0.5;
+      }
+      if (coin.riskRoiGauge === undefined) {
+        coin.riskRoiGauge = 0.5; // Default if missing
       }
     });
     return output!;

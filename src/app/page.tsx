@@ -113,7 +113,11 @@ export default function QuantumLeapPage() {
     setQuickProfitError(null);
     setQuickProfitResults(null);
     setCurrentQuickProfitInput(data);
-    await fetchAndSetCoachTip('profitGoal', `Target: $${data.profitTarget}, Risk: ${data.riskTolerance}`);
+    let summary = `Goal: $${data.profitTarget}, Risk: ${data.riskTolerance}`;
+    if (data.investmentAmount) {
+      summary += `, Invest: $${data.investmentAmount}`;
+    }
+    await fetchAndSetCoachTip('profitGoal', summary);
     try {
       const result = await recommendCoinsForProfitTarget(data);
       setQuickProfitResults(result);
@@ -204,7 +208,7 @@ export default function QuantumLeapPage() {
           <TabsContent value="aiPicks" className="mt-8">
             <div className="flex flex-col items-center gap-12">
               <div className={cn(
-                  "w-full md:max-w-md lg:max-w-lg p-6",
+                  "w-full md:max-w-md lg:max-w-lg p-6 shadow-xl",
                   "glass-effect glass-effect-interactive-hover hover-glow-primary"
                 )}>
                 <h2 className="text-2xl font-semibold mb-6 text-primary flex items-center">
@@ -246,7 +250,7 @@ export default function QuantumLeapPage() {
           <TabsContent value="profitGoal" className="mt-8">
             <div className="flex flex-col items-center gap-12">
               <div className={cn(
-                  "w-full md:max-w-md lg:max-w-lg p-6",
+                  "w-full md:max-w-md lg:max-w-lg p-6 shadow-xl",
                   "glass-effect glass-effect-interactive-hover hover-glow-accent"
                 )}>
                  <h2 className="text-2xl font-semibold mb-6 text-accent flex items-center">
@@ -271,6 +275,7 @@ export default function QuantumLeapPage() {
                         coinData={coin} 
                         type="profitGoal"
                         profitTarget={currentQuickProfitInput?.profitTarget}
+                        investmentAmount={currentQuickProfitInput?.investmentAmount}
                         riskTolerance={currentQuickProfitInput?.riskTolerance}
                       />
                     ))}
@@ -289,7 +294,7 @@ export default function QuantumLeapPage() {
           <TabsContent value="memeFlip" className="mt-8">
             <div className="flex flex-col items-center gap-12">
               <div className={cn(
-                  "w-full md:max-w-md lg:max-w-lg p-6",
+                  "w-full md:max-w-md lg:max-w-lg p-6 shadow-xl",
                   "glass-effect glass-effect-interactive-hover hover-glow-orange"
                 )}>
                  <h2 className="text-2xl font-semibold mb-6 text-orange-500 flex items-center">

@@ -26,7 +26,8 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { LoadingDots } from "@/components/ui/loading-dots";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { TrendingUp, HelpCircle, Gauge, Target, Clock, DollarSign, Info, Brain, Terminal, RocketIcon, AlertTriangle, Calculator, TimerIcon, BellIcon, ShoppingCart } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { TrendingUp, HelpCircle, Gauge, Target, Clock, DollarSign, Info, Brain, Terminal, RocketIcon, AlertTriangle, Calculator, TimerIcon, BellIcon, ShoppingCart, LineChart, ShieldCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -47,6 +48,7 @@ interface CoinCardProps {
   type: 'aiPick' | 'profitGoal' | 'memeFlip';
   profitTarget?: number;
   riskTolerance?: 'low' | 'medium' | 'high';
+  investmentAmount?: number; // Added for profitGoal
 }
 
 function isAiPick(coinData: AnyCoinData, type: CoinCardProps['type']): coinData is AiPick {
@@ -147,11 +149,11 @@ const formatSecondsToCountdown = (totalSeconds: number): string => {
 };
 
 
-export function CoinCard({ coinData, type, profitTarget, riskTolerance }: CoinCardProps) {
+export function CoinCard({ coinData, type, profitTarget, riskTolerance, investmentAmount }: CoinCardProps) {
   let name: string;
   let gain: number;
   let confidence: number | undefined;
-  let riskRoiGauge: number | undefined;
+  let riskRoiGaugeValue: number | undefined; // Renamed for clarity
   let predictedPumpPotential: string | undefined;
   let riskLevel: string | undefined;
   let rationale: string;
@@ -174,12 +176,17 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance }: CoinCa
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
 
+  // Profit Goal Tracker state
+  const [unitsToBuyForGoal, setUnitsToBuyForGoal] = useState<number | null>(null);
+  const [requiredSellPriceForGoal, setRequiredSellPriceForGoal] = useState<number | null>(null);
+  const [potentialTotalValueForGoal, setPotentialTotalValueForGoal] = useState<number | null>(null);
+
 
   if (isAiPick(coinData, type)) {
     name = coinData.coin;
     gain = coinData.predictedGainPercentage;
     confidence = coinData.confidenceMeter;
-    riskRoiGauge = coinData.riskRoiGauge;
+    riskRoiGaugeValue = coinData.riskRoiGauge;
     rationale = coinData.rationale;
     entryPriceRange = coinData.entryPriceRange;
     exitPriceRange = coinData.exitPriceRange;
@@ -192,6 +199,7 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance }: CoinCa
     name = coinData.coinName;
     gain = coinData.estimatedGain;
     confidence = coinData.tradeConfidence;
+    riskRoiGaugeValue = coinData.riskRoiGauge;
     rationale = coinData.rationale;
     entryPriceRange = coinData.entryPriceRange;
     exitPriceRange = coinData.exitPriceRange;
@@ -215,9 +223,11 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance }: CoinCa
     simulatedEntryCountdownText = coinData.simulatedEntryCountdownText;
     simulatedPostBuyDropAlertText = coinData.simulatedPostBuyDropAlertText;
   } else {
+    // Should not happen with proper typing, but as a fallback
     name = "Unknown Coin";
     gain = 0;
     confidence = 0;
+    riskRoiGaugeValue = 0.5;
     rationale = "No rationale available.";
   }
 
@@ -225,11 +235,16 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance }: CoinCa
     if (entryPriceRange?.low && entryPriceRange?.high) {
       const avgEntry = (entryPriceRange.low + entryPriceRange.high) / 2;
       setAverageEntryPrice(avgEntry > 0 ? avgEntry : entryPriceRange.low); 
+    } else if (entryPriceRange?.low) {
+       setAverageEntryPrice(entryPriceRange.low);
+    } else {
+      setAverageEntryPrice(null);
     }
   }, [entryPriceRange]);
 
+  // Effect for Meme Coin Profit Estimator
   useEffect(() => {
-    if (purchaseQuantity !== null && averageEntryPrice !== null && purchaseQuantity > 0 && averageEntryPrice > 0) {
+    if (type === 'memeFlip' && purchaseQuantity !== null && averageEntryPrice !== null && purchaseQuantity > 0 && averageEntryPrice > 0) {
       setTotalBuyCost(purchaseQuantity * averageEntryPrice);
       if (estimatedSellPrice !== null && estimatedSellPrice >= 0) {
         const totalRevenue = purchaseQuantity * estimatedSellPrice;
@@ -237,11 +252,30 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance }: CoinCa
       } else {
         setCalculatedProfit(null); 
       }
-    } else {
+    } else if (type === 'memeFlip') {
       setTotalBuyCost(null);
       setCalculatedProfit(null);
     }
-  }, [purchaseQuantity, estimatedSellPrice, averageEntryPrice]);
+  }, [purchaseQuantity, estimatedSellPrice, averageEntryPrice, type]);
+
+  // Effect for Quick Profit Goal Tracker calculations
+  useEffect(() => {
+    if (type === 'profitGoal' && investmentAmount && profitTarget && averageEntryPrice && averageEntryPrice > 0) {
+      const units = investmentAmount / averageEntryPrice;
+      setUnitsToBuyForGoal(units);
+      if (units > 0) {
+        setRequiredSellPriceForGoal((investmentAmount + profitTarget) / units);
+      } else {
+        setRequiredSellPriceForGoal(null);
+      }
+      setPotentialTotalValueForGoal(investmentAmount + profitTarget);
+    } else if (type === 'profitGoal') {
+      setUnitsToBuyForGoal(null);
+      setRequiredSellPriceForGoal(null);
+      setPotentialTotalValueForGoal(null);
+    }
+  }, [type, investmentAmount, profitTarget, averageEntryPrice]);
+
 
   useEffect(() => {
     if (countdownIntervalRef.current) {
@@ -325,9 +359,18 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance }: CoinCa
 
   const cardTitleColor = type === 'memeFlip' ? 'text-orange-400' : 'text-primary-foreground group-hover:text-primary transition-colors';
   const gainColor = gain >= 0 ? (type === 'memeFlip' ? 'text-yellow-400' : 'text-green-400') : 'text-red-400';
-  const progressBg = type === 'memeFlip' ? 'bg-orange-500/20' : 'bg-primary/20';
-  const progressGradientFrom = type === 'memeFlip' ? 'from-yellow-500' : 'from-accent';
-  const progressGradientTo = type === 'memeFlip' ? 'to-red-500' : 'to-primary';
+  
+  const getRiskRoiProgressBg = () => {
+    if (riskRoiGaugeValue === undefined) return 'bg-muted';
+    if (riskRoiGaugeValue < 0.33) return 'bg-green-500/20 [&>div]:bg-gradient-to-r [&>div]:from-green-400 [&>div]:to-green-600';
+    if (riskRoiGaugeValue < 0.66) return 'bg-yellow-500/20 [&>div]:bg-gradient-to-r [&>div]:from-yellow-400 [&>div]:to-yellow-600';
+    return 'bg-red-500/20 [&>div]:bg-gradient-to-r [&>div]:from-red-400 [&>div]:to-red-600';
+  };
+  const riskRoiProgressClass = getRiskRoiProgressBg();
+
+  const confidenceProgressBg = type === 'memeFlip' ? 'bg-orange-500/20 [&>div]:bg-gradient-to-r [&>div]:from-yellow-500 [&>div]:to-red-500' : 'bg-primary/20 [&>div]:bg-gradient-to-r [&>div]:from-accent [&>div]:to-primary';
+
+
   const dialogButtonVariant = type === 'memeFlip' ? 'outline' : 'outline';
   const dialogButtonTextColor = type === 'memeFlip' ? 'text-orange-500 border-orange-500 hover:bg-orange-500 hover:text-white' : 'border-accent text-accent hover:bg-accent hover:text-accent-foreground';
   const dialogTitleIcon = type === 'memeFlip' ? <RocketIcon className="h-6 w-6"/> : <Brain className="h-6 w-6"/>;
@@ -365,7 +408,7 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance }: CoinCa
           <p className="font-medium text-foreground justify-self-end text-right">{formatPriceRange(entryPriceRange)}</p>
         </div>
 
-        { (isAiPick(coinData, type) || isProfitGoalCoin(coinData, type) || (isMemeFlipCoin(coinData, type))) && // simplified condition for exit price
+        { (isAiPick(coinData, type) || isProfitGoalCoin(coinData, type) || (isMemeFlipCoin(coinData, type))) &&
           <div className="grid grid-cols-[auto,1fr] items-center gap-x-2">
             <p className="text-xs text-muted-foreground justify-self-start">
               {isMemeFlipCoin(coinData, type) ? "Flip Target:" : "Exit Price:"}
@@ -377,9 +420,31 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance }: CoinCa
         {typeof confidence === 'number' && (
           <div>
             <p className="text-xs text-muted-foreground mb-1">Confidence:</p>
-            <Progress value={confidence * 100} className={`h-2 w-full ${progressBg} [&>div]:bg-gradient-to-r [&>div]:${progressGradientFrom} [&>div]:${progressGradientTo}`} />
+            <Progress value={confidence * 100} className={`h-2 w-full ${confidenceProgressBg}`} />
           </div>
         )}
+
+        {riskRoiGaugeValue !== undefined && (isAiPick(coinData, type) || isProfitGoalCoin(coinData, type)) && (
+          <TooltipProvider>
+            <Tooltip delayDuration={100}>
+              <TooltipTrigger asChild>
+                <div className="cursor-help">
+                  <p className="text-xs text-muted-foreground mb-1 flex items-center">
+                    AI Risk/ROI Gauge
+                    <Info className="h-3 w-3 ml-1 text-muted-foreground group-hover:text-accent transition-colors" />
+                  </p>
+                  <Progress value={riskRoiGaugeValue * 100} className={`h-2 w-full ${riskRoiProgressClass}`} />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs text-center bg-popover text-popover-foreground p-2 rounded-md shadow-lg border">
+                <p className="text-xs">
+                  AI-Assessed Risk vs. Reward. Lower values suggest lower relative risk for the potential reward; higher values suggest higher risk. This is a speculative indicator based on AI analysis.
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
+
 
         {isMemeFlipCoin(coinData, type) && coinData.suggestedBuyInWindow && (
             <div className="flex items-center gap-2 text-sm">
@@ -392,19 +457,6 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance }: CoinCa
           <div className="flex items-center gap-2 text-sm">
             <Clock className="h-4 w-4 text-muted-foreground" />
             <p><span className="text-muted-foreground">Est. Duration:</span> {estimatedDuration}</p>
-          </div>
-        )}
-
-        {isAiPick(coinData, type) && riskRoiGauge !== undefined && (
-          <div className="group relative">
-            <p className="text-xs text-muted-foreground mb-1 flex items-center">
-              Risk/ROI Gauge
-              <Info className="h-3 w-3 ml-1 text-muted-foreground group-hover:text-accent transition-colors" />
-            </p>
-            <Progress value={riskRoiGauge * 100} className="h-2 w-full bg-primary/20 [&>div]:bg-gradient-to-r [&>div]:from-yellow-500 [&>div]:to-red-500" />
-            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden w-60 rounded-md bg-popover px-3 py-2 text-xs text-popover-foreground shadow-lg group-hover:block z-10 text-center">
-              Indicates risk vs. reward. Higher means higher potential reward but also higher risk.
-            </div>
           </div>
         )}
 
@@ -465,7 +517,7 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance }: CoinCa
                   <Input
                     id={`sellPrice-${name.replace(/\s+/g, '-')}`}
                     type="number"
-                    placeholder={formatPrice(coinData.exitPriceRange?.high)}
+                    placeholder={formatPrice(coinData.exitPriceRange?.high)} // Use exitPriceRange.high as placeholder
                     value={estimatedSellPrice === null ? '' : estimatedSellPrice}
                      onChange={(e) => {
                       const val = parseFloat(e.target.value);
@@ -504,6 +556,55 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance }: CoinCa
             </div>
           </>
         )}
+
+        {isProfitGoalCoin(coinData, type) && investmentAmount && profitTarget && averageEntryPrice && (
+          <>
+            <Separator className="my-3 border-accent/30" />
+            <div className="space-y-2">
+              <h4 className="text-sm font-semibold text-accent flex items-center">
+                <Target className="h-4 w-4 mr-2" />
+                Investment Scenario for Your Goal
+              </h4>
+              <p className="text-xs text-muted-foreground">
+                With an investment of <span className="font-semibold text-foreground">{formatPrice(investmentAmount)}</span>:
+              </p>
+              {unitsToBuyForGoal !== null && unitsToBuyForGoal > 0 && (
+                <ul className="list-disc list-inside text-xs text-muted-foreground space-y-1 pl-4">
+                  <li>
+                    You could potentially buy ~<span className="font-semibold text-foreground">{unitsToBuyForGoal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 6})}</span> units of {name}.
+                  </li>
+                  {requiredSellPriceForGoal !== null && (
+                    <li>
+                      To reach your <span className="font-semibold text-green-400">{formatPrice(profitTarget)}</span> profit target, the price per unit would need to hit ~<span className="font-semibold text-foreground">{formatPrice(requiredSellPriceForGoal)}</span>.
+                    </li>
+                  )}
+                </ul>
+              )}
+              {potentialTotalValueForGoal !== null && (
+                 <div className="mt-2 text-center p-2 rounded-md bg-green-500/10 border border-green-500/30">
+                    <p className="text-xs text-muted-foreground flex items-center justify-center gap-1">
+                        <LineChart className="h-3 w-3 text-green-400"/> Potential Total Value:
+                    </p>
+                    <p className="text-lg font-semibold text-green-400">
+                        {formatPrice(potentialTotalValueForGoal)}
+                    </p>
+                     <p className="text-[10px] text-muted-foreground/80">
+                        (Investment: {formatPrice(investmentAmount)} + Target Profit: {formatPrice(profitTarget)})
+                    </p>
+                </div>
+              )}
+              {estimatedDuration && (
+                 <p className="text-xs text-muted-foreground text-center pt-1">
+                    AI Est. Duration to reach target: <span className="font-semibold text-foreground">{estimatedDuration}</span>
+                </p>
+              )}
+               <p className="text-[10px] text-muted-foreground/60 text-center pt-1">
+                This scenario is illustrative, based on AI estimations & average entry. Market conditions can change rapidly.
+              </p>
+            </div>
+          </>
+        )}
+
 
       </GlassCardContent>
       <GlassCardFooter>
