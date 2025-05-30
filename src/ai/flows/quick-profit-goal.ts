@@ -39,9 +39,13 @@ const RecommendedCoinSchema = z.object({
   targetSellPrices: z.array(z.number()).optional().describe('One or more specific target sell prices to consider for taking profits.'),
   tradeConfidence: z
     .number()
-    .optional() 
+    .optional()
     .describe('A number from 0 to 1 indicating the confidence in this trade. Defaults to 0.5 if not provided by AI.'),
   rationale: z.string().describe('A detailed rationale (at least 3-4 paragraphs, targeting an advanced user) behind recommending this coin. Cover technical and fundamental aspects, market sentiment, relevant news/events, potential catalysts, risks, and how it aligns with the user\'s risk tolerance and profit target to maximize gains.'),
+  predictedEntryWindowDescription: z.string().optional().describe('AI textual description of ideal entry window/conditions.'),
+  predictedExitWindowDescription: z.string().optional().describe('AI textual description of ideal exit window/conditions/signals.'),
+  simulatedEntryCountdownText: z.string().optional().describe('Textual suggestion for a countdown, e.g., "approx. 30 minutes", "around 1 hour".'),
+  simulatedPostBuyDropAlertText: z.string().optional().describe('Text for a hypothetical critical drop alert post-entry.'),
 });
 
 const RecommendCoinsForProfitTargetOutputSchema = z.object({
@@ -83,6 +87,10 @@ For each recommended coin, provide:
     *   Current market sentiment and significant whale/social media activity.
     *   How it aligns with the user's risk tolerance and profit target, focusing on profit maximization.
     *   Potential catalysts for price movement and key risks or invalidation points.
+10. **Predicted Entry Window Description (predictedEntryWindowDescription)**: (Optional) Textual description of the ideal entry window or conditions (e.g., "Entry favorable in next 2-4h, if BTC holds $60k", "Consider entry on a pullback to the 0.618 Fib level").
+11. **Predicted Exit Window Description (predictedExitWindowDescription)**: (Optional) Textual description of ideal exit signals or windows (e.g., "Exit if daily candle closes below $X support", "Target $Y for 50% profit, then trail stop for rest").
+12. **Simulated Entry Countdown Text (simulatedEntryCountdownText)**: (Optional) A textual suggestion for a countdown to an ideal entry (e.g., "approx. 1 hour 45 minutes", "potentially 4 hours", "around 20 minutes"). Be specific with units.
+13. **Simulated Post-Buy Drop Alert Text (simulatedPostBuyDropAlertText)**: (Optional) Text for a hypothetical critical drop alert after entry (e.g., "SIMULATED ALERT: If {{coinName}} falls 8% sharply post-entry, AI recommends immediate risk assessment."). This text will be used for a simulated alert.
 
 Format the output strictly according to the RecommendCoinsForProfitTargetOutputSchema.
 Ensure all numeric values are indeed numbers, not strings.
@@ -96,7 +104,11 @@ Example for a single recommended coin:
   "optimalBuyPrice": 2.51,
   "targetSellPrices": [3.10, 3.15],
   "tradeConfidence": 0.75,
-  "rationale": "Multi-paragraph detailed rationale targeting advanced users, covering TA, FA, market sentiment, profit maximization for user's goal..."
+  "rationale": "Multi-paragraph detailed rationale targeting advanced users, covering TA, FA, market sentiment, profit maximization for user's goal...",
+  "predictedEntryWindowDescription": "Entry looks good on a test of the $2.50 support level.",
+  "predictedExitWindowDescription": "Take profit at $3.10, consider a stop-loss below $2.40.",
+  "simulatedEntryCountdownText": "approx. 2 hours 30 minutes",
+  "simulatedPostBuyDropAlertText": "SIMULATED ALERT: If EXM drops 10% rapidly after entry, re-evaluate holding."
 }
 `,
 });

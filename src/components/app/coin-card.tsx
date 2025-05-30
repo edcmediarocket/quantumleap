@@ -2,7 +2,7 @@
 // src/components/app/coin-card.tsx
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   GlassCardRoot,
   GlassCardHeader,
@@ -26,7 +26,8 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { LoadingDots } from "@/components/ui/loading-dots";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { TrendingUp, HelpCircle, Gauge, Target, Clock, DollarSign, Info, Brain, Terminal, RocketIcon, AlertTriangle, Calculator } from "lucide-react";
+import { TrendingUp, HelpCircle, Gauge, Target, Clock, DollarSign, Info, Brain, Terminal, RocketIcon, AlertTriangle, Calculator, TimerIcon, BellIcon } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 import type { AiCoinPicksOutput } from "@/ai/flows/ai-coin-picks";
 import type { RecommendCoinsForProfitTargetOutput } from "@/ai/flows/quick-profit-goal";
@@ -42,8 +43,8 @@ type PriceRange = { low: number; high: number };
 
 interface CoinCardProps {
   coinData: AnyCoinData;
-  type: 'aiPick' | 'profitGoal' | 'memeFlip'; 
-  profitTarget?: number; 
+  type: 'aiPick' | 'profitGoal' | 'memeFlip';
+  profitTarget?: number;
   riskTolerance?: 'low' | 'medium' | 'high';
 }
 
@@ -61,11 +62,11 @@ const formatPrice = (price: number | undefined | null): string => {
   if (typeof price !== 'number' || isNaN(price)) return "$N/A";
   if (price === 0) return "$0.00";
 
-  if (Math.abs(price) < 0.00000001 && price !== 0) { 
+  if (Math.abs(price) < 0.000000001 && price !== 0) { // Even smaller for some meme coins
     return `$${price.toExponential(2)}`;
   }
-  if (Math.abs(price) < 0.01) { 
-    let priceStr = price.toFixed(12); 
+  if (Math.abs(price) < 0.01) {
+    let priceStr = price.toFixed(12);
     let [integerPart, decimalPart] = priceStr.split('.');
 
     if (decimalPart) {
@@ -81,25 +82,25 @@ const formatPrice = (price: number | undefined | null): string => {
             if (nonZeroFound) {
                  significantDecimal += char;
                  nonZeroCount++;
-            } else if (leadingZeros.length < 6) { // Limit leading zeros shown
+            } else if (leadingZeros.length < 8) { // Show more leading zeros if needed
                 leadingZeros += char;
             }
-            if (nonZeroCount >= 4 && (leadingZeros + significantDecimal).length >=6 ) break; // Show at least 4 sig-figs, up to 6 total after decimal
-             if ((leadingZeros + significantDecimal).length >= 8) break; // Hard cap for length
+            if (nonZeroCount >= 2 && (leadingZeros + significantDecimal).length >=4 ) break;
+            if ((leadingZeros + significantDecimal).length >= 10) break;
         }
-        
+
         significantDecimal = (leadingZeros + significantDecimal).replace(/0+$/, '');
         if (significantDecimal.length === 0 && integerPart === '0') return `$0.00...`;
         if (significantDecimal.length === 0) return `$${integerPart}.00`;
-        return `$${integerPart}.${significantDecimal.substring(0,8)}`; // Cap total decimal length
+        return `$${integerPart}.${significantDecimal.substring(0,10)}`;
     } else {
          return `$${integerPart}.00`;
     }
   }
-  if (Math.abs(price) < 1) { 
-    return `$${price.toFixed(4).replace(/0+$/, '').replace(/\.$/,'.00')}`; 
+  if (Math.abs(price) < 1) {
+    return `$${price.toFixed(4).replace(/0+$/, '').replace(/\.$/,'.00')}`;
   }
-  return `$${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`; 
+  return `$${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
 
 
@@ -108,11 +109,48 @@ const formatPriceRange = (range?: PriceRange): string => {
   return `${formatPrice(range.low)} - ${formatPrice(range.high)}`;
 };
 
+// Helper to parse AI's countdown text (e.g., "approx. 45 minutes", "1 hour 10 mins")
+const parseCountdownTextToSeconds = (text: string | undefined): number | null => {
+  if (!text) return null;
+  let totalSeconds = 0;
+  const hourMatch = text.match(/(\d+)\s*hour/i);
+  const minMatch = text.match(/(\d+)\s*min/i);
+
+  if (hourMatch) totalSeconds += parseInt(hourMatch[1], 10) * 3600;
+  if (minMatch) totalSeconds += parseInt(minMatch[1], 10) * 60;
+
+  // If only a number is present, assume minutes if small, else needs more context
+  if (!hourMatch && !minMatch) {
+    const numMatch = text.match(/(\d+)/);
+    if (numMatch) {
+      const num = parseInt(numMatch[1], 10);
+      if (num <= 120) totalSeconds += num * 60; // Assume minutes if <= 120
+      // Else, could be ambiguous, returning null or requiring AI to be more specific
+      else return null;
+    }
+  }
+  return totalSeconds > 0 ? totalSeconds : null;
+};
+
+const formatSecondsToCountdown = (totalSeconds: number): string => {
+  if (totalSeconds <= 0) return "Now / Overdue";
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  let parts = [];
+  if (hours > 0) parts.push(`${hours}h`);
+  if (minutes > 0) parts.push(`${minutes}m`);
+  if (hours === 0 && minutes < 30) { // Show seconds if less than 30 mins total or no hours
+    parts.push(`${seconds}s`);
+  }
+  return parts.join(' ') || "Calculating...";
+};
+
 
 export function CoinCard({ coinData, type, profitTarget, riskTolerance }: CoinCardProps) {
   let name: string;
   let gain: number;
-  let confidence: number | undefined; 
+  let confidence: number | undefined;
   let riskRoiGauge: number | undefined;
   let predictedPumpPotential: string | undefined;
   let riskLevel: string | undefined;
@@ -120,12 +158,20 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance }: CoinCa
   let entryPriceRange: PriceRange | undefined;
   let exitPriceRange: PriceRange | undefined;
   let estimatedDuration: string | undefined;
+  let predictedEntryWindowDescription: string | undefined;
+  let predictedExitWindowDescription: string | undefined;
+  let simulatedEntryCountdownText: string | undefined;
+  let simulatedPostBuyDropAlertText: string | undefined;
 
-  // State for profit estimator
+
   const [purchaseQuantity, setPurchaseQuantity] = useState<number | null>(null);
   const [estimatedSellPrice, setEstimatedSellPrice] = useState<number | null>(null);
   const [calculatedProfit, setCalculatedProfit] = useState<number | null>(null);
   const [averageEntryPrice, setAverageEntryPrice] = useState<number | null>(null);
+
+  const [countdownSeconds, setCountdownSeconds] = useState<number | null>(null);
+  const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const { toast } = useToast();
 
 
   if (isAiPick(coinData, type)) {
@@ -137,6 +183,10 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance }: CoinCa
     entryPriceRange = coinData.entryPriceRange;
     exitPriceRange = coinData.exitPriceRange;
     estimatedDuration = coinData.estimatedDuration;
+    predictedEntryWindowDescription = coinData.predictedEntryWindowDescription;
+    predictedExitWindowDescription = coinData.predictedExitWindowDescription;
+    simulatedEntryCountdownText = coinData.simulatedEntryCountdownText;
+    simulatedPostBuyDropAlertText = coinData.simulatedPostBuyDropAlertText;
   } else if (isProfitGoalCoin(coinData, type)) {
     name = coinData.coinName;
     gain = coinData.estimatedGain;
@@ -145,9 +195,13 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance }: CoinCa
     entryPriceRange = coinData.entryPriceRange;
     exitPriceRange = coinData.exitPriceRange;
     estimatedDuration = coinData.estimatedDuration;
+    predictedEntryWindowDescription = coinData.predictedEntryWindowDescription;
+    predictedExitWindowDescription = coinData.predictedExitWindowDescription;
+    simulatedEntryCountdownText = coinData.simulatedEntryCountdownText;
+    simulatedPostBuyDropAlertText = coinData.simulatedPostBuyDropAlertText;
   } else if (isMemeFlipCoin(coinData, type)) {
     name = coinData.coinName;
-    gain = coinData.predictedGainPercentage; 
+    gain = coinData.predictedGainPercentage;
     confidence = coinData.confidenceScore;
     predictedPumpPotential = coinData.predictedPumpPotential;
     riskLevel = coinData.riskLevel;
@@ -155,6 +209,10 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance }: CoinCa
     entryPriceRange = coinData.entryPriceRange;
     exitPriceRange = coinData.exitPriceRange;
     estimatedDuration = coinData.estimatedDuration;
+    predictedEntryWindowDescription = coinData.predictedEntryWindowDescription;
+    predictedExitWindowDescription = coinData.predictedExitWindowDescription;
+    simulatedEntryCountdownText = coinData.simulatedEntryCountdownText;
+    simulatedPostBuyDropAlertText = coinData.simulatedPostBuyDropAlertText;
   } else {
     name = "Unknown Coin";
     gain = 0;
@@ -163,14 +221,14 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance }: CoinCa
   }
 
   useEffect(() => {
-    if (isMemeFlipCoin(coinData, type) && coinData.entryPriceRange) {
-      const avgEntry = (coinData.entryPriceRange.low + coinData.entryPriceRange.high) / 2;
-      setAverageEntryPrice(avgEntry);
+    if (entryPriceRange?.low && entryPriceRange?.high) {
+      const avgEntry = (entryPriceRange.low + entryPriceRange.high) / 2;
+      setAverageEntryPrice(avgEntry > 0 ? avgEntry : entryPriceRange.low); // Handle potential zero if high=low=0
     }
-  }, [coinData, type]);
+  }, [entryPriceRange]);
 
   useEffect(() => {
-    if (purchaseQuantity !== null && estimatedSellPrice !== null && averageEntryPrice !== null && purchaseQuantity > 0 && estimatedSellPrice > 0 && averageEntryPrice > 0) {
+    if (purchaseQuantity !== null && estimatedSellPrice !== null && averageEntryPrice !== null && purchaseQuantity > 0 && estimatedSellPrice >= 0 && averageEntryPrice > 0) {
       const totalCost = purchaseQuantity * averageEntryPrice;
       const totalRevenue = purchaseQuantity * estimatedSellPrice;
       setCalculatedProfit(totalRevenue - totalCost);
@@ -178,6 +236,35 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance }: CoinCa
       setCalculatedProfit(null);
     }
   }, [purchaseQuantity, estimatedSellPrice, averageEntryPrice]);
+
+  useEffect(() => {
+    if (countdownIntervalRef.current) {
+      clearInterval(countdownIntervalRef.current);
+      countdownIntervalRef.current = null;
+    }
+
+    const initialSeconds = parseCountdownTextToSeconds(simulatedEntryCountdownText);
+    setCountdownSeconds(initialSeconds);
+
+    if (initialSeconds !== null && initialSeconds > 0) {
+      countdownIntervalRef.current = setInterval(() => {
+        setCountdownSeconds(prevSeconds => {
+          if (prevSeconds === null || prevSeconds <= 1) {
+            if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
+            // Optionally trigger a toast or visual change when timer ends
+             toast({ title: `${name} Entry Window`, description: "AI-suggested entry window is now active or has passed." });
+            return 0;
+          }
+          return prevSeconds - 1;
+        });
+      }, 1000);
+    }
+    return () => {
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+      }
+    };
+  }, [simulatedEntryCountdownText, name, toast]);
 
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -220,13 +307,24 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance }: CoinCa
     }
   }, [isDialogOpen, name, gain, type, coachStrategies, isLoadingCoach, profitTarget, riskTolerance, canShowCoach, rationale, entryPriceRange, exitPriceRange, estimatedDuration]);
 
+  const handleSimulateDumpAlert = () => {
+    const alertText = simulatedPostBuyDropAlertText || `SIMULATED ALERT: ${name} is showing a mock -10% drop! AI suggests re-evaluating.`;
+    setTimeout(() => {
+      toast({
+        variant: "destructive",
+        title: "Simulated Price Dump!",
+        description: alertText,
+      });
+    }, 3000); // 3-second delay
+  };
+
 
   const cardTitleColor = type === 'memeFlip' ? 'text-orange-400' : 'text-primary-foreground group-hover:text-primary transition-colors';
   const gainColor = gain >= 0 ? (type === 'memeFlip' ? 'text-yellow-400' : 'text-green-400') : 'text-red-400';
   const progressBg = type === 'memeFlip' ? 'bg-orange-500/20' : 'bg-primary/20';
   const progressGradientFrom = type === 'memeFlip' ? 'from-yellow-500' : 'from-accent';
   const progressGradientTo = type === 'memeFlip' ? 'to-red-500' : 'to-primary';
-  const dialogButtonVariant = type === 'memeFlip' ? 'outline' : 'outline'; 
+  const dialogButtonVariant = type === 'memeFlip' ? 'outline' : 'outline';
   const dialogButtonTextColor = type === 'memeFlip' ? 'text-orange-500 border-orange-500 hover:bg-orange-500 hover:text-white' : 'border-accent text-accent hover:bg-accent hover:text-accent-foreground';
   const dialogTitleIcon = type === 'memeFlip' ? <RocketIcon className="h-6 w-6"/> : <Brain className="h-6 w-6"/>;
   const dialogTitleText = type === 'memeFlip' ? `Meme Analysis for ${name}` : `AI Analysis for ${name}`;
@@ -292,7 +390,7 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance }: CoinCa
             <p><span className="text-muted-foreground">Est. Duration:</span> {estimatedDuration}</p>
           </div>
         )}
-        
+
         {isAiPick(coinData, type) && riskRoiGauge !== undefined && (
           <div className="group relative">
             <p className="text-xs text-muted-foreground mb-1 flex items-center">
@@ -305,6 +403,37 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance }: CoinCa
             </div>
           </div>
         )}
+
+        {/* Simulated Entry/Exit Timers & Alerts Section */}
+        {(predictedEntryWindowDescription || countdownSeconds !== null || predictedExitWindowDescription || simulatedPostBuyDropAlertText) && (
+          <div className="mt-3 pt-3 border-t border-border/20 space-y-2">
+            <h4 className="text-sm font-semibold text-primary-foreground/80 flex items-center">
+              <TimerIcon className="h-4 w-4 mr-2 text-accent" /> AI Timing &amp; Alerts
+            </h4>
+            {predictedEntryWindowDescription && (
+              <p className="text-xs text-muted-foreground"><span className="font-medium">Entry Suggestion:</span> {predictedEntryWindowDescription}</p>
+            )}
+            {countdownSeconds !== null && (
+              <div className="text-xs">
+                <span className="font-medium text-green-400">Simulated Ideal Entry In: </span>
+                <span className="font-mono">{formatSecondsToCountdown(countdownSeconds)}</span>
+                <p className="text-[10px] text-muted-foreground/70">⚠️ AI-suggested, not a live market prediction.</p>
+              </div>
+            )}
+            {predictedExitWindowDescription && (
+              <p className="text-xs text-muted-foreground mt-1"><span className="font-medium">Exit Suggestion:</span> {predictedExitWindowDescription}</p>
+            )}
+            {simulatedPostBuyDropAlertText && (
+              <div className="mt-2">
+                <p className="text-xs text-red-400/90"><span className="font-medium">Potential Dump Scenario:</span> {simulatedPostBuyDropAlertText}</p>
+                <Button onClick={handleSimulateDumpAlert} size="sm" variant="destructive" className="text-xs mt-1 h-7 px-2 py-1 opacity-80 hover:opacity-100">
+                  <BellIcon className="h-3 w-3 mr-1"/> Simulate Dump Alert
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+
 
         {isMemeFlipCoin(coinData, type) && (
           <>
@@ -381,7 +510,7 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance }: CoinCa
                 {dialogDescriptionText}
               </DialogDescription>
             </DialogHeader>
-            
+
             <div className="py-4 space-y-6">
               <div>
                 <h3 className={`text-lg font-semibold mb-2 ${type === 'memeFlip' ? 'text-orange-400' : 'text-accent'}`}>In-depth Rationale</h3>
@@ -453,4 +582,3 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance }: CoinCa
     </GlassCardRoot>
   );
 }
-

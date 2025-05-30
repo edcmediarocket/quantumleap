@@ -13,8 +13,8 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const PriceRangeSchema = z.object({
-  low: z.number().describe('Lower price bound.'), // Concise
-  high: z.number().describe('Upper price bound.'), // Concise
+  low: z.number().describe('Lower price bound.'),
+  high: z.number().describe('Upper price bound.'),
 });
 
 const AiCoinPicksInputSchema = z.object({
@@ -28,16 +28,20 @@ export type AiCoinPicksInput = z.infer<typeof AiCoinPicksInputSchema>;
 const AiCoinPicksOutputSchema = z.object({
   picks: z.array(
     z.object({
-      coin: z.string().describe('Coin ticker.'), // Concise
-      predictedGainPercentage: z.number().describe('Predicted % gain.'), // Concise
-      entryPriceRange: PriceRangeSchema.describe('Entry price (low/high).'), // Concise
-      exitPriceRange: PriceRangeSchema.describe('Exit price (low/high).'), // Concise
-      optimalBuyPrice: z.number().optional().describe('Optimal buy price (opt).'), // Concise
-      targetSellPrices: z.array(z.number()).optional().describe('Target sell prices (opt array).'), // Concise
-      confidenceMeter: z.number().describe('Confidence score (0-1).'), // Concise
-      rationale: z.string().describe('Advanced rationale: TA, FA, sentiment, whale/social, catalysts, risks. Profit focus.'), // Keep detailed
-      estimatedDuration: z.string().describe('Estimated duration to profit.'), // Concise
-      riskRoiGauge: z.number().describe('Risk/ROI score (0-1).'), // Concise
+      coin: z.string().describe('Coin ticker.'),
+      predictedGainPercentage: z.number().describe('Predicted % gain.'),
+      entryPriceRange: PriceRangeSchema.describe('Entry price (low/high).'),
+      exitPriceRange: PriceRangeSchema.describe('Exit price (low/high).'),
+      optimalBuyPrice: z.number().optional().describe('Optimal buy price (opt).'),
+      targetSellPrices: z.array(z.number()).optional().describe('Target sell prices (opt array).'),
+      confidenceMeter: z.number().describe('Confidence score (0-1).'), // No min/max for schema simplicity
+      rationale: z.string().describe('Advanced rationale: TA, FA, sentiment, whale/social, catalysts, risks. Profit focus.'),
+      estimatedDuration: z.string().describe('Estimated duration to profit.'),
+      riskRoiGauge: z.number().describe('Risk/ROI score (0-1).'), // No min/max for schema simplicity
+      predictedEntryWindowDescription: z.string().optional().describe('AI textual description of ideal entry window/conditions.'),
+      predictedExitWindowDescription: z.string().optional().describe('AI textual description of ideal exit window/conditions/signals.'),
+      simulatedEntryCountdownText: z.string().optional().describe('Textual suggestion for a countdown, e.g., "approx. 30 minutes", "around 1 hour".'),
+      simulatedPostBuyDropAlertText: z.string().optional().describe('Text for a hypothetical critical drop alert post-entry.'),
     })
   ).describe('An array of recommended coin picks.'),
 });
@@ -69,6 +73,10 @@ For each recommended coin, provide:
 8.  **Detailed Rationale (rationale)**: In-depth (3-4 paragraphs, advanced user focus) covering: TA (RSI, MACD, patterns), FA (updates, tokenomics, news), market sentiment, whale activity, social media trends, profit opportunity synthesis, catalysts, risks.
 9.  **Estimated Duration (estimatedDuration)**: Timeframe (e.g., "3-7 days").
 10. **Risk/ROI Gauge (riskRoiGauge)**: Score 0.0 to 1.0.
+11. **Predicted Entry Window Description (predictedEntryWindowDescription)**: (Optional) Textual description of the ideal entry window or conditions (e.g., "Entry favorable in next 1-2h, watch for X signal", "Consider entry if price consolidates above Y for 30 mins").
+12. **Predicted Exit Window Description (predictedExitWindowDescription)**: (Optional) Textual description of ideal exit signals or windows (e.g., "Exit on clear momentum loss on 15m chart or after 25% gain", "Target $Z, then re-evaluate").
+13. **Simulated Entry Countdown Text (simulatedEntryCountdownText)**: (Optional) A textual suggestion for a countdown to an ideal entry (e.g., "approx. 25 minutes", "around 1 hour 10 minutes", "potentially 3 hours"). Be specific with units.
+14. **Simulated Post-Buy Drop Alert Text (simulatedPostBuyDropAlertText)**: (Optional) Text for a hypothetical critical drop alert after entry (e.g., "ALERT SIM: If {{coin}} drops sharply by 12% within 1h of entry, AI advises immediate risk review."). This text will be used for a simulated alert.
 
 Format output strictly as AiCoinPicksOutputSchema. Numeric values must be numbers.
 Example for a single pick:
@@ -82,7 +90,11 @@ Example for a single pick:
   "confidenceMeter": 0.85,
   "rationale": "Detailed rationale...",
   "estimatedDuration": "5-10 days",
-  "riskRoiGauge": 0.7
+  "riskRoiGauge": 0.7,
+  "predictedEntryWindowDescription": "Entry looks good in the next 1-3 hours if Bitcoin remains stable.",
+  "predictedExitWindowDescription": "Consider taking profits around $1.42, or if RSI (14) on 1h chart goes above 75.",
+  "simulatedEntryCountdownText": "approx. 1 hour 30 minutes",
+  "simulatedPostBuyDropAlertText": "SIMULATED ALERT: If XYZ drops 10% quickly after entry, AI suggests re-evaluating position."
 }
 `,
 });
