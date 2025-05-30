@@ -36,7 +36,7 @@ const MemeCoinQuickFlipOutputSchema = z.object({
       predictedGainPercentage: z.number().describe('Predicted % gain (same as quickFlipSellTargetPercentage)'),
       exitPriceRange: PriceRangeSchema.describe('Calculated exit price range based on target gain'),
     })
-  ).describe('Array of 2-4 meme coin quick flip picks.'),
+  ).describe('Array of 2-5 meme coin quick flip picks.'), // Updated description
   overallDisclaimer: z.string().default("Meme coins are EXTREMELY RISKY and highly speculative. Prices are driven by hype and can collapse to zero without warning. Invest only what you are absolutely prepared to lose. This is not financial advice. DYOR!").describe("Overall risk disclaimer for meme coins.")
 });
 export type MemeCoinQuickFlipOutput = z.infer<typeof MemeCoinQuickFlipOutputSchema>;
@@ -53,7 +53,7 @@ const prompt = ai.definePrompt({
 
 The user wants to identify meme coins to buy very low and sell almost immediately for substantial profits. Emphasize the EXTREME VOLATILITY and RISK INVOLVED.
 
-For each potential meme coin (recommend 2-4), provide the following details STRICTLY adhering to the MemeCoinQuickFlipOutputSchema:
+For each potential meme coin (recommend 2-5), provide the following details STRICTLY adhering to the MemeCoinQuickFlipOutputSchema:
 
 1.  **Coin Name (coinName)**: Full name and ticker (e.g., PepeCoin (PEPE)). Matches 'Name & ticker'.
 2.  **Predicted Pump Potential (predictedPumpPotential)**: Qualitative assessment (e.g., "High", "Very High", "Extreme"). REQUIRED. Matches 'Pump potential'.
@@ -114,3 +114,4 @@ const memeCoinQuickFlipFlow = ai.defineFlow(
     return output;
   }
 );
+
