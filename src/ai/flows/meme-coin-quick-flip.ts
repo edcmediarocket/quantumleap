@@ -16,20 +16,18 @@ const PriceRangeSchema = z.object({
   high: z.number().describe('Upper price bound.'),
 });
 
+// Simplified for meme coins - descriptions removed
 const CandlestickDataPointSchema = z.object({
-  time: z.string().describe("Date YYYY-MM-DD"), // Shortest possible: "Date"
-  open: z.number().describe('Open price'), // Shortest: "Open"
-  high: z.number().describe('High price'), // Shortest: "High"
-  low: z.number().describe('Low price'), // Shortest: "Low"
-  close: z.number().describe('Close price'), // Shortest: "Close"
+  time: z.string(),      // Expected: YYYY-MM-DD
+  open: z.number(),    // Opening price
+  high: z.number(),    // Highest price
+  low: z.number(),     // Lowest price
+  close: z.number(),   // Closing price
 });
 
-// Input might be simple, as meme coin hunting is often less about user parameters
-// and more about the AI's "scan" of the market.
+
 const MemeCoinQuickFlipInputSchema = z.object({
   trigger: z.boolean().default(true).describe('Trigger for meme coin scan.'),
-  // Optional: Could add a general risk appetite confirmation later if needed
-  // riskConfirmation: z.boolean().refine(val => val === true, { message: "User must confirm understanding of extreme risk."}),
 });
 export type MemeCoinQuickFlipInput = z.infer<typeof MemeCoinQuickFlipInputSchema>;
 
@@ -37,16 +35,16 @@ const MemeCoinQuickFlipOutputSchema = z.object({
   picks: z.array(
     z.object({
       coinName: z.string().describe('Name & ticker'),
-      predictedPumpPotential: z.string().describe('Pump potential'),
-      suggestedBuyInWindow: z.string().describe('Buy window'),
-      quickFlipSellTargetPercentage: z.number().describe('Target % gain'),
+      predictedPumpPotential: z.string().describe('Pump potential'), // e.g., "High", "Very High"
+      suggestedBuyInWindow: z.string().describe('Buy window'), // e.g., "Next 1-4 hours"
+      quickFlipSellTargetPercentage: z.number().describe('Target % gain'), // e.g., 50 for 50%
       entryPriceRange: PriceRangeSchema.describe('Entry price range'),
-      confidenceScore: z.number().describe('Confidence (0-1)'), // REMOVED .min(0).max(1)
+      confidenceScore: z.number().describe('Confidence (0-1)'),
       rationale: z.string().describe('Rationale & risk. 2-3 paras. Incl: "Highly speculative," "Extreme risk," "Rug pull," "DYOR."'),
       riskLevel: z.enum(["Extreme", "Very High"]).default("Extreme").describe('Risk level'),
-      mockCandlestickData: z.array(CandlestickDataPointSchema).length(15).describe("15 mock daily OHLC, 2025. Volatile, low prices."),
+      mockCandlestickData: z.array(CandlestickDataPointSchema).length(10).describe("10 mock daily OHLC, 2025. Volatile, low prices."), // Reduced to 10
       estimatedDuration: z.string().describe('Est. duration (speculative)'),
-      predictedGainPercentage: z.number().describe('Predicted % gain'),
+      predictedGainPercentage: z.number().describe('Predicted % gain'), // Should mirror quickFlipSellTargetPercentage
       exitPriceRange: PriceRangeSchema.describe('Exit price range (calc.)'),
     })
   ).describe('Array of meme coin quick flip picks.'),
@@ -67,26 +65,26 @@ const prompt = ai.definePrompt({
 The user is looking for meme coins to buy very low and sell almost immediately for substantial profits. Emphasize the EXTREME VOLATILITY and RISK.
 
 For each potential meme coin (recommend 2-4):
-1.  **Coin Name**: Full name and ticker if possible (e.g., PepeCoin (PEPE), TurboToad (TOAD)). Ensure this matches 'Name & ticker' schema.
-2.  **Predicted Pump Potential**: (e.g., "High", "Very High", "Extreme"). THIS IS A REQUIRED FIELD. Ensure this matches 'Pump potential' schema.
-3.  **Suggested Buy-In Window**: (e.g., "Next 1-4 hours - monitor closely!", "ASAP - extreme vigilance needed!"). Ensure this matches 'Buy window' schema.
-4.  **Quick Flip Sell Target Percentage**: A specific percentage gain target for a quick exit (e.g., 50 for 50% gain, 200 for 200% gain). This will be used for 'predictedGainPercentage'. Ensure this matches 'Target % gain' schema.
-5.  **Entry Price Range**: An object with 'low' and 'high' numeric values for the current approximate entry price. These prices should be VERY SMALL (e.g., {low: 0.00000012, high: 0.00000015}). Ensure this matches 'Entry price range' schema.
-6.  **Confidence Score**: 0.0 to 1.0 (reflecting high uncertainty despite potential). THIS IS A REQUIRED FIELD. Ensure this matches 'Confidence (0-1)' schema.
+1.  **Coin Name**: Full name and ticker if possible (e.g., PepeCoin (PEPE), TurboToad (TOAD)). Matches 'Name & ticker' schema.
+2.  **Predicted Pump Potential**: (e.g., "High", "Very High", "Extreme"). THIS IS A REQUIRED FIELD. Matches 'Pump potential' schema.
+3.  **Suggested Buy-In Window**: (e.g., "Next 1-4 hours - monitor closely!", "ASAP - extreme vigilance needed!"). Matches 'Buy window' schema.
+4.  **Quick Flip Sell Target Percentage**: A specific percentage gain target for a quick exit (e.g., 50 for 50% gain, 200 for 200% gain). This will be used for 'predictedGainPercentage'. Matches 'Target % gain' schema.
+5.  **Entry Price Range**: An object with 'low' and 'high' numeric values for the current approximate entry price. These prices should be VERY SMALL (e.g., {low: 0.00000012, high: 0.00000015}). Matches 'Entry price range' schema.
+6.  **Confidence Score**: 0.0 to 1.0 (reflecting high uncertainty despite potential). THIS IS A REQUIRED FIELD. Matches 'Confidence (0-1)' schema.
 7.  **Rationale (CRITICAL EMPHASIS ON RISK)**: 2-3 paragraphs.
     *   Focus on: social media hype (Twitter, Telegram, Reddit), influencer mentions, new/imminent CEX/DEX listings, extremely low market cap, tokenomics (supply, burn), strong narrative, high community engagement, recent volume spikes.
-    *   MANDATORY: Include strong warnings like "This is a degen play," "EXTREMELY SPECULATIVE," "HIGH RISK OF TOTAL CAPITAL LOSS," "Possibility of rug pull or scam is significant," "Only invest funds you can afford to lose entirely," "Thoroughly Do Your Own Research (DYOR) before considering." Ensure this matches 'Rationale & risk. 2-3 paras. Incl: "Highly speculative," "Extreme risk," "Rug pull," "DYOR."' schema.
-8.  **Risk Level**: Must be "Extreme" or "Very High". THIS IS A REQUIRED FIELD. Ensure this matches 'Risk level' schema.
-9.  **Mock Candlestick Data**: Generate 15 mock daily candlestick data points for the last 15 days leading up to a plausible RECENT date in 2025. Each data point object MUST contain 'time' (YYYY-MM-DD), 'open', 'high', 'low', and 'close' numeric values. Data must show EXTREME volatility and very low prices typical of meme coins (e.g., values like 0.000000XX). Ensure this matches '15 mock daily OHLC, 2025. Volatile, low prices.' schema for the array and individual points ('Date YYYY-MM-DD', 'Open price', 'High price', 'Low price', 'Close price').
-10. **Estimated Duration**: Speculative timeframe for the flip (e.g., "Few hours to 2 days"). Ensure this matches 'Est. duration (speculative)' schema.
+    *   MANDATORY: Include strong warnings like "This is a degen play," "EXTREMELY SPECULATIVE," "HIGH RISK OF TOTAL CAPITAL LOSS," "Possibility of rug pull or scam is significant," "Only invest funds you can afford to lose entirely," "Thoroughly Do Your Own Research (DYOR) before considering." Matches 'Rationale & risk. 2-3 paras. Incl: "Highly speculative," "Extreme risk," "Rug pull," "DYOR."' schema.
+8.  **Risk Level**: Must be "Extreme" or "Very High". THIS IS A REQUIRED FIELD. Matches 'Risk level' schema.
+9.  **Mock Candlestick Data**: Generate 10 mock daily candlestick data points (time, open, high, low, close) for the last 10 days leading up to a plausible RECENT date in 2025. Data must show EXTREME volatility and very low prices typical of meme coins (e.g., values like 0.000000XX). Time as 'YYYY-MM-DD'. Matches '10 mock daily OHLC, 2025. Volatile, low prices.' schema.
+10. **Estimated Duration**: Speculative timeframe for the flip (e.g., "Few hours to 2 days"). Matches 'Est. duration (speculative)' schema.
 
-Based on the 'Entry Price Range' and 'Quick Flip Sell Target Percentage', calculate and provide an 'Exit Price Range' (low and high). For example, if entry is {low: 0.1, high: 0.11} and target is 50%, exit would be {low: 0.15, high: 0.165}. Ensure this matches 'Exit price range (calc.)' schema.
-Also, set 'predictedGainPercentage' to be the same as 'Quick Flip Sell Target Percentage'. Ensure this matches 'Predicted % gain' schema.
+Based on the 'Entry Price Range' and 'Quick Flip Sell Target Percentage', calculate and provide an 'Exit Price Range' (low and high). For example, if entry is {low: 0.1, high: 0.11} and target is 50%, exit would be {low: 0.15, high: 0.165}. Matches 'Exit price range (calc.)' schema.
+Also, set 'predictedGainPercentage' to be the same as 'Quick Flip Sell Target Percentage'. Matches 'Predicted % gain' schema.
 
 Output format MUST strictly follow MemeCoinQuickFlipOutputSchema.
 Provide an 'overallDisclaimer' as defined in the schema ('Overall risk disclaimer.').
-Ensure all numeric values are numbers. Dates in mock data MUST be in 2025. Mock candlestick data array must contain exactly 15 data points.
-Mock candlestick data must be plausible for highly volatile, very low-priced meme coins.
+Ensure all numeric values are numbers. Dates in mock data MUST be in 2025. Mock candlestick data array must contain exactly 10 data points.
+Mock candlestick data fields are time (string 'YYYY-MM-DD'), open (number), high (number), low (number), close (number).
 `,
 });
 
@@ -102,13 +100,11 @@ const memeCoinQuickFlipFlow = ai.defineFlow(
         throw new Error("AI failed to generate valid meme coin picks.");
     }
     output.picks.forEach(pick => {
-      // Fallback for missing predictedPumpPotential
       if (!pick.predictedPumpPotential) {
-        pick.predictedPumpPotential = "High"; // Default value
+        pick.predictedPumpPotential = "High";
         console.warn(`Predicted pump potential for ${pick.coinName} was missing. Defaulted to "High".`);
       }
       
-      // Calculate exitPriceRange and ensure predictedGainPercentage is set
       pick.predictedGainPercentage = pick.quickFlipSellTargetPercentage;
       const gainFactor = 1 + pick.quickFlipSellTargetPercentage / 100;
       pick.exitPriceRange = {
@@ -116,11 +112,11 @@ const memeCoinQuickFlipFlow = ai.defineFlow(
         high: parseFloat((pick.entryPriceRange.high * gainFactor).toPrecision(6)),
       };
       
-      if (!pick.mockCandlestickData || pick.mockCandlestickData.length !== 15) {
-        console.warn(`Mock candlestick data for ${pick.coinName} was invalid or missing. Generating default 15 points for 2025.`);
-        pick.mockCandlestickData = Array(15).fill(null).map((_, i) => { 
-          const date = new Date(2025, 0, 15); 
-          date.setDate(date.getDate() + i - 14); 
+      if (!pick.mockCandlestickData || pick.mockCandlestickData.length !== 10) { // Check for 10 points
+        console.warn(`Mock candlestick data for ${pick.coinName} was invalid or missing. Generating default 10 points for 2025.`);
+        pick.mockCandlestickData = Array(10).fill(null).map((_, i) => {  // Generate 10 points
+          const date = new Date(2025, 0, 10); // Base date for fallback
+          date.setDate(date.getDate() + i - 9); // Create a sequence for the last 10 days
           const basePrice = pick.entryPriceRange && typeof pick.entryPriceRange.low === 'number' ? pick.entryPriceRange.low : 0.000001;
           const open = basePrice * (1 + (Math.random() - 0.5) * 0.8); 
           const close = open * (1 + (Math.random() - 0.5) * 0.7);
@@ -143,11 +139,11 @@ const memeCoinQuickFlipFlow = ai.defineFlow(
                dp.time = `2025-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
             } else {
                const fallbackDate = new Date(2025,0,1); 
-               fallbackDate.setDate(fallbackDate.getDate() + (pick.mockCandlestickData?.indexOf(dp) ?? 0) - 14);
+               fallbackDate.setDate(fallbackDate.getDate() + (pick.mockCandlestickData?.indexOf(dp) ?? 0) - 9); // Adjust for 10 days
                dp.time = fallbackDate.toISOString().split('T')[0];
             }
           }
-          // Ensure numeric precision and valid OHLC
+          
           const o = parseFloat(Number(dp.open || 0).toPrecision(6));
           const h = parseFloat(Number(dp.high || 0).toPrecision(6));
           const l = parseFloat(Number(dp.low || 0).toPrecision(6));
@@ -155,16 +151,29 @@ const memeCoinQuickFlipFlow = ai.defineFlow(
 
           dp.open = o;
           dp.close = c;
-          dp.high = Math.max(o, c, h); // High must be at least open or close
-          dp.low = Math.min(o, c, l, dp.high); // Low must be at most open, close, or high
+          dp.high = Math.max(o, c, h, l); 
+          dp.low = Math.min(o, c, l, h); 
 
-          // If all are zero (potentially bad data from LLM), generate some plausible values
           if (dp.low === 0 && dp.high === 0 && o === 0 && c === 0){ 
              const baseEntry = pick.entryPriceRange?.low || 0.000001;
              dp.open = baseEntry * (1 + (Math.random() - 0.5) * 0.1);
              dp.close = dp.open * (1 + (Math.random() - 0.5) * 0.1);
              dp.high = Math.max(dp.open, dp.close) * (1 + Math.random() * 0.05);
              dp.low = Math.min(dp.open, dp.close) * (1 - Math.random() * 0.05);
+             // Ensure high is always >= low after generation
+             if (dp.high < dp.low) dp.high = dp.low;
+          } else {
+             // Ensure high >= low, open, close and low <= high, open, close
+             dp.high = Math.max(o, c, h);
+             dp.low = Math.min(o, c, l);
+             if (dp.high < dp.low) { // if after all this, high is still less than low (e.g. bad initial h, l)
+                const temp = dp.high;
+                dp.high = dp.low;
+                dp.low = temp;
+             }
+             // Ensure open and close are within high/low
+             dp.open = Math.max(dp.low, Math.min(dp.high, o));
+             dp.close = Math.max(dp.low, Math.min(dp.high, c));
           }
         });
       }
@@ -175,7 +184,5 @@ const memeCoinQuickFlipFlow = ai.defineFlow(
     return output;
   }
 );
-
-    
 
     
