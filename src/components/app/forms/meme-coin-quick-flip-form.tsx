@@ -61,7 +61,7 @@ export function MemeCoinQuickFlipForm({ onSubmit, isLoading }: MemeCoinQuickFlip
                 <Checkbox
                   checked={field.value}
                   onCheckedChange={field.onChange}
-                  className="border-destructive data-[state=checked]:bg-destructive data-[state=checked]:text-destructive-foreground"
+                  className="border-destructive data-[state=checked]:bg-destructive data-[state=checked]:text-destructive-foreground mt-[2px]" // Nudged down slightly
                 />
               </FormControl>
               <div className="space-y-1 leading-none">
