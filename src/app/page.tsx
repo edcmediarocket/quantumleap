@@ -2,48 +2,86 @@
 // src/app/page.tsx
 "use client";
 
-import React, { useState } from "react"; // Removed Suspense
+import React, { useState, useEffect } from "react";
 import { AppHeader } from "@/components/app/header";
 import { CoinCard } from "@/components/app/coin-card";
 import { AiCoinPicksForm } from "@/components/app/forms/ai-coin-picks-form";
 import { QuickProfitGoalForm } from "@/components/app/forms/quick-profit-goal-form";
-import { MemeCoinQuickFlipForm } from "@/components/app/forms/meme-coin-quick-flip-form"; // New Form
+import { MemeCoinQuickFlipForm } from "@/components/app/forms/meme-coin-quick-flip-form";
+import { AiCoachAvatarPanel } from "@/components/app/ai-coach-avatar-panel"; // New Component
 import { LoadingDots } from "@/components/ui/loading-dots";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Terminal, TrendingUpIcon, BarChartIcon, RocketIcon, AlertTriangle } from "lucide-react"; // Added RocketIcon
+import { Terminal, TrendingUpIcon, BarChartIcon, RocketIcon, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 // AI Flow Imports
 import { aiCoinPicks, type AiCoinPicksInput, type AiCoinPicksOutput } from "@/ai/flows/ai-coin-picks";
 import { recommendCoinsForProfitTarget, type RecommendCoinsForProfitTargetInput, type RecommendCoinsForProfitTargetOutput } from "@/ai/flows/quick-profit-goal";
-import { memeCoinQuickFlip, type MemeCoinQuickFlipInput, type MemeCoinQuickFlipOutput } from "@/ai/flows/meme-coin-quick-flip"; // New Flow
+import { memeCoinQuickFlip, type MemeCoinQuickFlipInput, type MemeCoinQuickFlipOutput } from "@/ai/flows/meme-coin-quick-flip";
+import { getCoachQuickTip, type GetCoachQuickTipInput, type GetCoachQuickTipOutput } from "@/ai/flows/get-coach-quick-tip"; // New Flow
 
 
 export default function QuantumLeapPage() {
   const [aiCoinPicksResults, setAiCoinPicksResults] = useState<AiCoinPicksOutput | null>(null);
   const [quickProfitResults, setQuickProfitResults] = useState<RecommendCoinsForProfitTargetOutput | null>(null);
-  const [memeFlipResults, setMemeFlipResults] = useState<MemeCoinQuickFlipOutput | null>(null); // New State
+  const [memeFlipResults, setMemeFlipResults] = useState<MemeCoinQuickFlipOutput | null>(null);
+  const [coachQuickTip, setCoachQuickTip] = useState<GetCoachQuickTipOutput | null>(null); // New State
   
   const [isLoadingAiPicks, setIsLoadingAiPicks] = useState(false);
   const [isLoadingQuickProfit, setIsLoadingQuickProfit] = useState(false);
-  const [isLoadingMemeFlip, setIsLoadingMemeFlip] = useState(false); // New Loading State
+  const [isLoadingMemeFlip, setIsLoadingMemeFlip] = useState(false);
+  const [isLoadingCoachQuickTip, setIsLoadingCoachQuickTip] = useState(false); // New State
   
   const [aiPicksError, setAiPicksError] = useState<string | null>(null);
   const [quickProfitError, setQuickProfitError] = useState<string | null>(null);
-  const [memeFlipError, setMemeFlipError] = useState<string | null>(null); // New Error State
+  const [memeFlipError, setMemeFlipError] = useState<string | null>(null);
+  const [coachQuickTipError, setCoachQuickTipError] = useState<string | null>(null); // New State
 
   const [currentAiPicksInput, setCurrentAiPicksInput] = useState<AiCoinPicksInput | null>(null);
   const [currentQuickProfitInput, setCurrentQuickProfitInput] = useState<RecommendCoinsForProfitTargetInput | null>(null);
-  // No specific input to store for meme flip form for now, as it's just a trigger
 
   const { toast } = useToast();
+
+  // Fetch initial coach tip on mount
+  useEffect(() => {
+    const fetchInitialTip = async () => {
+      setIsLoadingCoachQuickTip(true);
+      setCoachQuickTipError(null);
+      try {
+        const initialTip = await getCoachQuickTip({ userActionContext: 'general' });
+        setCoachQuickTip(initialTip);
+      } catch (error) {
+        console.error("Error fetching initial coach tip:", error);
+        setCoachQuickTipError(error instanceof Error ? error.message : "Failed to load coach wisdom.");
+      } finally {
+        setIsLoadingCoachQuickTip(false);
+      }
+    };
+    fetchInitialTip();
+  }, []);
+
+  const fetchAndSetCoachTip = async (context: GetCoachQuickTipInput['userActionContext'], summary?: string) => {
+    setIsLoadingCoachQuickTip(true);
+    setCoachQuickTipError(null);
+    try {
+      const tip = await getCoachQuickTip({ userActionContext: context, lastPicksSummary: summary });
+      setCoachQuickTip(tip);
+    } catch (error) {
+      console.error(`Error fetching coach tip for ${context}:`, error);
+      setCoachQuickTipError(error instanceof Error ? error.message : "Coach is pondering... tip unavailable.");
+    } finally {
+      setIsLoadingCoachQuickTip(false);
+    }
+  };
+
 
   const handleAiCoinPicksSubmit = async (data: AiCoinPicksInput) => {
     setIsLoadingAiPicks(true);
     setAiPicksError(null);
     setAiCoinPicksResults(null);
     setCurrentAiPicksInput(data);
+    await fetchAndSetCoachTip('aiPicks', `Target: $${data.profitTarget}, Strat: ${data.strategy}`);
     try {
       const result = await aiCoinPicks(data);
       setAiCoinPicksResults(result);
@@ -53,6 +91,8 @@ export default function QuantumLeapPage() {
           description: "No specific coin picks found for your criteria. Try adjusting your profit target or strategy.",
           variant: "default",
         });
+      } else {
+         fetchAndSetCoachTip('aiPicks', `${result.picks.length} picks found! E.g., ${result.picks[0].coin}`);
       }
     } catch (error) {
       console.error("Error fetching AI coin picks:", error);
@@ -73,6 +113,7 @@ export default function QuantumLeapPage() {
     setQuickProfitError(null);
     setQuickProfitResults(null);
     setCurrentQuickProfitInput(data);
+    await fetchAndSetCoachTip('profitGoal', `Target: $${data.profitTarget}, Risk: ${data.riskTolerance}`);
     try {
       const result = await recommendCoinsForProfitTarget(data);
       setQuickProfitResults(result);
@@ -82,6 +123,8 @@ export default function QuantumLeapPage() {
           description: "No coins found for your profit goal and risk tolerance. Consider different inputs.",
           variant: "default",
         });
+      } else {
+        fetchAndSetCoachTip('profitGoal', `${result.recommendedCoins.length} coins for goal! E.g., ${result.recommendedCoins[0].coinName}`);
       }
     } catch (error) {
       console.error("Error fetching quick profit goal recommendations:", error);
@@ -101,6 +144,7 @@ export default function QuantumLeapPage() {
     setIsLoadingMemeFlip(true);
     setMemeFlipError(null);
     setMemeFlipResults(null);
+    await fetchAndSetCoachTip('memeFlip', `Hunting for meme coins!`);
     try {
       const result = await memeCoinQuickFlip(data);
       setMemeFlipResults(result);
@@ -110,6 +154,8 @@ export default function QuantumLeapPage() {
           description: "The AI couldn't spot any immediate meme coin opportunities. The meme-verse is quiet... for now.",
           variant: "default",
         });
+      } else {
+         fetchAndSetCoachTip('memeFlip', `${result.picks.length} meme rockets spotted! E.g., ${result.picks[0].coinName} 🚀`);
       }
     } catch (error) {
       console.error("Error fetching meme coin quick flips:", error);
@@ -130,7 +176,18 @@ export default function QuantumLeapPage() {
     <div className="container mx-auto min-h-screen px-4 py-8 selection:bg-primary/30 selection:text-primary-foreground">
       <AppHeader />
 
-      <main className="mt-12">
+      <div className="my-8">
+        <AiCoachAvatarPanel tipData={coachQuickTip} isLoading={isLoadingCoachQuickTip} />
+        {coachQuickTipError && (
+            <Alert variant="destructive" className="mt-2 max-w-md mx-auto text-xs">
+                <Terminal className="h-4 w-4" />
+                <AlertTitle>Coach Comms Down</AlertTitle>
+                <AlertDescription>{coachQuickTipError}</AlertDescription>
+            </Alert>
+        )}
+      </div>
+
+      <main className="mt-6">
         <Tabs defaultValue="aiPicks" className="w-full">
           <TabsList className="grid w-full grid-cols-3 mx-auto bg-background/50 border border-border/50 md:max-w-xl lg:max-w-2xl">
             <TabsTrigger value="aiPicks" className="text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
@@ -260,7 +317,6 @@ export default function QuantumLeapPage() {
                           key={`${pick.coinName}-${index}`} 
                           coinData={pick} 
                           type="memeFlip"
-                          // No specific profitTarget or riskTolerance from form for meme coins to pass to coach currently
                         />
                       ))}
                     </div>
