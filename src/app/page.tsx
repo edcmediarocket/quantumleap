@@ -1,3 +1,4 @@
+// src/app/page.tsx
 "use client";
 
 import React, { useState, Suspense } from "react";
@@ -25,12 +26,18 @@ export default function QuantumLeapPage() {
   const [aiPicksError, setAiPicksError] = useState<string | null>(null);
   const [quickProfitError, setQuickProfitError] = useState<string | null>(null);
 
+  // Store form inputs to pass to CoinCard for AI Coach
+  const [currentAiPicksInput, setCurrentAiPicksInput] = useState<AiCoinPicksInput | null>(null);
+  const [currentQuickProfitInput, setCurrentQuickProfitInput] = useState<RecommendCoinsForProfitTargetInput | null>(null);
+
+
   const { toast } = useToast();
 
   const handleAiCoinPicksSubmit = async (data: AiCoinPicksInput) => {
     setIsLoadingAiPicks(true);
     setAiPicksError(null);
     setAiCoinPicksResults(null);
+    setCurrentAiPicksInput(data); // Store input
     try {
       const result = await aiCoinPicks(data);
       setAiCoinPicksResults(result);
@@ -59,6 +66,7 @@ export default function QuantumLeapPage() {
     setIsLoadingQuickProfit(true);
     setQuickProfitError(null);
     setQuickProfitResults(null);
+    setCurrentQuickProfitInput(data); // Store input
     try {
       const result = await recommendCoinsForProfitTarget(data);
       setQuickProfitResults(result);
@@ -118,7 +126,13 @@ export default function QuantumLeapPage() {
                 {aiCoinPicksResults && aiCoinPicksResults.picks.length > 0 && (
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {aiCoinPicksResults.picks.map((pick, index) => (
-                      <CoinCard key={`${pick.coin}-${index}`} coinData={pick} type="aiPick" />
+                      <CoinCard 
+                        key={`${pick.coin}-${index}`} 
+                        coinData={pick} 
+                        type="aiPick"
+                        profitTarget={currentAiPicksInput?.profitTarget}
+                        // riskTolerance is not part of AiCoinPicksInput, but strategy is. We could map strategy to risk if needed by coach.
+                      />
                     ))}
                   </div>
                 )}
@@ -152,7 +166,13 @@ export default function QuantumLeapPage() {
                 {quickProfitResults && quickProfitResults.recommendedCoins.length > 0 && (
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {quickProfitResults.recommendedCoins.map((coin, index) => (
-                      <CoinCard key={`${coin.coinName}-${index}`} coinData={coin} type="profitGoal" />
+                      <CoinCard 
+                        key={`${coin.coinName}-${index}`} 
+                        coinData={coin} 
+                        type="profitGoal"
+                        profitTarget={currentQuickProfitInput?.profitTarget}
+                        riskTolerance={currentQuickProfitInput?.riskTolerance}
+                      />
                     ))}
                   </div>
                 )}
@@ -167,6 +187,10 @@ export default function QuantumLeapPage() {
           </TabsContent>
         </Tabs>
       </main>
+       <footer className="mt-12 py-4 text-center text-xs text-muted-foreground/70 border-t border-border/20">
+        <p>AI-generated insights are for informational purposes only and not financial advice. Cryptocurrency investments are subject to high market risk. Predictions are not guaranteed.</p>
+        <p>&copy; {new Date().getFullYear()} Quantum Leap. All rights reserved.</p>
+      </footer>
     </div>
   );
 }
