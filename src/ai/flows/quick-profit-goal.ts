@@ -47,7 +47,8 @@ const RecommendedCoinSchema = z.object({
   tradeConfidence: z
     .number()
     .min(0).max(1)
-    .describe('A number from 0 to 1 indicating the confidence in this trade.'),
+    .optional() // Made optional
+    .describe('A number from 0 to 1 indicating the confidence in this trade. Defaults to 0.5 if not provided by AI.'),
   rationale: z.string().describe('A detailed rationale (at least 3-4 paragraphs, targeting an advanced user) behind recommending this coin. Cover technical and fundamental aspects, market sentiment, relevant news/events, potential catalysts, risks, and how it aligns with the user\'s risk tolerance and profit target to maximize gains.'),
   mockCandlestickData: z.array(CandlestickDataPointSchema).length(30).describe("A list of 30 mock daily candlestick data points (time, open, high, low, close) for this coin for the last 30 days leading up to a plausible recent date in 2025. The data should look plausible for a volatile cryptocurrency. 'time' should be a date string like 'YYYY-MM-DD'. Ensure prices are realistic for the coin type.")
 });
@@ -84,7 +85,7 @@ For each recommended coin, provide:
 5.  **Exit Price Range**: As an object with 'low' and 'high' numeric values (e.g., { low: 55000, high: 56000 }).
 6.  **Optimal Buy Price**: (Optional) A specific suggested buy price that represents a particularly good entry point.
 7.  **Target Sell Prices**: (Optional) One or more specific price targets for selling and taking profit.
-8.  **Trade Confidence**: A score from 0.0 to 1.0.
+8.  **Trade Confidence**: A score from 0.0 to 1.0. THIS IS A REQUIRED FIELD.
 9.  **Detailed Rationale**: An in-depth explanation (at least 3-4 paragraphs, targeting an advanced user) for this recommendation, including:
     *   Relevant technical analysis (support/resistance levels, chart patterns, indicators like RSI, MACD).
     *   Key fundamental factors (project developments, news, adoption, tokenomics).
@@ -128,12 +129,18 @@ const recommendCoinsForProfitTargetFlow = ai.defineFlow(
         throw new Error("AI failed to generate valid coin recommendations.");
     }
     output.recommendedCoins.forEach(coin => {
+      // Default tradeConfidence if not provided by the AI
+      if (coin.tradeConfidence === undefined) {
+        coin.tradeConfidence = 0.5; // Default to 0.5 (medium confidence)
+      }
+
       if (!coin.mockCandlestickData || coin.mockCandlestickData.length !== 30) {
          console.warn(`Mock candlestick data for ${coin.coinName} was invalid or missing. Generating default for 2025.`);
         coin.mockCandlestickData = Array(30).fill(null).map((_, i) => {
           const date = new Date(2025, 0, 1); // Start of 2025 for fallback
           date.setDate(date.getDate() + i - 29); // Create a sequence for the last 30 days
-          const open = coin.entryPriceRange.low * (1 + (Math.random() - 0.5) * 0.1);
+          const basePrice = coin.entryPriceRange && typeof coin.entryPriceRange.low === 'number' ? coin.entryPriceRange.low : 1;
+          const open = basePrice * (1 + (Math.random() - 0.5) * 0.1);
           const close = open * (1 + (Math.random() - 0.1) * 0.05);
           const high = Math.max(open, close) * (1 + Math.random() * 0.03);
           const low = Math.min(open, close) * (1 - Math.random() * 0.03);
@@ -151,7 +158,13 @@ const recommendCoinsForProfitTargetFlow = ai.defineFlow(
           if (!dp.time.startsWith('2025')) {
             console.warn(`Correcting date for ${coin.coinName} to 2025. Original: ${dp.time}`);
             const parts = dp.time.split('-');
-            dp.time = `2025-${parts[1]}-${parts[2]}`;
+            if (parts.length === 3) {
+               dp.time = `2025-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+            } else {
+               // Fallback if date format is unexpected
+               const fallbackDate = new Date(2025,0,1);
+               dp.time = fallbackDate.toISOString().split('T')[0];
+            }
           }
         });
       }
