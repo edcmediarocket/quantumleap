@@ -57,19 +57,44 @@ function isMemeFlipCoin(coinData: AnyCoinData, type: CoinCardProps['type']): coi
 }
 
 const formatPrice = (price: number): string => {
-  if (price === 0) return "$0.00"; // Handle zero price
-  if (Math.abs(price) < 0.000001) {
-    return `$${price.toExponential(2)}`; // For very, very small numbers
+  if (typeof price !== 'number' || isNaN(price)) return "$N/A";
+  if (price === 0) return "$0.00";
+
+  if (Math.abs(price) < 0.00000001 && price !== 0) { // Extremely small non-zero numbers
+    return `$${price.toExponential(2)}`;
   }
-  if (Math.abs(price) < 0.01) {
-    return `$${price.toPrecision(3)}`;
+  if (Math.abs(price) < 0.01) { // Small fractions of a cent
+    // Show more precision for very small numbers
+    // Attempt to show up to 8 significant non-zero digits after decimal
+    const priceStr = price.toFixed(12); // Go to a high number of decimal places
+    const [integerPart, decimalPart] = priceStr.split('.');
+    if (decimalPart) {
+        let significantDecimal = "";
+        let nonZeroFound = false;
+        let nonZeroCount = 0;
+        for (const char of decimalPart) {
+            if (char !== '0') nonZeroFound = true;
+            if (nonZeroFound) {
+                 significantDecimal += char;
+                 nonZeroCount++;
+            } else if (significantDecimal.length < 6) { // keep leading zeros if few
+                significantDecimal += char;
+            }
+            if (nonZeroCount >= 6 && significantDecimal.length >=8) break; // Max 8 total chars, at least 6 non-zero
+             if (significantDecimal.length >= 8) break;
+        }
+        // Remove trailing zeros from our custom precision part
+        significantDecimal = significantDecimal.replace(/0+$/, '');
+        if (significantDecimal.length === 0) return `$${integerPart}.00`; // Should not happen if price isn't 0
+        return `$${integerPart}.${significantDecimal}`;
+    }
   }
-  if (Math.abs(price) < 1) {
-    const fixed = price.toFixed(6); // Show up to 6 decimal places
-    return `$${parseFloat(fixed)}`; // Remove trailing zeros from toFixed
+  if (Math.abs(price) < 1) { // Between $0.01 and $1
+    return `$${price.toFixed(4).replace(/0+$/, '').replace(/\.$/,'.00')}`; // Up to 4 decimal places, remove trailing zeros
   }
-  return `$${price.toFixed(2)}`;
+  return `$${price.toFixed(2)}`; // Standard two decimal places for larger numbers
 };
+
 
 const formatPriceRange = (range?: PriceRange): string => {
   if (!range || typeof range.low !== 'number' || typeof range.high !== 'number') return "N/A";
@@ -80,7 +105,7 @@ const formatPriceRange = (range?: PriceRange): string => {
 export function CoinCard({ coinData, type, profitTarget, riskTolerance }: CoinCardProps) {
   let name: string;
   let gain: number;
-  let confidence: number | undefined; // Make confidence optional for meme coins if not always present
+  let confidence: number | undefined; 
   let riskRoiGauge: number | undefined;
   let predictedPumpPotential: string | undefined;
   let riskLevel: string | undefined;
@@ -96,12 +121,11 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance }: CoinCa
     confidence = coinData.tradeConfidence;
   } else if (isMemeFlipCoin(coinData, type)) {
     name = coinData.coinName;
-    gain = coinData.predictedGainPercentage; // or coinData.quickFlipSellTargetPercentage
+    gain = coinData.predictedGainPercentage; 
     confidence = coinData.confidenceScore;
     predictedPumpPotential = coinData.predictedPumpPotential;
     riskLevel = coinData.riskLevel;
   } else {
-    // Fallback or error
     name = "Unknown Coin";
     gain = 0;
     confidence = 0;
@@ -120,7 +144,6 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance }: CoinCa
         setIsLoadingCoach(true);
         setCoachError(null);
         try {
-          // Ensure coinData.entryPriceRange and exitPriceRange are valid
           if (!coinData.entryPriceRange || !coinData.exitPriceRange) {
             throw new Error("Entry or exit price range is missing for AI Coach.");
           }
@@ -154,7 +177,7 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance }: CoinCa
   const progressBg = type === 'memeFlip' ? 'bg-orange-500/20' : 'bg-primary/20';
   const progressGradientFrom = type === 'memeFlip' ? 'from-yellow-500' : 'from-accent';
   const progressGradientTo = type === 'memeFlip' ? 'to-red-500' : 'to-primary';
-  const dialogButtonVariant = type === 'memeFlip' ? 'outline' : 'outline'; // Can customize further
+  const dialogButtonVariant = type === 'memeFlip' ? 'outline' : 'outline'; 
   const dialogButtonTextColor = type === 'memeFlip' ? 'text-orange-500 border-orange-500 hover:bg-orange-500 hover:text-white' : 'border-accent text-accent hover:bg-accent hover:text-accent-foreground';
   const dialogTitleIcon = type === 'memeFlip' ? <RocketIcon className="h-6 w-6"/> : <Brain className="h-6 w-6"/>;
   const dialogTitleText = type === 'memeFlip' ? `Meme Analysis for ${name}` : `AI Analysis for ${name}`;
@@ -180,8 +203,8 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance }: CoinCa
         </div>
         {isMemeFlipCoin(coinData, type) && (
           <>
-            <p className="text-xs text-amber-500"><span className="font-semibold">Pump Potential:</span> {predictedPumpPotential}</p>
-            <p className="text-xs text-red-500 flex items-center"><AlertTriangle className="h-3 w-3 mr-1"/> <span className="font-semibold">Risk:</span> {riskLevel}</p>
+            {predictedPumpPotential && <p className="text-xs text-amber-500"><span className="font-semibold">Pump Potential:</span> {predictedPumpPotential}</p>}
+            {riskLevel && <p className="text-xs text-red-500 flex items-center"><AlertTriangle className="h-3 w-3 mr-1"/> <span className="font-semibold">Risk:</span> {riskLevel}</p>}
           </>
         )}
       </GlassCardHeader>
@@ -235,7 +258,7 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance }: CoinCa
         )}
 
          <div className="pt-2">
-            <p className="text-xs text-muted-foreground mb-1">Chart Preview (Mock Data):</p>
+            <p className="text-xs text-muted-foreground mb-1">Chart Preview (Mock Data - May 2025):</p>
             <CoinCandlestickChart data={coinData.mockCandlestickData} />
           </div>
       </GlassCardContent>
