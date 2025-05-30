@@ -132,7 +132,7 @@ export default function QuantumLeapPage() {
 
       <main className="mt-12">
         <Tabs defaultValue="aiPicks" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 mx-auto bg-background/50 border border-border/50 md:w-3/4 lg:w-1/2">
+          <TabsList className="grid w-full grid-cols-3 mx-auto bg-background/50 border border-border/50 md:w-3/4 lg:w-1/2">
             <TabsTrigger value="aiPicks" className="text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <TrendingUpIcon className="mr-1 sm:mr-2 h-4 w-4" /> AI Coin Picks
             </TabsTrigger>
