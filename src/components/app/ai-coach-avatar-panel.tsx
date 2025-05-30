@@ -3,7 +3,7 @@
 
 import React from "react";
 import Image from "next/image";
-import { Bot, Sparkles, AlertTriangle, Info, Rocket } from "lucide-react";
+import { Bot, Sparkles, AlertTriangle, Info, Rocket, Brain } from "lucide-react"; // Added Brain
 import { cn } from "@/lib/utils";
 import { type GetCoachQuickTipOutput } from "@/ai/flows/get-coach-quick-tip";
 import { LoadingDots } from "@/components/ui/loading-dots";
@@ -23,6 +23,8 @@ export function AiCoachAvatarPanel({ tipData, isLoading, className }: AiCoachAva
         return <Rocket className="h-5 w-5 text-accent mr-2" />;
       case "ENGAGE":
         return <Sparkles className="h-5 w-5 text-primary mr-2" />;
+      case "STRATEGY": // New case
+        return <Brain className="h-5 w-5 text-purple-400 mr-2" />;
       case "INFO":
       default:
         return <Info className="h-5 w-5 text-blue-400 mr-2" />;
@@ -64,3 +66,4 @@ export function AiCoachAvatarPanel({ tipData, isLoading, className }: AiCoachAva
     </div>
   );
 }
+
