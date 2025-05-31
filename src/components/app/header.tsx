@@ -11,25 +11,24 @@ import { useToast } from "@/hooks/use-toast";
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import { getAuth, onAuthStateChanged, signOut, Auth, User } from 'firebase/auth';
 import { firebaseConfig } from '@/lib/firebaseConfig';
-import { LoadingDots } from '../ui/loading-dots'; // Added for loading state
+import { LoadingDots } from '../ui/loading-dots'; 
 
 let app: FirebaseApp;
 let auth: Auth;
 
-// Admin UID: qRJOtYXWqLbpQ1yx6qRdwSGwGyl1 (Associated with coreyenglish517@gmail.com)
 const ADMIN_UID = 'qRJOtYXWqLbpQ1yx6qRdwSGwGyl1';
 
 if (!getApps().length) {
   try {
     app = initializeApp(firebaseConfig);
   } catch (error) {
-    // console.error("Firebase initialization error in AppHeader:", error); // Keep console errors for debugging
+    // console.error("Firebase initialization error in AppHeader:", error); 
   }
 } else {
   app = getApps()[0];
 }
 
-if (app! && !auth) { // ensure app is initialized before getAuth
+if (app! && !auth) { 
   try {
     auth = getAuth(app);
   } catch (error) {
@@ -44,15 +43,13 @@ export function AppHeader() {
 
   useEffect(() => {
     if (!auth) {
-      // console.warn("Firebase Auth not initialized in AppHeader effect.");
       setLoadingAuth(false);
       return;
     }
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
       setLoadingAuth(false);
-    }, (error) => { // Added error callback for onAuthStateChanged
-        // console.error("Auth state change error:", error);
+    }, (error) => { 
         setLoadingAuth(false);
     });
     return () => unsubscribe();
@@ -67,26 +64,17 @@ export function AppHeader() {
       await signOut(auth);
       toast({ title: "Signed Out", description: "You have been successfully signed out." });
     } catch (error) {
-      // console.error("Sign out error:", error);
       toast({ title: "Sign Out Error", description: "Failed to sign out. Please try again.", variant: "destructive" });
     }
-  };
-
-  const handleSignUpClick = () => {
-    toast({
-      title: "Sign Up Coming Soon!",
-      description: "User registration will be available shortly. For now, admin access is pre-configured.",
-    });
   };
 
   const isAdmin = currentUser?.uid === ADMIN_UID;
 
   return (
     <>
-      {/* Authentication Buttons Row */}
-      <div className="flex justify-end items-center gap-2 py-3 mb-3"> {/* py-3 for vertical padding, mb-3 for space below */}
+      <div className="flex justify-end items-center gap-2 py-3 mb-3"> 
         {loadingAuth ? (
-          <Button variant="ghost" size="sm" disabled>
+          <Button variant="ghost" size="sm" disabled className="w-24"> {/* Added fixed width for loading state */}
             <LoadingDots size="sm"/>
           </Button>
         ) : currentUser ? (
@@ -114,15 +102,16 @@ export function AppHeader() {
                 <LogIn className="mr-1 h-4 w-4" /> Sign In
               </Link>
             </Button>
-            <Button variant="default" size="sm" onClick={handleSignUpClick} className="bg-accent hover:bg-accent/90 text-accent-foreground">
-              <UserPlus className="mr-1 h-4 w-4" /> Sign Up
+            <Button variant="default" size="sm" asChild className="bg-accent hover:bg-accent/90 text-accent-foreground">
+              <Link href="/signup">
+                <UserPlus className="mr-1 h-4 w-4" /> Sign Up
+              </Link>
             </Button>
           </>
         )}
       </div>
 
-      {/* Main Title and Subtitle Block */}
-      <div className="text-center"> {/* Removed py-6, spacing now comes from mb on button row and mt on subtitle */}
+      <div className="text-center"> 
         <div className="inline-flex items-center gap-3">
           <Waves className="h-10 w-10 md:h-12 md:w-12 text-primary" />
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
@@ -136,7 +125,6 @@ export function AppHeader() {
         </p>
       </div>
       
-      {/* Disclaimer Block */}
       <Alert variant="default" className="mt-6 max-w-2xl mx-auto text-sm bg-card/30 border-primary/30 text-left">
         <Info className="h-5 w-5 text-primary" />
         <AlertTitle className="text-primary/90">Important Disclaimer</AlertTitle>
