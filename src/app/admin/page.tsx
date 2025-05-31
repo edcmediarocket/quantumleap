@@ -9,9 +9,9 @@ import Toggle from '@/components/app/admin/Toggle';
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import { firebaseConfig } from '@/lib/firebaseConfig';
 import { Button } from '@/components/ui/button';
-import { ShieldCheck, Settings } from 'lucide-react';
+import { ShieldCheck, Settings, ArrowLeftCircle } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
-import Link from 'next/link'; // Import Link
+import Link from 'next/link';
 
 let app: FirebaseApp;
 let db: Firestore;
@@ -27,38 +27,36 @@ if (!getApps().length) {
   app = getApps()[0];
 }
 
-if (app! && !auth) { // Check if auth is already initialized
+if (app! && !auth) { 
   try {
     auth = getAuth(app);
-    if (!db) db = getFirestore(app); // Initialize db if not already
+    if (!db) db = getFirestore(app);
   } catch (error) {
     console.error("Error initializing Firestore/Auth:", error);
   }
 }
 
-
 // Admin UID: qRJOtYXWqLbpQ1yx6qRdwSGwGyl1 (Associated with coreyenglish517@gmail.com as per user)
 const ADMIN_UID = 'qRJOtYXWqLbpQ1yx6qRdwSGwGyl1';
 
-interface FeatureToggles {
+export interface FeatureToggles {
   darkMode: boolean;
   testUserMode: boolean;
-  aiCoachLive: boolean;
-  whaleAlertsActive: boolean;
-  predictiveAlertsActive: boolean;
-  profitGoalCalculator: boolean;
-  memeCoinFinder: boolean;
+  aiCoinPicksEnabled: boolean;
+  profitGoalEnabled: boolean;
+  memeCoinHunterEnabled: boolean;
+  predictiveAlertsEnabled: boolean;
+  aiCoachEnabled: boolean;
 }
 
-// Define the initial/default state for feature toggles
 const initialFeatureTogglesState: FeatureToggles = {
   darkMode: true,
   testUserMode: false,
-  aiCoachLive: true,
-  whaleAlertsActive: true,
-  predictiveAlertsActive: true,
-  profitGoalCalculator: true,
-  memeCoinFinder: true,
+  aiCoinPicksEnabled: true,
+  profitGoalEnabled: true,
+  memeCoinHunterEnabled: true,
+  predictiveAlertsEnabled: true,
+  aiCoachEnabled: true,
 };
 
 const AdminDashboard = () => {
@@ -70,28 +68,27 @@ const AdminDashboard = () => {
   useEffect(() => {
     if (!auth) {
         console.warn("Firebase Auth is not initialized yet for AdminDashboard effect. Attempting re-init.");
-        if (getApps().length && !auth) { // Check again if auth got initialized by another part
+        if (getApps().length && !auth) {
             try {
               auth = getAuth(getApps()[0]);
-              if (!db && app) db = getFirestore(app); // Ensure app is defined before using
+              if (!db && app) db = getFirestore(app);
             } catch (e) {
                 console.error("Delayed auth/db init error:", e);
                 setLoading(false);
                 toast({ title: "Error", description: "Firebase services not fully available.", variant: "destructive" });
                 return;
             }
-        } else if (!getApps().length) { // Firebase not initialized at all
+        } else if (!getApps().length) {
             setLoading(false);
             toast({ title: "Error", description: "Firebase not initialized.", variant: "destructive" });
             return;
         }
-         if (!auth) { // Still not initialized after attempts
+         if (!auth) {
             setLoading(false);
             toast({ title: "Critical Error", description: "Firebase Auth could not be initialized.", variant: "destructive" });
             return;
         }
     }
-
 
     const unsubscribe = auth.onAuthStateChanged(user => {
       setCurrentUser(user);
@@ -102,7 +99,7 @@ const AdminDashboard = () => {
       }
     });
     return () => unsubscribe();
-  }, [toast]); // Added toast to dependency array as it's used in effect
+  }, [toast]);
 
   const fetchToggles = async (user: User) => {
     if (!user || user.uid !== ADMIN_UID || !db) {
@@ -205,6 +202,14 @@ const AdminDashboard = () => {
             />
             ))}
         </div>
+         <div className="mt-8 pt-6 border-t border-border/30">
+            <Button asChild variant="outline" className="w-full text-primary border-primary hover:bg-primary/10 hover:text-primary">
+              <Link href="/">
+                <ArrowLeftCircle className="mr-2 h-5 w-5" />
+                Back to Homepage (Changes are auto-saved)
+              </Link>
+            </Button>
+          </div>
         </div>
          <footer className="mt-12 text-center text-xs text-muted-foreground/70">
             <p>Admin Panel &copy; {new Date().getFullYear()} Quantum Leap</p>
@@ -214,3 +219,5 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
+
+    

@@ -11,13 +11,14 @@ import { MemeCoinQuickFlipForm } from "@/components/app/forms/meme-coin-quick-fl
 import { AiCoachAvatarPanel } from "@/components/app/ai-coach-avatar-panel";
 import { HowItWorksPanel } from "@/components/app/how-it-works-panel";
 import { CryptoTerminologyPanel } from "@/components/app/crypto-terminology-panel";
-import { PredictiveBreakoutAlertsPanel } from "@/components/app/predictive-breakout-alerts-panel"; // Import new component
+import { PredictiveBreakoutAlertsPanel } from "@/components/app/predictive-breakout-alerts-panel";
 import { LoadingDots } from "@/components/ui/loading-dots";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Terminal, TrendingUpIcon, BarChartIcon, RocketIcon, AlertTriangle, Zap } from "lucide-react";
+import { Terminal, TrendingUpIcon, BarChartIcon, RocketIcon, AlertTriangle, ShieldOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { useFeatureTogglesContext } from "@/contexts/FeatureTogglesContext"; // Import context hook
 
 // AI Flow Imports
 import { aiCoinPicks, type AiCoinPicksInput, type AiCoinPicksOutput } from "@/ai/flows/ai-coin-picks";
@@ -27,6 +28,8 @@ import { getCoachQuickTip, type GetCoachQuickTipInput, type GetCoachQuickTipOutp
 
 
 export default function QuantumLeapPage() {
+  const { toggles, loadingToggles, errorToggles } = useFeatureTogglesContext();
+
   const [aiCoinPicksResults, setAiCoinPicksResults] = useState<AiCoinPicksOutput | null>(null);
   const [quickProfitResults, setQuickProfitResults] = useState<RecommendCoinsForProfitTargetOutput | null>(null);
   const [memeFlipResults, setMemeFlipResults] = useState<MemeCoinQuickFlipOutput | null>(null);
@@ -45,9 +48,24 @@ export default function QuantumLeapPage() {
   const [currentAiPicksInput, setCurrentAiPicksInput] = useState<AiCoinPicksInput | null>(null);
   const [currentQuickProfitInput, setCurrentQuickProfitInput] = useState<RecommendCoinsForProfitTargetInput | null>(null);
 
+  const [activeTab, setActiveTab] = useState<string>("aiPicks"); // Default to first enabled tab
+
   const { toast } = useToast();
 
   useEffect(() => {
+    // Determine the default active tab based on enabled features
+    if (!loadingToggles) {
+      if (toggles.aiCoinPicksEnabled) setActiveTab("aiPicks");
+      else if (toggles.profitGoalEnabled) setActiveTab("profitGoal");
+      else if (toggles.memeCoinHunterEnabled) setActiveTab("memeFlip");
+      else setActiveTab("none"); // Or some other fallback
+    }
+  }, [toggles, loadingToggles]);
+  
+
+  useEffect(() => {
+    if (loadingToggles || !toggles.aiCoachEnabled) return; // Only fetch if coach is enabled
+
     const fetchInitialTip = async () => {
       setIsLoadingCoachQuickTip(true);
       setCoachQuickTipError(null);
@@ -62,9 +80,11 @@ export default function QuantumLeapPage() {
       }
     };
     fetchInitialTip();
-  }, []);
+  }, [loadingToggles, toggles.aiCoachEnabled]);
 
   const fetchAndSetCoachTip = async (context: GetCoachQuickTipInput['userActionContext'], summary?: string) => {
+    if (!toggles.aiCoachEnabled) return; // Don't fetch if coach is disabled
+
     setIsLoadingCoachQuickTip(true);
     setCoachQuickTipError(null);
     try {
@@ -178,183 +198,241 @@ export default function QuantumLeapPage() {
     }
   };
 
+  if (loadingToggles) {
+    return (
+      <div className="flex flex-col justify-center items-center min-h-screen bg-background text-center p-4">
+        <LoadingDots size="lg" />
+        <p className="text-muted-foreground mt-4">Loading Quantum Leap features...</p>
+      </div>
+    );
+  }
+
+  if (errorToggles) {
+    return (
+      <div className="flex flex-col justify-center items-center min-h-screen bg-background text-center p-4">
+        <Alert variant="destructive" className="max-w-md">
+          <Terminal className="h-4 w-4" />
+          <AlertTitle>Configuration Error</AlertTitle>
+          <AlertDescription>
+            Could not load app configuration: {errorToggles}. Please try again later or contact support.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
+  const enabledTabsCount = [
+    toggles.aiCoinPicksEnabled,
+    toggles.profitGoalEnabled,
+    toggles.memeCoinHunterEnabled
+  ].filter(Boolean).length;
 
   return (
     <div className="container mx-auto min-h-screen px-4 py-8 selection:bg-primary/30 selection:text-primary-foreground">
       <AppHeader />
       
-      <PredictiveBreakoutAlertsPanel />
+      {toggles.predictiveAlertsEnabled && <PredictiveBreakoutAlertsPanel />}
 
-      <div className="my-8">
-        <AiCoachAvatarPanel tipData={coachQuickTip} isLoading={isLoadingCoachQuickTip} />
-        {coachQuickTipError && (
-            <Alert variant="destructive" className="mt-2 max-w-md mx-auto text-xs">
-                <Terminal className="h-4 w-4" />
-                <AlertTitle>Coach Comms Down</AlertTitle>
-                <AlertDescription>{coachQuickTipError}</AlertDescription>
-            </Alert>
-        )}
-      </div>
+      {toggles.aiCoachEnabled && (
+        <div className="my-8">
+          <AiCoachAvatarPanel tipData={coachQuickTip} isLoading={isLoadingCoachQuickTip} />
+          {coachQuickTipError && (
+              <Alert variant="destructive" className="mt-2 max-w-md mx-auto text-xs">
+                  <Terminal className="h-4 w-4" />
+                  <AlertTitle>Coach Comms Down</AlertTitle>
+                  <AlertDescription>{coachQuickTipError}</AlertDescription>
+              </Alert>
+          )}
+        </div>
+      )}
       
-
       <main className="mt-6">
-        <Tabs defaultValue="aiPicks" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mx-auto bg-background/50 border border-border/50 md:max-w-xl lg:max-w-2xl">
-            <TabsTrigger value="aiPicks" className="text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <TrendingUpIcon className="mr-1 sm:mr-2 h-4 w-4" /> AI Coin Picks
-            </TabsTrigger>
-            <TabsTrigger value="profitGoal" className="text-xs sm:text-sm data-[state=active]:bg-accent data-[state=active]:text-accent-foreground">
-             <BarChartIcon className="mr-1 sm:mr-2 h-4 w-4" /> Profit Goal
-            </TabsTrigger>
-            <TabsTrigger value="memeFlip" className="text-xs sm:text-sm data-[state=active]:bg-orange-500 data-[state=active]:text-white">
-             <RocketIcon className="mr-1 sm:mr-2 h-4 w-4" /> Meme Hunter
-            </TabsTrigger>
-          </TabsList>
+        {enabledTabsCount > 0 ? (
+          <Tabs defaultValue={activeTab} value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList 
+              className={cn(
+                "grid w-full mx-auto bg-background/50 border border-border/50 md:max-w-xl lg:max-w-2xl",
+                enabledTabsCount === 3 && "grid-cols-3",
+                enabledTabsCount === 2 && "grid-cols-2",
+                enabledTabsCount === 1 && "grid-cols-1",
+              )}
+            >
+              {toggles.aiCoinPicksEnabled && (
+                <TabsTrigger value="aiPicks" className="text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                  <TrendingUpIcon className="mr-1 sm:mr-2 h-4 w-4" /> AI Coin Picks
+                </TabsTrigger>
+              )}
+              {toggles.profitGoalEnabled && (
+                <TabsTrigger value="profitGoal" className="text-xs sm:text-sm data-[state=active]:bg-accent data-[state=active]:text-accent-foreground">
+                <BarChartIcon className="mr-1 sm:mr-2 h-4 w-4" /> Profit Goal
+                </TabsTrigger>
+              )}
+              {toggles.memeCoinHunterEnabled && (
+                <TabsTrigger value="memeFlip" className="text-xs sm:text-sm data-[state=active]:bg-orange-500 data-[state=active]:text-white">
+                <RocketIcon className="mr-1 sm:mr-2 h-4 w-4" /> Meme Hunter
+                </TabsTrigger>
+              )}
+            </TabsList>
 
-          <TabsContent value="aiPicks" className="mt-8">
-            <div className="flex flex-col items-center gap-12">
-              <div className={cn(
-                  "w-full md:max-w-md lg:max-w-lg p-6 shadow-xl",
-                  "glass-effect glass-effect-interactive-hover hover-glow-primary"
-                )}>
-                <h2 className="text-2xl font-semibold mb-6 text-primary flex items-center">
-                  <TrendingUpIcon className="mr-2 h-6 w-6" /> Configure AI Picks
-                </h2>
-                <AiCoinPicksForm onSubmit={handleAiCoinPicksSubmit} isLoading={isLoadingAiPicks} />
-              </div>
-              <div className="w-full">
-                {isLoadingAiPicks && <LoadingDots className="mt-10" size="lg" />}
-                {aiPicksError && (
-                  <Alert variant="destructive" className="mt-6 max-w-2xl mx-auto">
-                    <Terminal className="h-4 w-4" />
-                    <AlertTitle>Error</AlertTitle>
-                    <AlertDescription>{aiPicksError}</AlertDescription>
-                  </Alert>
-                )}
-                {aiCoinPicksResults && aiCoinPicksResults.picks.length > 0 && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {aiCoinPicksResults.picks.map((pick, index) => (
-                      <CoinCard 
-                        key={`${pick.coin}-${index}`} 
-                        coinData={pick} 
-                        type="aiPick"
-                        profitTarget={currentAiPicksInput?.profitTarget}
-                      />
-                    ))}
+            {toggles.aiCoinPicksEnabled && (
+              <TabsContent value="aiPicks" className="mt-8">
+                <div className="flex flex-col items-center gap-12">
+                  <div className={cn(
+                      "w-full md:max-w-md lg:max-w-lg p-6 shadow-xl",
+                      "glass-effect glass-effect-interactive-hover hover-glow-primary"
+                    )}>
+                    <h2 className="text-2xl font-semibold mb-6 text-primary flex items-center">
+                      <TrendingUpIcon className="mr-2 h-6 w-6" /> Configure AI Picks
+                    </h2>
+                    <AiCoinPicksForm onSubmit={handleAiCoinPicksSubmit} isLoading={isLoadingAiPicks} />
                   </div>
-                )}
-                {aiCoinPicksResults && aiCoinPicksResults.picks.length === 0 && !isLoadingAiPicks && !aiPicksError && (
-                   <div className="text-center py-10 text-muted-foreground">
-                    <p>No AI coin picks match your current criteria.</p>
-                    <p>Try adjusting the profit target or strategy.</p>
+                  <div className="w-full">
+                    {isLoadingAiPicks && <LoadingDots className="mt-10" size="lg" />}
+                    {aiPicksError && (
+                      <Alert variant="destructive" className="mt-6 max-w-2xl mx-auto">
+                        <Terminal className="h-4 w-4" />
+                        <AlertTitle>Error</AlertTitle>
+                        <AlertDescription>{aiPicksError}</AlertDescription>
+                      </Alert>
+                    )}
+                    {aiCoinPicksResults && aiCoinPicksResults.picks.length > 0 && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {aiCoinPicksResults.picks.map((pick, index) => (
+                          <CoinCard 
+                            key={`${pick.coin}-${index}`} 
+                            coinData={pick} 
+                            type="aiPick"
+                            profitTarget={currentAiPicksInput?.profitTarget}
+                          />
+                        ))}
+                      </div>
+                    )}
+                    {aiCoinPicksResults && aiCoinPicksResults.picks.length === 0 && !isLoadingAiPicks && !aiPicksError && (
+                      <div className="text-center py-10 text-muted-foreground">
+                        <p>No AI coin picks match your current criteria.</p>
+                        <p>Try adjusting the profit target or strategy.</p>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            </div>
-          </TabsContent>
+                </div>
+              </TabsContent>
+            )}
 
-          <TabsContent value="profitGoal" className="mt-8">
-            <div className="flex flex-col items-center gap-12">
-              <div className={cn(
-                  "w-full md:max-w-md lg:max-w-lg p-6 shadow-xl",
-                  "glass-effect glass-effect-interactive-hover hover-glow-accent"
-                )}>
-                 <h2 className="text-2xl font-semibold mb-6 text-accent flex items-center">
-                  <BarChartIcon className="mr-2 h-6 w-6" /> Set Your Profit Goal
-                </h2>
-                <QuickProfitGoalForm onSubmit={handleQuickProfitGoalSubmit} isLoading={isLoadingQuickProfit} />
-              </div>
-              <div className="w-full">
-                {isLoadingQuickProfit && <LoadingDots className="mt-10" size="lg" />}
-                {quickProfitError && (
-                  <Alert variant="destructive" className="mt-6 max-w-2xl mx-auto">
-                    <Terminal className="h-4 w-4" />
-                    <AlertTitle>Error</AlertTitle>
-                    <AlertDescription>{quickProfitError}</AlertDescription>
-                  </Alert>
-                )}
-                {quickProfitResults && quickProfitResults.recommendedCoins.length > 0 && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {quickProfitResults.recommendedCoins.map((coin, index) => (
-                      <CoinCard 
-                        key={`${coin.coinName}-${index}`} 
-                        coinData={coin} 
-                        type="profitGoal"
-                        profitTarget={currentQuickProfitInput?.profitTarget}
-                        investmentAmount={currentQuickProfitInput?.investmentAmount}
-                        riskTolerance={currentQuickProfitInput?.riskTolerance}
-                      />
-                    ))}
+            {toggles.profitGoalEnabled && (
+              <TabsContent value="profitGoal" className="mt-8">
+                <div className="flex flex-col items-center gap-12">
+                  <div className={cn(
+                      "w-full md:max-w-md lg:max-w-lg p-6 shadow-xl",
+                      "glass-effect glass-effect-interactive-hover hover-glow-accent"
+                    )}>
+                    <h2 className="text-2xl font-semibold mb-6 text-accent flex items-center">
+                      <BarChartIcon className="mr-2 h-6 w-6" /> Set Your Profit Goal
+                    </h2>
+                    <QuickProfitGoalForm onSubmit={handleQuickProfitGoalSubmit} isLoading={isLoadingQuickProfit} />
                   </div>
-                )}
-                {quickProfitResults && quickProfitResults.recommendedCoins.length === 0 && !isLoadingQuickProfit && !quickProfitError && (
-                  <div className="text-center py-10 text-muted-foreground">
-                    <p>No coins found for your profit goal and risk tolerance.</p>
-                    <p>Try adjusting your inputs.</p>
+                  <div className="w-full">
+                    {isLoadingQuickProfit && <LoadingDots className="mt-10" size="lg" />}
+                    {quickProfitError && (
+                      <Alert variant="destructive" className="mt-6 max-w-2xl mx-auto">
+                        <Terminal className="h-4 w-4" />
+                        <AlertTitle>Error</AlertTitle>
+                        <AlertDescription>{quickProfitError}</AlertDescription>
+                      </Alert>
+                    )}
+                    {quickProfitResults && quickProfitResults.recommendedCoins.length > 0 && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {quickProfitResults.recommendedCoins.map((coin, index) => (
+                          <CoinCard 
+                            key={`${coin.coinName}-${index}`} 
+                            coinData={coin} 
+                            type="profitGoal"
+                            profitTarget={currentQuickProfitInput?.profitTarget}
+                            investmentAmount={currentQuickProfitInput?.investmentAmount}
+                            riskTolerance={currentQuickProfitInput?.riskTolerance}
+                          />
+                        ))}
+                      </div>
+                    )}
+                    {quickProfitResults && quickProfitResults.recommendedCoins.length === 0 && !isLoadingQuickProfit && !quickProfitError && (
+                      <div className="text-center py-10 text-muted-foreground">
+                        <p>No coins found for your profit goal and risk tolerance.</p>
+                        <p>Try adjusting your inputs.</p>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            </div>
-          </TabsContent>
+                </div>
+              </TabsContent>
+            )}
 
-          <TabsContent value="memeFlip" className="mt-8">
-            <div className="flex flex-col items-center gap-12">
-              <div className={cn(
-                  "w-full md:max-w-md lg:max-w-lg p-6 shadow-xl",
-                  "glass-effect glass-effect-interactive-hover hover-glow-orange"
-                )}>
-                 <h2 className="text-2xl font-semibold mb-6 text-orange-500 flex items-center">
-                  <RocketIcon className="mr-2 h-6 w-6" /> Meme Coin Hunter
-                </h2>
-                <MemeCoinQuickFlipForm onSubmit={handleMemeCoinQuickFlipSubmit} isLoading={isLoadingMemeFlip} />
-                 <Alert variant="destructive" className="mt-6 text-xs">
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertTitle>Extreme Risk Warning!</AlertTitle>
-                    <AlertDescription>
-                      Meme coins are highly speculative and carry extreme risk. You can lose your entire investment. This is not financial advice. Always DYOR!
-                    </AlertDescription>
-                  </Alert>
-              </div>
-              <div className="w-full">
-                {isLoadingMemeFlip && <LoadingDots className="mt-10" size="lg" />}
-                {memeFlipError && (
-                  <Alert variant="destructive" className="mt-6 max-w-2xl mx-auto">
-                    <Terminal className="h-4 w-4" />
-                    <AlertTitle>Meme Hunter Error</AlertTitle>
-                    <AlertDescription>{memeFlipError}</AlertDescription>
-                  </Alert>
-                )}
-                {memeFlipResults && memeFlipResults.picks.length > 0 && (
-                  <>
-                    <Alert variant="default" className="mb-4 bg-background/30 border-amber-500/50 max-w-3xl mx-auto">
-                      <AlertTriangle className="h-4 w-4 text-amber-500" />
-                      <AlertTitle className="text-amber-500">Overall Meme Disclaimer</AlertTitle>
-                      <AlertDescription className="text-muted-foreground">{memeFlipResults.overallDisclaimer}</AlertDescription>
-                    </Alert>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {memeFlipResults.picks.map((pick, index) => (
-                        <CoinCard 
-                          key={`${pick.coinName}-${index}`} 
-                          coinData={pick} 
-                          type="memeFlip"
-                        />
-                      ))}
-                    </div>
-                  </>
-                )}
-                {memeFlipResults && memeFlipResults.picks.length === 0 && !isLoadingMemeFlip && !memeFlipError && (
-                  <div className="text-center py-10 text-muted-foreground">
-                    <p>The Meme Hunter found no immediate explosive opportunities.</p>
-                    <p>The meme-verse can be fickle. Try again later!</p>
+            {toggles.memeCoinHunterEnabled && (
+              <TabsContent value="memeFlip" className="mt-8">
+                <div className="flex flex-col items-center gap-12">
+                  <div className={cn(
+                      "w-full md:max-w-md lg:max-w-lg p-6 shadow-xl",
+                      "glass-effect glass-effect-interactive-hover hover-glow-orange"
+                    )}>
+                    <h2 className="text-2xl font-semibold mb-6 text-orange-500 flex items-center">
+                      <RocketIcon className="mr-2 h-6 w-6" /> Meme Coin Hunter
+                    </h2>
+                    <MemeCoinQuickFlipForm onSubmit={handleMemeCoinQuickFlipSubmit} isLoading={isLoadingMemeFlip} />
+                    <Alert variant="destructive" className="mt-6 text-xs">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertTitle>Extreme Risk Warning!</AlertTitle>
+                        <AlertDescription>
+                          Meme coins are highly speculative and carry extreme risk. You can lose your entire investment. This is not financial advice. Always DYOR!
+                        </AlertDescription>
+                      </Alert>
                   </div>
-                )}
-              </div>
+                  <div className="w-full">
+                    {isLoadingMemeFlip && <LoadingDots className="mt-10" size="lg" />}
+                    {memeFlipError && (
+                      <Alert variant="destructive" className="mt-6 max-w-2xl mx-auto">
+                        <Terminal className="h-4 w-4" />
+                        <AlertTitle>Meme Hunter Error</AlertTitle>
+                        <AlertDescription>{memeFlipError}</AlertDescription>
+                      </Alert>
+                    )}
+                    {memeFlipResults && memeFlipResults.picks.length > 0 && (
+                      <>
+                        <Alert variant="default" className="mb-4 bg-background/30 border-amber-500/50 max-w-3xl mx-auto">
+                          <AlertTriangle className="h-4 w-4 text-amber-500" />
+                          <AlertTitle className="text-amber-500">Overall Meme Disclaimer</AlertTitle>
+                          <AlertDescription className="text-muted-foreground">{memeFlipResults.overallDisclaimer}</AlertDescription>
+                        </Alert>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          {memeFlipResults.picks.map((pick, index) => (
+                            <CoinCard 
+                              key={`${pick.coinName}-${index}`} 
+                              coinData={pick} 
+                              type="memeFlip"
+                            />
+                          ))}
+                        </div>
+                      </>
+                    )}
+                    {memeFlipResults && memeFlipResults.picks.length === 0 && !isLoadingMemeFlip && !memeFlipError && (
+                      <div className="text-center py-10 text-muted-foreground">
+                        <p>The Meme Hunter found no immediate explosive opportunities.</p>
+                        <p>The meme-verse can be fickle. Try again later!</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </TabsContent>
+            )}
+          </Tabs>
+        ) : (
+           <div className="text-center py-12">
+              <ShieldOff className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+              <h2 className="text-2xl font-semibold text-muted-foreground mb-2">No Features Enabled</h2>
+              <p className="text-muted-foreground">
+                It looks like all primary features are currently disabled. Please check back later or contact an administrator.
+              </p>
             </div>
-          </TabsContent>
-        </Tabs>
+        )}
 
         <HowItWorksPanel />
-        <CryptoTerminologyPanel /> {/* Add the new terminology panel here */}
+        <CryptoTerminologyPanel />
 
       </main>
        <footer className="mt-12 py-4 text-center text-xs text-muted-foreground/70 border-t border-border/20">
@@ -365,3 +443,4 @@ export default function QuantumLeapPage() {
   );
 }
 
+    
