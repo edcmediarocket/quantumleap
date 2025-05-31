@@ -3,19 +3,16 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Admin settings can only be read/written by the specific admin UID
+    // Admin settings for feature toggles
+    // Allow public read so the app can fetch toggles for all users
+    // Restrict write access to the specific admin UID
     match /adminSettings/featureToggles {
-      allow read, write: if request.auth != null && request.auth.uid == 'qRJOtYXWqLbpQ1yx6qRdwSGwGyl1';
+      allow read: if true; // All users can read
+      allow write: if request.auth != null && request.auth.uid == 'qRJOtYXWqLbpQ1yx6qRdwSGwGyl1'; // Only admin can write
     }
 
-    // Example: Allow users to read/write their own data in a 'users' collection
-    // match /users/{userId} {
-    //   allow read, write: if request.auth != null && request.auth.uid == userId;
-    // }
-
-    // Default deny all other reads/writes
-    // It's important to explicitly define rules for all collections your app uses.
+    // This is a default rule, denying all access to any other collections
+    // Add rules for other collections your app uses above this line
     match /{document=**} {
       allow read, write: if false;
     }
