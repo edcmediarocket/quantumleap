@@ -21,26 +21,26 @@ const MemeCoinQuickFlipInputSchema = z.object({
 });
 export type MemeCoinQuickFlipInput = z.infer<typeof MemeCoinQuickFlipInputSchema>;
 
+const MemeCoinPickSchema = z.object({
+  coinName: z.string().describe('Name & ticker (e.g., "PepeCoin (PEPE)")'),
+  predictedPumpPotential: z.string().describe('Pump potential (e.g. "High", "Extreme")'),
+  suggestedBuyInWindow: z.string().describe('Urgent buy window (e.g., "Next 1-2 hours", "ASAP if X signal!")'),
+  quickFlipSellTargetPercentage: z.number().describe('Target % gain for quick flip (e.g. 50 for 50%)'),
+  entryPriceRange: PriceRangeSchema.describe('Current approx. entry price (low/high) - VERY SMALL prices'),
+  confidenceScore: z.number().describe('Confidence (0-1) - highly speculative, default 0.5 if missing'), // No min/max
+  rationale: z.string().describe('ADVANCED RATIONALE FOR QUICK FLIP (2-3 PARAGRAPHS): Specific buy signals (social volume, Telegram hype, micro-chart patterns), optimal entry strategy/price points (e.g., "target entry near X if dip", "buy on Y volume spike"), quick flip sell targets/strategy (e.g., "aim for Z% then re-eval", "sell 50% at A% then trail rest"), timing considerations (e.g., "monitor during peak US/Asia hours"). CRITICAL: Detail WHY this pick, BEST TIME/PRICE TO BUY for quick profit, and link DIRECTLY TO PROFIT MAXIMIZATION. MANDATORY RISK WARNINGS: "EXTREMELY SPECULATIVE," "HIGH RISK OF TOTAL CAPITAL LOSS," "Rug pull possible," "DYOR." Detailed, actionable, advanced, profit-focused.'),
+  riskLevel: z.enum(["Extreme", "Very High"]).default("Extreme").describe('Risk (e.g. "Extreme")'),
+  estimatedDuration: z.string().describe('Est. flip duration (e.g. "Few hours", "1-2 days")'),
+  predictedGainPercentage: z.number().describe('Predicted % gain (same as quickFlipSellTargetPercentage)'),
+  exitPriceRange: PriceRangeSchema.describe('Calculated exit price range based on target gain'),
+  predictedEntryWindowDescription: z.string().optional().describe('AI text on ideal entry timing/signals for this meme coin.'),
+  predictedExitWindowDescription: z.string().optional().describe('AI text on ideal exit timing/signals for this meme coin.'),
+  simulatedEntryCountdownText: z.string().optional().describe('Textual countdown idea, e.g., "approx. 15 minutes", "within 1 hour".'),
+  simulatedPostBuyDropAlertText: z.string().optional().describe('Text for a hypothetical critical meme coin drop alert.'),
+});
+
 const MemeCoinQuickFlipOutputSchema = z.object({
-  picks: z.array(
-    z.object({
-      coinName: z.string().describe('Name & ticker (e.g., "PepeCoin (PEPE)")'),
-      predictedPumpPotential: z.string().describe('Pump potential (e.g. "High", "Extreme")'),
-      suggestedBuyInWindow: z.string().describe('Urgent buy window (e.g., "Next 1-2 hours", "ASAP if X signal!")'),
-      quickFlipSellTargetPercentage: z.number().describe('Target % gain for quick flip (e.g. 50 for 50%)'),
-      entryPriceRange: PriceRangeSchema.describe('Current approx. entry price (low/high) - VERY SMALL prices'),
-      confidenceScore: z.number().describe('Confidence (0-1) - highly speculative, default 0.5 if missing'), // No min/max
-      rationale: z.string().describe('ADVANCED RATIONALE FOR QUICK FLIP (2-3 PARAGRAPHS): Specific buy signals (social volume, Telegram hype, micro-chart patterns), optimal entry strategy/price points (e.g., "target entry near X if dip", "buy on Y volume spike"), quick flip sell targets/strategy (e.g., "aim for Z% then re-eval", "sell 50% at A% then trail rest"), timing considerations (e.g., "monitor during peak US/Asia hours"). CRITICAL: Detail WHY this pick, BEST TIME/PRICE TO BUY for quick profit, and link DIRECTLY TO PROFIT MAXIMIZATION. MANDATORY RISK WARNINGS: "EXTREMELY SPECULATIVE," "HIGH RISK OF TOTAL CAPITAL LOSS," "Rug pull possible," "DYOR." Detailed, actionable, advanced, profit-focused.'),
-      riskLevel: z.enum(["Extreme", "Very High"]).default("Extreme").describe('Risk (e.g. "Extreme")'),
-      estimatedDuration: z.string().describe('Est. flip duration (e.g. "Few hours", "1-2 days")'),
-      predictedGainPercentage: z.number().describe('Predicted % gain (same as quickFlipSellTargetPercentage)'),
-      exitPriceRange: PriceRangeSchema.describe('Calculated exit price range based on target gain'),
-      predictedEntryWindowDescription: z.string().optional().describe('AI text on ideal entry timing/signals for this meme coin.'),
-      predictedExitWindowDescription: z.string().optional().describe('AI text on ideal exit timing/signals for this meme coin.'),
-      simulatedEntryCountdownText: z.string().optional().describe('Textual countdown idea, e.g., "approx. 15 minutes", "within 1 hour".'),
-      simulatedPostBuyDropAlertText: z.string().optional().describe('Text for a hypothetical critical meme coin drop alert.'),
-    })
-  ).describe('Array of 2-5 meme coin quick flip picks.'),
+  picks: z.array(MemeCoinPickSchema).describe('Array of 2-5 meme coin quick flip picks.'),
   overallDisclaimer: z.string().default("Meme coins are EXTREMELY RISKY and highly speculative. Prices are driven by hype and can collapse to zero without warning. Invest only what you are absolutely prepared to lose. This is not financial advice. DYOR!").describe("Overall risk disclaimer for meme coins.")
 });
 export type MemeCoinQuickFlipOutput = z.infer<typeof MemeCoinQuickFlipOutputSchema>;
@@ -122,3 +122,4 @@ const memeCoinQuickFlipFlow = ai.defineFlow(
     return output;
   }
 );
+

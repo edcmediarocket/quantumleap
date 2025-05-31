@@ -1,3 +1,4 @@
+
 // 'use server';
 /**
  * @fileOverview AI coin picks flow that recommends the top 3-5 coins predicted to yield quick profits based on real-time data analytics.
@@ -25,25 +26,25 @@ const AiCoinPicksInputSchema = z.object({
 });
 export type AiCoinPicksInput = z.infer<typeof AiCoinPicksInputSchema>;
 
+const AiCoinPickSchema = z.object({
+  coin: z.string().describe('Coin ticker.'),
+  predictedGainPercentage: z.number().describe('Predicted % gain.'),
+  entryPriceRange: PriceRangeSchema.describe('Entry price (low/high).'),
+  exitPriceRange: PriceRangeSchema.describe('Exit price (low/high).'),
+  optimalBuyPrice: z.number().optional().describe('Optimal buy price (opt).'),
+  targetSellPrices: z.array(z.number()).optional().describe('Target sell prices (opt array).'),
+  confidenceMeter: z.number().describe('Confidence score (0-1).'), // No min/max for schema simplicity
+  rationale: z.string().describe('Advanced rationale: TA, FA, sentiment, whale/social, catalysts, risks. Profit focus.'),
+  estimatedDuration: z.string().describe('Estimated duration to profit.'),
+  riskRoiGauge: z.number().describe('Risk/ROI score (0-1).'), // New field
+  predictedEntryWindowDescription: z.string().optional().describe('AI textual description of ideal entry window/conditions.'),
+  predictedExitWindowDescription: z.string().optional().describe('AI textual description of ideal exit window/conditions/signals.'),
+  simulatedEntryCountdownText: z.string().optional().describe('Textual suggestion for a countdown, e.g., "approx. 30 minutes", "around 1 hour".'),
+  simulatedPostBuyDropAlertText: z.string().optional().describe('Text for a hypothetical critical drop alert post-entry.'),
+});
+
 const AiCoinPicksOutputSchema = z.object({
-  picks: z.array(
-    z.object({
-      coin: z.string().describe('Coin ticker.'),
-      predictedGainPercentage: z.number().describe('Predicted % gain.'),
-      entryPriceRange: PriceRangeSchema.describe('Entry price (low/high).'),
-      exitPriceRange: PriceRangeSchema.describe('Exit price (low/high).'),
-      optimalBuyPrice: z.number().optional().describe('Optimal buy price (opt).'),
-      targetSellPrices: z.array(z.number()).optional().describe('Target sell prices (opt array).'),
-      confidenceMeter: z.number().describe('Confidence score (0-1).'), // No min/max for schema simplicity
-      rationale: z.string().describe('Advanced rationale: TA, FA, sentiment, whale/social, catalysts, risks. Profit focus.'),
-      estimatedDuration: z.string().describe('Estimated duration to profit.'),
-      riskRoiGauge: z.number().describe('Risk/ROI score (0-1).'), // New field
-      predictedEntryWindowDescription: z.string().optional().describe('AI textual description of ideal entry window/conditions.'),
-      predictedExitWindowDescription: z.string().optional().describe('AI textual description of ideal exit window/conditions/signals.'),
-      simulatedEntryCountdownText: z.string().optional().describe('Textual suggestion for a countdown, e.g., "approx. 30 minutes", "around 1 hour".'),
-      simulatedPostBuyDropAlertText: z.string().optional().describe('Text for a hypothetical critical drop alert post-entry.'),
-    })
-  ).describe('An array of recommended coin picks.'),
+  picks: z.array(AiCoinPickSchema).describe('An array of recommended coin picks.'),
 });
 
 export type AiCoinPicksOutput = z.infer<typeof AiCoinPicksOutputSchema>;
@@ -117,3 +118,4 @@ const aiCoinPicksFlow = ai.defineFlow(
     return output!;
   }
 );
+

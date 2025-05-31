@@ -27,7 +27,7 @@ import { Separator } from "@/components/ui/separator";
 import { LoadingDots } from "@/components/ui/loading-dots";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { TrendingUp, HelpCircle, Gauge, Target, Clock, DollarSign, Info, Brain, Terminal, RocketIcon, AlertTriangle, Calculator, TimerIcon, BellIcon, ShoppingCart, LineChart, ShieldCheck, Zap, TrendingDown, BarChartBig } from "lucide-react";
+import { TrendingUp, HelpCircle, Gauge, Target, Clock, DollarSign, Info, Brain, Terminal, RocketIcon, AlertTriangle, Calculator, TimerIcon, BellIcon, ShoppingCart, LineChart, ShieldCheck, Zap, TrendingDown, BarChartBig, PlayCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -35,10 +35,13 @@ import type { AiCoinPicksOutput } from "@/ai/flows/ai-coin-picks";
 import type { RecommendCoinsForProfitTargetOutput } from "@/ai/flows/quick-profit-goal";
 import type { MemeCoinQuickFlipOutput } from "@/ai/flows/meme-coin-quick-flip";
 import { aiCoachStrategies, type AiCoachStrategiesInput, type AiCoachStrategiesOutput } from "@/ai/flows/ai-coach-strategies";
+import { StrategyBacktestSimulator } from "./strategy-backtest-simulator"; // Import new component
 
 type AiPick = AiCoinPicksOutput['picks'][0];
 type ProfitGoalCoin = RecommendCoinsForProfitTargetOutput['recommendedCoins'][0];
 type MemeFlipCoin = MemeCoinQuickFlipOutput['picks'][0];
+type InvestmentStrategyFromAICoach = AiCoachStrategiesOutput['investmentStrategies'][0];
+
 
 type AnyCoinData = AiPick | ProfitGoalCoin | MemeFlipCoin;
 type PriceRange = { low: number; high: number };
@@ -66,25 +69,25 @@ const formatPrice = (price: number | undefined | null): string => {
   if (typeof price !== 'number' || isNaN(price)) return "$N/A";
   if (price === 0) return "$0.00";
 
-  // For very small, non-zero numbers (abs(price) < 0.000001)
   if (Math.abs(price) < 0.000001 && price !== 0) {
-    let priceStr = price.toFixed(15); // Use high precision
-    // Remove trailing zeros. E.g. "0.000000120000000" -> "0.00000012"
-    // If it becomes all zeros like "0.000000000000000", regex makes it "0"
+    let priceStr = price.toFixed(15);
     priceStr = priceStr.replace(/(\.\d*?[1-9])0+$|\.0+$/, '$1');
+    if (priceStr === "0.") priceStr = "0.00"; // Handle if it becomes "0."
     return `$${priceStr}`;
   }
-  // For small numbers (0.000001 <= abs(price) < 0.01)
   if (Math.abs(price) < 0.01) {
     let priceStr = price.toFixed(8);
     priceStr = priceStr.replace(/(\.\d*?[1-9])0+$|\.0+$/, '$1');
+    if (priceStr === "0.") priceStr = "0.00";
     return `$${priceStr}`;
   }
-  // For numbers (0.01 <= abs(price) < 1)
   if (Math.abs(price) < 1) {
-    return `$${price.toFixed(4).replace(/0+$/, '').replace(/\.$/,'.00')}`;
+    let priceStr = price.toFixed(4);
+    priceStr = priceStr.replace(/(\.\d*?[1-9])0+$|\.0+$/, '$1');
+    if (priceStr.endsWith('.')) priceStr += '00'; // e.g. 0.12. -> 0.1200
+    else if (priceStr.match(/\.\d$/)) priceStr += '0'; // e.g. 0.123 -> 0.1230
+    return `$${priceStr.replace(/0+$/, '').replace(/\.$/,'.00')}`;
   }
-  // For numbers >= 1
   return `$${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
 
@@ -288,7 +291,8 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
     if (!canShowCoach) return;
     setIsLoadingCoach(true);
     setCoachError(null);
-    setCoachStrategies(null); // Clear previous strategies
+    // Do not clear coachStrategies here if you want to show old ones while new ones load
+    // setCoachStrategies(null); 
     try {
       if (!entryPriceRange || !exitPriceRange) {
         throw new Error("Entry or exit price range is missing for AI Coach.");
@@ -316,14 +320,17 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
   };
   
   useEffect(() => {
+    // Fetch initial strategies when dialog opens and coach is available,
+    // and no strategies are loaded yet, and not currently loading or in error.
     if (isDialogOpen && canShowCoach && !coachStrategies && !isLoadingCoach && !coachError) {
         fetchCoachStrategies(currentTradingStylePreference);
     }
-  }, [isDialogOpen, canShowCoach, coachStrategies, isLoadingCoach, coachError, currentTradingStylePreference]); // Added dependencies
+  }, [isDialogOpen, canShowCoach, coachStrategies, isLoadingCoach, coachError, currentTradingStylePreference, name, rationale, gain, entryPriceRange, exitPriceRange, estimatedDuration, profitTarget, riskTolerance]);
+
 
   const handleTradingStyleSelect = (style: TradingStyle) => {
     setCurrentTradingStylePreference(style);
-    fetchCoachStrategies(style); // Re-fetch strategies with the new preference
+    fetchCoachStrategies(style);
   };
 
 
@@ -359,7 +366,7 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
 
   const glowClass = type === 'aiPick' ? 'hover-glow-primary'
                   : type === 'profitGoal' ? 'hover-glow-accent'
-                  : 'hover-glow-orange'; // Default to orange glow if type is memeFlip or undefined
+                  : 'hover-glow-orange';
 
 
   return (
@@ -592,7 +599,7 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
               <HelpCircle className="mr-2 h-4 w-4" /> {canShowCoach ? "Why This Coin & AI Coach" : "Why This Meme Coin?"}
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-xl md:max-w-2xl lg:max-w-3xl max-h-[85vh] overflow-y-auto bg-popover text-popover-foreground glass-effect !rounded-xl">
+          <DialogContent className="sm:max-w-xl md:max-w-2xl lg:max-w-4xl xl:max-w-5xl max-h-[90vh] overflow-y-auto bg-popover text-popover-foreground glass-effect !rounded-xl">
             <DialogHeader>
               <DialogTitle className={`${type === 'memeFlip' ? 'text-orange-500' : 'text-primary'} flex items-center gap-2`}>
                 {dialogTitleIcon} {dialogTitleText}
@@ -654,7 +661,7 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
                         </div>
                     </div>
 
-                    {isLoadingCoach && <LoadingDots className="my-4"/>}
+                    {isLoadingCoach && <div className="flex justify-center my-6"><LoadingDots size="lg"/></div>}
                     {coachError && (
                       <Alert variant="destructive" className="my-4">
                         <Terminal className="h-4 w-4" />
@@ -662,29 +669,36 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
                         <AlertDescription>{coachError}</AlertDescription>
                       </Alert>
                     )}
-                    {coachStrategies && (
+                    {coachStrategies && !isLoadingCoach && (
                       <div className="space-y-4">
                         <div>
                           <h4 className="font-medium text-primary-foreground/90">Coin-Specific Advice:</h4>
                           <p className="text-sm text-muted-foreground pl-2 border-l-2 border-primary ml-1 py-1 italic">{coachStrategies.coinSpecificAdvice}</p>
                         </div>
-                        {coachStrategies.investmentStrategies.map((strategy, index) => (
-                          <div key={index} className="p-3 rounded-md bg-card/50 border border-border/40 shadow-md">
-                            <h4 className="font-semibold text-primary-foreground">{strategy.name}</h4>
-                            <p className="text-xs text-muted-foreground mt-1">{strategy.description}</p>
-                            {strategy.optimalBuyPrice && <p className="text-xs text-muted-foreground mt-1"><span className="font-medium text-green-400">Optimal Buy:</span> {formatPrice(strategy.optimalBuyPrice)}</p>}
-                            {strategy.targetSellPrices && strategy.targetSellPrices.length > 0 && <p className="text-xs text-muted-foreground mt-1"><span className="font-medium text-red-400">Target Sells:</span> {strategy.targetSellPrices.map(p => formatPrice(p)).join(', ')}</p>}
-                            <p className="text-xs text-muted-foreground mt-2"><span className="font-medium text-accent/90">Reasoning:</span> {strategy.reasoning}</p>
-                            {strategy.tradingStyleAlignment && (
-                                <p className="text-xs text-purple-400 mt-1 italic"><span className="font-medium">Style Alignment:</span> {strategy.tradingStyleAlignment}</p>
-                            )}
-                            <div className="mt-2">
-                                <p className="text-xs font-medium text-primary-foreground/80 mb-1">Actionable Steps:</p>
-                                <ul className="list-disc list-inside text-xs text-muted-foreground space-y-1 pl-3">
-                                {strategy.actionableSteps.map((step, i) => <li key={i}>{step}</li>)}
-                                </ul>
+                        {coachStrategies.investmentStrategies.map((strategy: InvestmentStrategyFromAICoach, index: number) => (
+                          <div key={index} className="p-3 rounded-md bg-card/50 border border-border/40 shadow-md space-y-3">
+                            <div>
+                                <h4 className="font-semibold text-primary-foreground">{strategy.name}</h4>
+                                <p className="text-xs text-muted-foreground mt-1">{strategy.description}</p>
+                                {strategy.optimalBuyPrice && <p className="text-xs text-muted-foreground mt-1"><span className="font-medium text-green-400">Optimal Buy:</span> {formatPrice(strategy.optimalBuyPrice)}</p>}
+                                {strategy.targetSellPrices && strategy.targetSellPrices.length > 0 && <p className="text-xs text-muted-foreground mt-1"><span className="font-medium text-red-400">Target Sells:</span> {strategy.targetSellPrices.map(p => formatPrice(p)).join(', ')}</p>}
+                                <p className="text-xs text-muted-foreground mt-2"><span className="font-medium text-accent/90">Reasoning:</span> {strategy.reasoning}</p>
+                                {strategy.tradingStyleAlignment && (
+                                    <p className="text-xs text-purple-400 mt-1 italic"><span className="font-medium">Style Alignment:</span> {strategy.tradingStyleAlignment}</p>
+                                )}
+                                <div className="mt-2">
+                                    <p className="text-xs font-medium text-primary-foreground/80 mb-1">Actionable Steps:</p>
+                                    <ul className="list-disc list-inside text-xs text-muted-foreground space-y-1 pl-3">
+                                    {strategy.actionableSteps.map((step, i) => <li key={i}>{step}</li>)}
+                                    </ul>
+                                </div>
+                                {strategy.stopLossSuggestion && <p className="text-xs text-muted-foreground mt-2"><ShieldCheck className="inline h-3.5 w-3.5 mr-1 text-yellow-500"/> <span className="font-medium">Stop-Loss:</span> {strategy.stopLossSuggestion}</p>}
                             </div>
-                             {strategy.stopLossSuggestion && <p className="text-xs text-muted-foreground mt-2"><ShieldCheck className="inline h-3.5 w-3.5 mr-1 text-yellow-500"/> <span className="font-medium">Stop-Loss:</span> {strategy.stopLossSuggestion}</p>}
+                             {/* Strategy Backtest Simulator Integration */}
+                            <StrategyBacktestSimulator 
+                                coinName={name} // Pass coinName from CoinCard props
+                                strategy={strategy}
+                            />
                           </div>
                         ))}
                          <div>
@@ -694,6 +708,11 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
                         <p className="text-xs text-center text-muted-foreground/70 pt-2">{coachStrategies.disclaimer}</p>
                       </div>
                     )}
+                     {!coachStrategies && !isLoadingCoach && !coachError && (
+                        <div className="text-center py-6 text-muted-foreground">
+                            Select a trading style or click "Get AI Strategies" if no strategies are loaded.
+                        </div>
+                     )}
                   </div>
                 </>
               )}
@@ -708,3 +727,4 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
   );
 }
 
+    
