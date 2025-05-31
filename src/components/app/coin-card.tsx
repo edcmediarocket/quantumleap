@@ -69,28 +69,51 @@ function isMemeFlipCoin(coinData: AnyCoinData, type: CoinCardProps['type']): coi
 
 const formatPrice = (price: number | undefined | null): string => {
   if (typeof price !== 'number' || isNaN(price)) return "$N/A";
-  if (price === 0) return "$0.00";
+  if (price === 0) return "$0.00"; // Exact zero
 
-  if (Math.abs(price) < 0.000001 && price !== 0) {
-    let priceStr = price.toFixed(15);
-    priceStr = priceStr.replace(/(\.\d*?[1-9])0+$|\.0+$/, '$1');
-    if (priceStr === "0.") priceStr = "0.00"; // Handle if it becomes "0."
+  const absPrice = Math.abs(price);
+
+  if (absPrice >= 1) {
+    // For numbers 1 and above, use toLocaleString for standard currency formatting.
+    return `$${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  } else { 
+    // For numbers between 0 (exclusive) and 1 (exclusive).
+    // Use toFixed with high precision to get a string without scientific notation.
+    let priceStr = price.toFixed(20); 
+
+    // Remove trailing zeros.
+    priceStr = priceStr.replace(/0+$/, "");
+
+    // If toFixed results in "X." (e.g., from 0.000...0 which became "0."), convert to "X".
+    if (priceStr.endsWith('.')) {
+      priceStr = priceStr.slice(0, -1);
+    }
+
+    // If the number is extremely small (e.g., 1e-22 became "0" after toFixed(20) and stripping), display as $0.00.
+    if (priceStr === "0") { 
+      return "$0.00";
+    }
+
+    const parts = priceStr.split('.');
+    if (parts.length === 2) { // Should always be true here if priceStr !== "0"
+      const integerPart = parts[0]; // Should be "0"
+      const decimalPart = parts[1];
+
+      if (integerPart === "0") {
+        if (absPrice >= 0.01 && decimalPart.length < 2) {
+          // For numbers like 0.5 (became "0.5" from "0.500..."), ensure two decimal places like "0.50".
+          // Applies to 0.1 through 0.99 range.
+          priceStr = `${integerPart}.${decimalPart.padEnd(2, '0')}`;
+        }
+        // For numbers like "0.123" or "0.00007", they remain as is (e.g., "0.123", "0.00007").
+        // decimalPart already has trailing zeros removed.
+      }
+    }
+    // If parts.length is 1 and priceStr is not "0", it's an unexpected state for absPrice < 1.
+    // However, the logic above should handle it.
+    
     return `$${priceStr}`;
   }
-  if (Math.abs(price) < 0.01) {
-    let priceStr = price.toFixed(8);
-    priceStr = priceStr.replace(/(\.\d*?[1-9])0+$|\.0+$/, '$1');
-    if (priceStr === "0.") priceStr = "0.00";
-    return `$${priceStr}`;
-  }
-  if (Math.abs(price) < 1) {
-    let priceStr = price.toFixed(4);
-    priceStr = priceStr.replace(/(\.\d*?[1-9])0+$|\.0+$/, '$1');
-    if (priceStr.endsWith('.')) priceStr += '00'; // e.g. 0.12. -> 0.1200
-    else if (priceStr.match(/\.\d$/)) priceStr += '0'; // e.g. 0.123 -> 0.1230
-    return `$${priceStr.replace(/0+$/, '').replace(/\.$/,'.00')}`;
-  }
-  return `$${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
 
 
