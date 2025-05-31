@@ -6,8 +6,8 @@ import React, { useEffect, useState } from 'react';
 import { getFirestore, doc, getDoc, setDoc, Firestore } from 'firebase/firestore';
 import { getAuth, Auth, User } from 'firebase/auth';
 import Toggle from '@/components/app/admin/Toggle'; // Updated import path
-import { initializeApp, FirebaseApp } from 'firebase/app';
-import { firebaseConfig } from '@/lib/firebaseConfig'; // Updated import path
+import { initializeApp, getApps, FirebaseApp } from 'firebase/app'; // Import getApps
+import { firebaseConfig } from '@/lib/firebaseConfig'; // Import the centralized config
 import { Button } from '@/components/ui/button'; // For potential sign-in/out button
 import { ShieldCheck, Settings } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
@@ -17,27 +17,38 @@ let app: FirebaseApp;
 let db: Firestore;
 let auth: Auth;
 
-try {
+// Ensure Firebase is initialized only once
+if (!getApps().length) {
+  try {
     app = initializeApp(firebaseConfig);
+  } catch (error) {
+    console.error("Firebase initialization error during initial setup:", error);
+    // Fallback or error display might be needed in a real app
+  }
+} else {
+  app = getApps()[0]; // Use existing app
+}
+
+// Initialize services if app is available
+if (app!) {
+  try {
     db = getFirestore(app);
     auth = getAuth(app);
-} catch (error) {
-    console.error("Firebase initialization error:", error);
-    // Handle cases where Firebase might already be initialized if this page re-renders,
-    // or provide a fallback if initialization fails.
-    // For this prototype, we'll log and let it proceed, but in prod, this needs robust handling.
+  } catch (error) {
+    console.error("Error initializing Firestore/Auth:", error);
+    // Handle cases where services might fail to initialize
+  }
 }
 
 
-// IMPORTANT: Replace with your actual Admin User's UID from Firebase Authentication
 const ADMIN_UID = 'qRJOtYXWqLbpQ1yx6qRdwSGwGyl1';
 
 interface FeatureToggles {
   darkMode: boolean;
   testUserMode: boolean;
   aiCoachLive: boolean;
-  whaleAlertsActive: boolean; // Renamed for clarity
-  predictiveAlertsActive: boolean; // Renamed for clarity
+  whaleAlertsActive: boolean; 
+  predictiveAlertsActive: boolean; 
   profitGoalCalculator: boolean;
   memeCoinFinder: boolean;
   // Add more feature toggles here as needed
@@ -59,11 +70,26 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     if (!auth) {
-        console.error("Firebase Auth is not initialized.");
-        setLoading(false);
-        toast({ title: "Error", description: "Firebase Auth not available.", variant: "destructive" });
-        return;
+        console.warn("Firebase Auth is not initialized yet for AdminDashboard effect.");
+        // Attempt to re-initialize if needed, or wait.
+        // For this prototype, we'll let it proceed, but this indicates an init order issue if it happens.
+        if (getApps().length && !auth) {
+            try {
+              auth = getAuth(getApps()[0]);
+              if (!db) db = getFirestore(getApps()[0]);
+            } catch (e) {
+                console.error("Delayed auth/db init error:", e);
+                setLoading(false);
+                toast({ title: "Error", description: "Firebase services not fully available.", variant: "destructive" });
+                return;
+            }
+        } else if (!getApps().length) {
+            setLoading(false);
+            toast({ title: "Error", description: "Firebase not initialized.", variant: "destructive" });
+            return;
+        }
     }
+
     const unsubscribe = auth.onAuthStateChanged(user => {
       setCurrentUser(user);
       if (user && user.uid === ADMIN_UID) {
@@ -73,22 +99,22 @@ const AdminDashboard = () => {
       }
     });
     return () => unsubscribe();
-  }, []);
+  }, [toast]); // Added toast to dependency array as it's used in the effect
 
   const fetchToggles = async (user: User) => {
     if (!user || user.uid !== ADMIN_UID || !db) {
+        toast({ title: "Access Issue", description: "Admin user not verified or DB unavailable for fetching toggles.", variant: "warning" });
         setLoading(false);
         return;
     }
     setLoading(true);
     try {
-      const docRef = doc(db, 'adminSettings', 'featureToggles'); // Changed path for clarity
+      const docRef = doc(db, 'adminSettings', 'featureToggles');
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         setFeatureToggles(prev => ({...prev, ...docSnap.data() as FeatureToggles}));
       } else {
-        // If no toggles exist in Firestore, create them with current defaults
-        await setDoc(docRef, featureToggles);
+        await setDoc(docRef, featureToggles); // Initialize with current defaults if not present
         toast({ title: "Admin Setup", description: "Initial feature toggles set in Firestore."});
       }
     } catch (error) {
@@ -101,13 +127,13 @@ const AdminDashboard = () => {
 
   const updateToggle = async (key: keyof FeatureToggles, value: boolean) => {
     if (!db) {
-        toast({ title: "Error", description: "Firestore not available.", variant: "destructive" });
+        toast({ title: "Error", description: "Firestore not available for updating toggle.", variant: "destructive" });
         return;
     }
     const updatedToggles = { ...featureToggles, [key]: value };
-    setFeatureToggles(updatedToggles);
+    setFeatureToggles(updatedToggles); // Optimistic update
     try {
-      await setDoc(doc(db, 'adminSettings', 'featureToggles'), updatedToggles);
+      await setDoc(doc(db, 'adminSettings', 'featureToggles'), updatedToggles, { merge: true }); // Use merge:true to avoid overwriting unrelated fields if any
       toast({ title: "Success", description: `${key.replace(/([A-Z])/g, ' $1').trim()} updated to ${value ? 'ON' : 'OFF'}.` });
     } catch (error) {
         console.error("Error updating toggle:", error);
@@ -128,12 +154,11 @@ const AdminDashboard = () => {
         <ShieldCheck className="w-16 h-16 text-destructive mb-4" />
         <h1 className="text-2xl font-bold text-destructive mb-2">Access Denied</h1>
         <p className="text-muted-foreground mb-6">You must be signed in as an administrator to view this page.</p>
-        {/* Basic Sign-in placeholder -  Replace with your actual FirebaseUI or custom sign-in flow */}
-        <Button onClick={() => alert("Implement Firebase Sign-In Flow Here")} variant="destructive">
-            Sign In as Admin
+        <Button onClick={() => toast({ title: "Action Required", description: "Please implement a Firebase Sign-In flow."})} variant="destructive">
+            Sign In as Admin (Placeholder)
         </Button>
          <p className="text-xs text-muted-foreground mt-4">
-            (Ensure you are using the admin account: UID starting with {ADMIN_UID.substring(0, 5)}...)
+            (Admin UID: {ADMIN_UID})
         </p>
     </div>
   );
@@ -145,7 +170,7 @@ const AdminDashboard = () => {
         <p className="text-muted-foreground">You do not have permission to view this page.</p>
         <p className="text-xs text-muted-foreground mt-1">Logged in as: {currentUser.email || currentUser.uid}</p>
          <p className="text-xs text-muted-foreground mt-4">
-            (Ensure you are using the admin account: UID starting with {ADMIN_UID.substring(0, 5)}...)
+            (Ensure you are using the admin account: {ADMIN_UID})
         </p>
     </div>
   );
@@ -181,4 +206,3 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
-
