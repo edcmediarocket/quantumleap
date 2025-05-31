@@ -11,6 +11,7 @@ import { firebaseConfig } from '@/lib/firebaseConfig';
 import { Button } from '@/components/ui/button';
 import { ShieldCheck, Settings } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
+import Link from 'next/link'; // Import Link
 
 let app: FirebaseApp;
 let db: Firestore;
@@ -26,14 +27,15 @@ if (!getApps().length) {
   app = getApps()[0];
 }
 
-if (app!) {
+if (app! && !auth) { // Check if auth is already initialized
   try {
-    db = getFirestore(app);
     auth = getAuth(app);
+    if (!db) db = getFirestore(app); // Initialize db if not already
   } catch (error) {
     console.error("Error initializing Firestore/Auth:", error);
   }
 }
+
 
 // Admin UID: qRJOtYXWqLbpQ1yx6qRdwSGwGyl1 (Associated with coreyenglish517@gmail.com as per user)
 const ADMIN_UID = 'qRJOtYXWqLbpQ1yx6qRdwSGwGyl1';
@@ -67,34 +69,40 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     if (!auth) {
-        console.warn("Firebase Auth is not initialized yet for AdminDashboard effect.");
-        if (getApps().length && !auth) {
+        console.warn("Firebase Auth is not initialized yet for AdminDashboard effect. Attempting re-init.");
+        if (getApps().length && !auth) { // Check again if auth got initialized by another part
             try {
               auth = getAuth(getApps()[0]);
-              if (!db) db = getFirestore(getApps()[0]);
+              if (!db && app) db = getFirestore(app); // Ensure app is defined before using
             } catch (e) {
                 console.error("Delayed auth/db init error:", e);
                 setLoading(false);
                 toast({ title: "Error", description: "Firebase services not fully available.", variant: "destructive" });
                 return;
             }
-        } else if (!getApps().length) {
+        } else if (!getApps().length) { // Firebase not initialized at all
             setLoading(false);
             toast({ title: "Error", description: "Firebase not initialized.", variant: "destructive" });
             return;
         }
+         if (!auth) { // Still not initialized after attempts
+            setLoading(false);
+            toast({ title: "Critical Error", description: "Firebase Auth could not be initialized.", variant: "destructive" });
+            return;
+        }
     }
+
 
     const unsubscribe = auth.onAuthStateChanged(user => {
       setCurrentUser(user);
       if (user && user.uid === ADMIN_UID) {
         fetchToggles(user);
       } else {
-        setLoading(false); // Set loading to false if not admin or no user
+        setLoading(false); 
       }
     });
     return () => unsubscribe();
-  }, [toast]);
+  }, [toast]); // Added toast to dependency array as it's used in effect
 
   const fetchToggles = async (user: User) => {
     if (!user || user.uid !== ADMIN_UID || !db) {
@@ -108,22 +116,18 @@ const AdminDashboard = () => {
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         const firestoreData = docSnap.data() || {};
-        // Ensure all keys are present, using defaults from initialFeatureTogglesState
-        // and overriding with data from Firestore.
         setFeatureToggles({
           ...initialFeatureTogglesState,
-          ...(firestoreData as Partial<FeatureToggles>), // Cast to allow partial data from FS
+          ...(firestoreData as Partial<FeatureToggles>), 
         });
       } else {
-        // Document doesn't exist, so initialize it in Firestore with the full default toggles
         await setDoc(docRef, initialFeatureTogglesState);
-        setFeatureToggles(initialFeatureTogglesState); // Set local state to defaults
+        setFeatureToggles(initialFeatureTogglesState); 
         toast({ title: "Admin Setup", description: "Initial feature toggles set in Firestore."});
       }
     } catch (error) {
         console.error("Error fetching toggles:", error);
         toast({ title: "Error", description: `Failed to fetch toggles: ${error instanceof Error ? error.message : "Unknown error"}`, variant: "destructive"});
-        // Fallback to initial defaults on error to ensure state consistency
         setFeatureToggles(initialFeatureTogglesState);
     } finally {
         setLoading(false);
@@ -135,18 +139,15 @@ const AdminDashboard = () => {
         toast({ title: "Error", description: "Firestore not available for updating toggle.", variant: "destructive" });
         return;
     }
-    // Optimistically update UI
     const newToggles = { ...featureToggles, [key]: value };
     setFeatureToggles(newToggles);
     
     try {
-      // Persist to Firestore
       await setDoc(doc(db, 'adminSettings', 'featureToggles'), newToggles, { merge: true });
       toast({ title: "Success", description: `${key.replace(/([A-Z])/g, ' $1').trim()} updated to ${value ? 'ON' : 'OFF'}.` });
     } catch (error) {
         console.error("Error updating toggle:", error);
         toast({ title: "Error", description: `Failed to update ${key}: ${error instanceof Error ? error.message : "Unknown error"}`, variant: "destructive"});
-        // Revert optimistic update on error
         setFeatureToggles(prev => ({ ...prev, [key]: !value }));
     }
   };
@@ -162,8 +163,8 @@ const AdminDashboard = () => {
         <ShieldCheck className="w-16 h-16 text-destructive mb-4" />
         <h1 className="text-2xl font-bold text-destructive mb-2">Access Denied</h1>
         <p className="text-muted-foreground mb-6">You must be signed in as an administrator to view this page.</p>
-        <Button onClick={() => toast({ title: "Action Required", description: "Please implement a Firebase Sign-In flow."})} variant="destructive">
-            Sign In as Admin (Placeholder)
+        <Button asChild variant="destructive">
+          <Link href="/signin">Sign In to Access Admin</Link>
         </Button>
          <p className="text-xs text-muted-foreground mt-4">
             (Admin UID: {ADMIN_UID})
@@ -178,7 +179,7 @@ const AdminDashboard = () => {
         <p className="text-muted-foreground">You do not have permission to view this page.</p>
         <p className="text-xs text-muted-foreground mt-1">Logged in as: {currentUser.email || currentUser.uid}</p>
          <p className="text-xs text-muted-foreground mt-4">
-            (Ensure you are using the admin account: {ADMIN_UID})
+            (Ensure you are using the admin account associated with UID: {ADMIN_UID})
         </p>
     </div>
   );
