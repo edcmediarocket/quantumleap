@@ -1,19 +1,117 @@
-import { Waves, Info } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
+// src/components/app/header.tsx
+"use client";
+
+import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { Waves, Info, LogIn, UserPlus, LogOut, UserCircle } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
+import { getAuth, onAuthStateChanged, signOut, Auth, User } from 'firebase/auth';
+import { firebaseConfig } from '@/lib/firebaseConfig';
+
+let app: FirebaseApp;
+let auth: Auth;
+
+if (!getApps().length) {
+  try {
+    app = initializeApp(firebaseConfig);
+  } catch (error) {
+    console.error("Firebase initialization error in AppHeader:", error);
+  }
+} else {
+  app = getApps()[0];
+}
+
+if (app! && !auth) {
+  try {
+    auth = getAuth(app);
+  } catch (error) {
+    console.error("Error initializing Firebase Auth in AppHeader:", error);
+  }
+}
 
 export function AppHeader() {
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [loadingAuth, setLoadingAuth] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (!auth) {
+      console.warn("Firebase Auth not initialized in AppHeader effect.");
+      setLoadingAuth(false);
+      return;
+    }
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+      setLoadingAuth(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleSignOut = async () => {
+    if (!auth) {
+      toast({ title: "Error", description: "Authentication service unavailable.", variant: "destructive" });
+      return;
+    }
+    try {
+      await signOut(auth);
+      toast({ title: "Signed Out", description: "You have been successfully signed out." });
+      // router.push('/'); // Optional: redirect to home or sign-in page
+    } catch (error) {
+      console.error("Sign out error:", error);
+      toast({ title: "Sign Out Error", description: "Failed to sign out. Please try again.", variant: "destructive" });
+    }
+  };
+
+  const handleSignUpClick = () => {
+    toast({
+      title: "Sign Up Coming Soon!",
+      description: "User registration will be available shortly. For now, admin access is pre-configured.",
+    });
+  };
+
   return (
-    <header className="py-8 text-center">
-      <div className="inline-flex items-center gap-3">
-        <Waves className="h-12 w-12 text-primary" />
-        <h1 className="text-5xl font-bold tracking-tight">
+    <header className="py-6 text-center relative">
+      <div className="absolute top-4 right-4 flex items-center gap-2">
+        {loadingAuth ? (
+          <Button variant="ghost" size="sm" disabled>Loading...</Button>
+        ) : currentUser ? (
+          <>
+            <span className="text-xs text-muted-foreground hidden sm:inline-block flex items-center gap-1">
+              <UserCircle className="h-4 w-4" />
+              {currentUser.email || 'Signed In'}
+            </span>
+            <Button variant="outline" size="sm" onClick={handleSignOut} className="text-primary border-primary hover:bg-primary/10 hover:text-primary">
+              <LogOut className="mr-1 h-4 w-4" />
+              Sign Out
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button variant="ghost" size="sm" asChild className="text-primary hover:bg-primary/10 hover:text-primary">
+              <Link href="/signin">
+                <LogIn className="mr-1 h-4 w-4" /> Sign In
+              </Link>
+            </Button>
+            <Button variant="default" size="sm" onClick={handleSignUpClick} className="bg-accent hover:bg-accent/90 text-accent-foreground">
+              <UserPlus className="mr-1 h-4 w-4" /> Sign Up
+            </Button>
+          </>
+        )}
+      </div>
+
+      <div className="inline-flex items-center gap-3 mt-4 sm:mt-0">
+        <Waves className="h-10 w-10 md:h-12 md:w-12 text-primary" />
+        <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
           <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
             Quantum Leap
           </span>
         </h1>
       </div>
-      <p className="mt-2 text-lg text-muted-foreground">
+      <p className="mt-2 text-md md:text-lg text-muted-foreground">
         AI-Powered Crypto Insights for Quick Profits
       </p>
       <Alert variant="default" className="mt-6 max-w-2xl mx-auto text-sm bg-card/30 border-primary/30 text-left">
