@@ -66,18 +66,25 @@ const formatPrice = (price: number | undefined | null): string => {
   if (typeof price !== 'number' || isNaN(price)) return "$N/A";
   if (price === 0) return "$0.00";
 
-  if (Math.abs(price) < 0.000001 && price !== 0) { // Increased precision for very small numbers
-    return `$${price.toExponential(2)}`;
-  }
-  if (Math.abs(price) < 0.01) {
-    let priceStr = price.toFixed(8); // Show up to 8 decimal places for small numbers
-    // Remove trailing zeros only if there's a decimal part, and keep at least two decimal places if it's like 0.1000
+  // For very small, non-zero numbers (abs(price) < 0.000001)
+  if (Math.abs(price) < 0.000001 && price !== 0) {
+    let priceStr = price.toFixed(15); // Use high precision
+    // Remove trailing zeros. E.g. "0.000000120000000" -> "0.00000012"
+    // If it becomes all zeros like "0.000000000000000", regex makes it "0"
     priceStr = priceStr.replace(/(\.\d*?[1-9])0+$|\.0+$/, '$1');
     return `$${priceStr}`;
   }
+  // For small numbers (0.000001 <= abs(price) < 0.01)
+  if (Math.abs(price) < 0.01) {
+    let priceStr = price.toFixed(8);
+    priceStr = priceStr.replace(/(\.\d*?[1-9])0+$|\.0+$/, '$1');
+    return `$${priceStr}`;
+  }
+  // For numbers (0.01 <= abs(price) < 1)
   if (Math.abs(price) < 1) {
     return `$${price.toFixed(4).replace(/0+$/, '').replace(/\.$/,'.00')}`;
   }
+  // For numbers >= 1
   return `$${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
 
