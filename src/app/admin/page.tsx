@@ -36,7 +36,7 @@ if (app! && !auth) {
   }
 }
 
-// Admin UID: qRJOtYXWqLbpQ1yx6qRdwSGwGyl1 (Associated with coreyenglish517@gmail.com as per user)
+// Admin UID: qRJOtYXWqLbpQ1yx6qRdwSGwGyl1 (Associated with coreyenglish517@gmail.com)
 const ADMIN_UID = 'qRJOtYXWqLbpQ1yx6qRdwSGwGyl1';
 
 export interface FeatureToggles {
@@ -141,10 +141,11 @@ const AdminDashboard = () => {
     
     try {
       await setDoc(doc(db, 'adminSettings', 'featureToggles'), newToggles, { merge: true });
-      toast({ title: "Success", description: `${key.replace(/([A-Z])/g, ' $1').trim()} updated to ${value ? 'ON' : 'OFF'}.` });
+      toast({ title: "Success", description: `${key.replace(/([A-Z])/g, ' $1').trim()} updated to ${value ? 'ON' : 'OFF'}. Changes are live.` });
     } catch (error) {
         console.error("Error updating toggle:", error);
         toast({ title: "Error", description: `Failed to update ${key}: ${error instanceof Error ? error.message : "Unknown error"}`, variant: "destructive"});
+        // Revert UI on error
         setFeatureToggles(prev => ({ ...prev, [key]: !value }));
     }
   };
@@ -188,7 +189,7 @@ const AdminDashboard = () => {
                 <Settings className="w-10 h-10" />
                 Admin Dashboard
             </h1>
-            <p className="text-muted-foreground mt-1">Manage Quantum Leap Features</p>
+            <p className="text-muted-foreground mt-1">Manage Quantum Leap Features (Changes save automatically & update live)</p>
         </header>
         <div className="max-w-2xl mx-auto mt-10 p-6 md:p-8 rounded-xl glass-effect shadow-2xl">
         <h2 className="text-2xl font-semibold mb-6 text-primary-foreground border-b border-border/50 pb-3">Feature Toggles</h2>
@@ -219,5 +220,3 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
-
-    

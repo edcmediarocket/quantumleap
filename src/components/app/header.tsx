@@ -4,7 +4,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Waves, Info, LogIn, UserPlus, LogOut, UserCircle } from 'lucide-react';
+import { Waves, Info, LogIn, UserPlus, LogOut, UserCircle, Settings } from 'lucide-react'; // Added Settings
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -14,6 +14,9 @@ import { firebaseConfig } from '@/lib/firebaseConfig';
 
 let app: FirebaseApp;
 let auth: Auth;
+
+// Admin UID: qRJOtYXWqLbpQ1yx6qRdwSGwGyl1 (Associated with coreyenglish517@gmail.com)
+const ADMIN_UID = 'qRJOtYXWqLbpQ1yx6qRdwSGwGyl1';
 
 if (!getApps().length) {
   try {
@@ -59,7 +62,6 @@ export function AppHeader() {
     try {
       await signOut(auth);
       toast({ title: "Signed Out", description: "You have been successfully signed out." });
-      // router.push('/'); // Optional: redirect to home or sign-in page
     } catch (error) {
       console.error("Sign out error:", error);
       toast({ title: "Sign Out Error", description: "Failed to sign out. Please try again.", variant: "destructive" });
@@ -73,17 +75,26 @@ export function AppHeader() {
     });
   };
 
+  const isAdmin = currentUser?.uid === ADMIN_UID;
+
   return (
     <header className="py-6 text-center relative">
-      <div className="absolute top-4 right-4 flex items-center gap-2">
+      <div className="absolute top-4 right-4 flex items-center gap-2 z-10">
         {loadingAuth ? (
-          <Button variant="ghost" size="sm" disabled>Loading...</Button>
+          <Button variant="ghost" size="sm" disabled>Loading Auth...</Button>
         ) : currentUser ? (
           <>
-            <span className="text-xs text-muted-foreground hidden sm:inline-block flex items-center gap-1">
+            <span className="text-xs text-muted-foreground hidden sm:inline-flex items-center gap-1">
               <UserCircle className="h-4 w-4" />
               {currentUser.email || 'Signed In'}
             </span>
+            {isAdmin && (
+              <Button variant="ghost" size="sm" asChild className="text-primary hover:bg-primary/10 hover:text-primary">
+                <Link href="/admin">
+                  <Settings className="mr-1 h-4 w-4" /> Admin
+                </Link>
+              </Button>
+            )}
             <Button variant="outline" size="sm" onClick={handleSignOut} className="text-primary border-primary hover:bg-primary/10 hover:text-primary">
               <LogOut className="mr-1 h-4 w-4" />
               Sign Out

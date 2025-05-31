@@ -3,10 +3,10 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { getFirestore, doc, getDoc, Firestore } from 'firebase/firestore';
+import { getFirestore, doc, Firestore, onSnapshot } from 'firebase/firestore'; // Added onSnapshot
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import { firebaseConfig } from '@/lib/firebaseConfig';
-import type { FeatureToggles } from '@/app/admin/page'; // Import the interface
+import type { FeatureToggles } from '@/app/admin/page';
 
 let app: FirebaseApp;
 let db: Firestore;
@@ -29,8 +29,6 @@ if (app! && !db) {
   }
 }
 
-// Default state for feature toggles, mirrors the one in admin/page.tsx
-// This is used as a fallback if Firestore data is unavailable or not yet loaded.
 const defaultFeatureTogglesState: FeatureToggles = {
   darkMode: true,
   testUserMode: false,
@@ -48,46 +46,40 @@ export function useFeatureToggles() {
 
   useEffect(() => {
     if (!db) {
-      setErrorToggles("Firestore is not initialized. Feature toggles cannot be loaded.");
+      setErrorToggles("Firestore is not initialized. Feature toggles cannot be loaded in real-time.");
       setLoadingToggles(false);
-      setToggles(defaultFeatureTogglesState); // Fallback to defaults
+      setToggles(defaultFeatureTogglesState);
       return;
     }
 
-    const fetchTogglesFromFirestore = async () => {
-      setLoadingToggles(true);
-      setErrorToggles(null);
-      try {
-        const docRef = doc(db, 'adminSettings', 'featureToggles');
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          const firestoreData = docSnap.data() as Partial<FeatureToggles>;
-          // Merge with defaults to ensure all keys are present
-          setToggles(prev => ({ ...defaultFeatureTogglesState, ...prev, ...firestoreData }));
-        } else {
-          // If no settings in Firestore, use defaults. Admin page handles creation.
-          setToggles(defaultFeatureTogglesState);
-          console.warn("Feature toggles document not found in Firestore. Using default settings.");
-        }
-      } catch (error) {
-        console.error("Error fetching feature toggles:", error);
-        setErrorToggles(error instanceof Error ? error.message : "Failed to load feature toggles.");
-        setToggles(defaultFeatureTogglesState); // Fallback to defaults on error
-      } finally {
-        setLoadingToggles(false);
+    const docRef = doc(db, 'adminSettings', 'featureToggles');
+    
+    // Set initial loading state
+    setLoadingToggles(true);
+    setErrorToggles(null);
+
+    const unsubscribe = onSnapshot(docRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const firestoreData = docSnap.data() as Partial<FeatureToggles>;
+        setToggles(prev => ({ ...defaultFeatureTogglesState, ...prev, ...firestoreData }));
+      } else {
+        setToggles(defaultFeatureTogglesState);
+        console.warn("Feature toggles document not found in Firestore. Using default settings. Admin page should create this document.");
+        // Optionally, you could try to create the document here with defaults if it's critical
+        // import { setDoc } from 'firebase/firestore';
+        // setDoc(docRef, defaultFeatureTogglesState).catch(err => console.error("Failed to create default toggles", err));
       }
-    };
+      setLoadingToggles(false); // Set loading to false after first successful snapshot or if doc doesn't exist
+    }, (error) => {
+      console.error("Error listening to feature toggles:", error);
+      setErrorToggles(error instanceof Error ? error.message : "Failed to load feature toggles in real-time.");
+      setToggles(defaultFeatureTogglesState); // Fallback to defaults on error
+      setLoadingToggles(false);
+    });
 
-    fetchTogglesFromFirestore();
+    return () => unsubscribe(); // Cleanup listener on unmount
 
-    // Note: Real-time listener (onSnapshot) could be used here if toggles need to update live
-    // without a page refresh, but for admin-controlled toggles, fetching once is often sufficient.
-    // const unsubscribe = onSnapshot(doc(db, 'adminSettings', 'featureToggles'), (docSnap) => { ... });
-    // return () => unsubscribe?.();
-
-  }, []);
+  }, []); // Empty dependency array ensures this runs once on mount and cleans up on unmount
 
   return { toggles, loadingToggles, errorToggles };
 }
-
-    
