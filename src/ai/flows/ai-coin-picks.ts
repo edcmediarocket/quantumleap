@@ -14,39 +14,38 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const PriceRangeSchema = z.object({
-  low: z.number().describe('Lower price bound.'),
-  high: z.number().describe('Upper price bound.'),
+  low: z.number(),
+  high: z.number(),
 });
 
 const AiCoinPicksInputSchema = z.object({
   profitTarget: z
-    .number()
-    .describe('Desired profit in USD.'),
-  strategy: z.enum(['short-term', 'swing', 'scalp']).default('short-term').describe('Trading strategy.'),
-  riskProfile: z.enum(['cautious', 'balanced', 'aggressive']).default('balanced').describe('User risk profile.'),
+    .number(),
+  strategy: z.enum(['short-term', 'swing', 'scalp']).default('short-term'),
+  riskProfile: z.enum(['cautious', 'balanced', 'aggressive']).default('balanced'),
 });
 export type AiCoinPicksInput = z.infer<typeof AiCoinPicksInputSchema>;
 
 const AiCoinPickSchema = z.object({
-  coin: z.string().describe('Coin name and ticker (e.g., "Bitcoin (BTC)").'),
-  predictedGainPercentage: z.number().describe('Predicted percentage gain.'),
-  entryPriceRange: PriceRangeSchema.describe('Recommended entry price range (low/high).'),
-  exitPriceRange: PriceRangeSchema.describe('Recommended exit price range (low/high).'),
-  optimalBuyPrice: z.number().optional().describe('Optimal buy price (optional).'),
-  targetSellPrices: z.array(z.number()).optional().describe('Target sell prices (optional array).'),
-  confidenceMeter: z.number().describe('Confidence score (0.0 to 1.0).'), 
-  rationale: z.string().describe('Rationale: TA, FA, sentiment, catalysts, risks. Include "Why This Coin?" & stop-loss.'),
-  estimatedDuration: z.string().describe('Estimated duration to profit (e.g., "1 day", "3 days").'),
-  riskRoiGauge: z.number().describe('Risk/ROI score (0.0 to 1.0).'),
-  riskMatchScore: z.number().describe('Risk profile alignment score (0.0 to 1.0).'), // Removed .min(0).max(1)
-  predictedEntryWindowDescription: z.string().optional().describe('AI description of ideal entry window/conditions (optional).'),
-  predictedExitWindowDescription: z.string().optional().describe('AI description of ideal exit window/conditions/signals (optional).'),
-  simulatedEntryCountdownText: z.string().optional().describe('Entry countdown text (e.g., "approx. 30m", optional).'),
-  simulatedPostBuyDropAlertText: z.string().optional().describe('Text for critical drop alert post-entry (optional).'),
+  coin: z.string(),
+  predictedGainPercentage: z.number(),
+  entryPriceRange: PriceRangeSchema,
+  exitPriceRange: PriceRangeSchema,
+  optimalBuyPrice: z.number().optional(),
+  targetSellPrices: z.array(z.number()).optional(),
+  confidenceMeter: z.number(), 
+  rationale: z.string(),
+  estimatedDuration: z.string(),
+  riskRoiGauge: z.number(),
+  riskMatchScore: z.number(),
+  predictedEntryWindowDescription: z.string().optional(),
+  predictedExitWindowDescription: z.string().optional(),
+  simulatedEntryCountdownText: z.string().optional(),
+  simulatedPostBuyDropAlertText: z.string().optional(),
 });
 
 const AiCoinPicksOutputSchema = z.object({
-  picks: z.array(AiCoinPickSchema).min(1).max(5).describe('Array of 1-5 recommended coin picks.'),
+  picks: z.array(AiCoinPickSchema),
 });
 
 export type AiCoinPicksOutput = z.infer<typeof AiCoinPicksOutputSchema>;
@@ -82,16 +81,17 @@ Response format guidance for the AI (internal thought process, map this to AiCoi
 -   💡 Why: [3 bullet points based on the above systems]
 -   📈 Entry: $[price range]
 -   🎯 Target: $[price or %]
+  (Note: Price ranges for entry and exit should be objects with 'low' and 'high' numeric values. E.g., entryPriceRange: {low: 100, high: 102})
 -   🛑 Stop Loss: $[value or %]
--   🧠 Risk Level: [Correlate to user's '{{{riskProfile}}}' and your 1-5 scale]
+-   🧠 Risk Level: [Correlate to user's '{{{riskProfile}}}' and your 1-5 scale. Map this general risk assessment to the 'riskMatchScore' and 'riskRoiGauge' fields, which are numbers from 0.0 to 1.0.]
 -   ⏱️ Exit Window: [1D / 3D / 7D]
 
 IMPORTANT: Your output MUST strictly follow the AiCoinPicksOutputSchema structure provided by the system.
 Map your findings to the schema as follows:
 -   'coin': (string) Use the coin name and ticker, e.g., "Bitcoin (BTC)".
 -   'predictedGainPercentage': (number) The target percentage gain from your "Target" field. If your target is a price, calculate the percentage gain from your entry price.
--   'entryPriceRange': (object with 'low':number, 'high':number) Based on your "Entry: $[price range]". If it's a single price, set low and high to be very close or equal.
--   'exitPriceRange': (object with 'low':number, 'high':number) Based on your "Target: $[price or %]". This should represent the price range where the target gain is achieved.
+-   'entryPriceRange': (object with 'low':number, 'high':number) Based on your "Entry: $[price range]". If it's a single price, set low and high to be very close or equal. Must be numeric.
+-   'exitPriceRange': (object with 'low':number, 'high':number) Based on your "Target: $[price or %]". This should represent the price range where the target gain is achieved. Must be numeric.
 -   'optimalBuyPrice': (number, optional) If your analysis yields a very specific optimal entry price, provide it here.
 -   'targetSellPrices': (array of numbers, optional) If you have multiple price targets for profit-taking, list them here.
 -   'confidenceMeter': (number, 0.0 to 1.0) Reflect your overall confidence in this pick, considering your Risk Layering assessment. A 1-5 risk scale (5=best) can be mapped (e.g., 5 -> 0.9-1.0, 4 -> 0.7-0.8, etc.).
@@ -101,11 +101,12 @@ Map your findings to the schema as follows:
 -   'riskMatchScore': (number, 0.0 to 1.0) How well this pick aligns with the user's input 'riskProfile' ('{{{riskProfile}}}'). A high score means good alignment. This should be heavily influenced by your "Risk Layering" step. Ensure this value is between 0.0 and 1.0.
 -   'predictedEntryWindowDescription': (string, optional) Elaborate on ideal entry conditions or timing from your Cycle Timing Engine.
 -   'predictedExitWindowDescription': (string, optional) Elaborate on ideal exit conditions or signals from your Cycle Timing Engine or Profit Strategy Design.
--   'simulatedEntryCountdownText': (string, optional) If applicable from Cycle Timing.
--   'simulatedPostBuyDropAlertText': (string, optional) If applicable for risk management.
+-   'simulatedEntryCountdownText': (string, optional) If applicable from Cycle Timing. (e.g., "approx. 30m", "around 1 hour").
+-   'simulatedPostBuyDropAlertText': (string, optional) If applicable for risk management. (e.g., "If {{coin}} drops 10% post-entry, consider cutting losses!").
 
 Stay focused on **fast flips**, **early entry**, and **low cap gems** trending up. Your tone is confident, data-driven, and profit-hungry.
-Your mission: Help users outperform the market with precision, not guesswork. Provide 1-5 picks.
+Your mission: Help users outperform the market with precision, not guesswork. Provide 1-5 picks. If no picks meet the criteria, return an empty array for 'picks'.
+Ensure all numeric fields in the output are actual numbers, not strings.
 `,
 });
 
@@ -118,14 +119,20 @@ const aiCoinPicksFlow = ai.defineFlow(
   async input => {
     const {output} = await prompt(input);
     if (!output || !output.picks) {
-        throw new Error("AI failed to generate valid coin picks.");
+        // If AI returns an empty object or picks is not an array, treat as no valid picks.
+        // This also handles cases where AI might return an empty picks array if no suitable coins found.
+        return { picks: [] };
     }
     output.picks.forEach(pick => {
-      if (pick.confidenceMeter === undefined) pick.confidenceMeter = 0.5;
-      if (pick.riskRoiGauge === undefined) pick.riskRoiGauge = 0.5;
+      if (pick.confidenceMeter === undefined) pick.confidenceMeter = 0.5; // Default if missing
+      if (pick.riskRoiGauge === undefined) pick.riskRoiGauge = 0.5; // Default if missing
       if (pick.riskMatchScore === undefined) pick.riskMatchScore = 0.5; // Default if missing
-      if (pick.riskMatchScore < 0) pick.riskMatchScore = 0; // Ensure within bounds post-hoc
-      if (pick.riskMatchScore > 1) pick.riskMatchScore = 1; // Ensure within bounds post-hoc
+      
+      // Post-hoc validation for scores, ensuring they are within 0-1 range
+      pick.confidenceMeter = Math.max(0, Math.min(1, pick.confidenceMeter));
+      pick.riskRoiGauge = Math.max(0, Math.min(1, pick.riskRoiGauge));
+      pick.riskMatchScore = Math.max(0, Math.min(1, pick.riskMatchScore));
+
       if (!pick.rationale.includes("### Why This Coin?")) {
         pick.rationale = "### Why This Coin?\n- AI analysis suggests potential.\n- Market conditions appear favorable for this type of asset.\n- Monitor closely.\n" + pick.rationale;
       }
@@ -133,7 +140,7 @@ const aiCoinPicksFlow = ai.defineFlow(
         pick.rationale += "\nSuggested Stop Loss: Consider a 5-10% stop loss or adjust based on personal risk tolerance and market volatility.";
       }
     });
-    return output!;
+    return output;
   }
 );
 
