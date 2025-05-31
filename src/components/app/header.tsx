@@ -95,7 +95,7 @@ export function AppHeader() {
                 </Link>
               </Button>
             )}
-            <Button variant="outline" size="sm" onClick={handleSignOut} className="text-destructive border-destructive hover:bg-destructive/10 hover:text-destructive-foreground">
+            <Button variant="outline" size="sm" onClick={handleSignOut} className="text-destructive border-destructive hover:bg-destructive/10 hover:text-destructive">
               <LogOut className="mr-1 h-4 w-4" />
               Sign Out
             </Button>
@@ -114,7 +114,8 @@ export function AppHeader() {
         )}
       </div>
 
-      <div className="inline-flex items-center gap-3 mt-4 sm:mt-0">
+      {/* Main Title Content - Removed mt-4 sm:mt-0 for better alignment */}
+      <div className="inline-flex items-center gap-3">
         <Waves className="h-10 w-10 md:h-12 md:w-12 text-primary" />
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
           <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
