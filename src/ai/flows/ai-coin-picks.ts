@@ -23,30 +23,30 @@ const AiCoinPicksInputSchema = z.object({
     .number()
     .describe('Desired profit in USD.'),
   strategy: z.enum(['short-term', 'swing', 'scalp']).default('short-term').describe('Trading strategy.'),
-  riskProfile: z.enum(['cautious', 'balanced', 'aggressive']).default('balanced').describe('User risk profile (cautious, balanced, aggressive).'),
+  riskProfile: z.enum(['cautious', 'balanced', 'aggressive']).default('balanced').describe('User risk profile.'),
 });
 export type AiCoinPicksInput = z.infer<typeof AiCoinPicksInputSchema>;
 
 const AiCoinPickSchema = z.object({
-  coin: z.string().describe('Coin ticker.'),
-  predictedGainPercentage: z.number().describe('Predicted % gain.'),
-  entryPriceRange: PriceRangeSchema.describe('Entry price (low/high).'),
-  exitPriceRange: PriceRangeSchema.describe('Exit price (low/high).'),
-  optimalBuyPrice: z.number().optional().describe('Optimal buy price (opt).'),
-  targetSellPrices: z.array(z.number()).optional().describe('Target sell prices (opt array).'),
-  confidenceMeter: z.number().describe('Confidence score (0-1).'), 
-  rationale: z.string().describe('Advanced rationale: TA, FA, sentiment, whale/social, catalysts, risks. Profit focus. Tailor to risk profile. Should include "Why This Coin?" bullet points and stop-loss information.'),
-  estimatedDuration: z.string().describe('Estimated duration to profit (e.g., "1 day", "3 days", "7 days").'),
-  riskRoiGauge: z.number().describe('Risk/ROI score (0-1).'),
-  riskMatchScore: z.number().min(0).max(1).describe('Score (0-1) how well this pick aligns with user risk profile. Higher means better alignment.'),
-  predictedEntryWindowDescription: z.string().optional().describe('AI textual description of ideal entry window/conditions.'),
-  predictedExitWindowDescription: z.string().optional().describe('AI textual description of ideal exit window/conditions/signals.'),
-  simulatedEntryCountdownText: z.string().optional().describe('Textual suggestion for a countdown, e.g., "approx. 30 minutes", "around 1 hour".'),
-  simulatedPostBuyDropAlertText: z.string().optional().describe('Text for a hypothetical critical drop alert post-entry.'),
+  coin: z.string().describe('Coin name and ticker (e.g., "Bitcoin (BTC)").'),
+  predictedGainPercentage: z.number().describe('Predicted percentage gain.'),
+  entryPriceRange: PriceRangeSchema.describe('Recommended entry price range (low/high).'),
+  exitPriceRange: PriceRangeSchema.describe('Recommended exit price range (low/high).'),
+  optimalBuyPrice: z.number().optional().describe('Optimal buy price (optional).'),
+  targetSellPrices: z.array(z.number()).optional().describe('Target sell prices (optional array).'),
+  confidenceMeter: z.number().describe('Confidence score (0.0 to 1.0).'), 
+  rationale: z.string().describe('Rationale: TA, FA, sentiment, catalysts, risks. Include "Why This Coin?" & stop-loss.'),
+  estimatedDuration: z.string().describe('Estimated duration to profit (e.g., "1 day", "3 days").'),
+  riskRoiGauge: z.number().describe('Risk/ROI score (0.0 to 1.0).'),
+  riskMatchScore: z.number().describe('Risk profile alignment score (0.0 to 1.0).'), // Removed .min(0).max(1)
+  predictedEntryWindowDescription: z.string().optional().describe('AI description of ideal entry window/conditions (optional).'),
+  predictedExitWindowDescription: z.string().optional().describe('AI description of ideal exit window/conditions/signals (optional).'),
+  simulatedEntryCountdownText: z.string().optional().describe('Entry countdown text (e.g., "approx. 30m", optional).'),
+  simulatedPostBuyDropAlertText: z.string().optional().describe('Text for critical drop alert post-entry (optional).'),
 });
 
 const AiCoinPicksOutputSchema = z.object({
-  picks: z.array(AiCoinPickSchema).min(1).max(5).describe('An array of 1 to 5 recommended coin picks.'),
+  picks: z.array(AiCoinPickSchema).min(1).max(5).describe('Array of 1-5 recommended coin picks.'),
 });
 
 export type AiCoinPicksOutput = z.infer<typeof AiCoinPicksOutputSchema>;
@@ -98,7 +98,7 @@ Map your findings to the schema as follows:
 -   'rationale': (string) THIS IS CRITICAL. Start with "### Why This Coin?\\n". Then, list your 3 bullet points. After the bullet points, add a new line and clearly state "Suggested Stop Loss: [Your stop loss value or %]". Then, you can elaborate further on insights from Volatility Optimization, Sentiment Intelligence, Whale Tracking, Narrative Pulse, and Cycle Timing engines to justify the pick.
 -   'estimatedDuration': (string) Use your "Exit Window" (e.g., "1D", "3D", "7D") and format it like "1 day", "3 days", "7 days".
 -   'riskRoiGauge': (number, 0.0 to 1.0) Reflect your risk-reward assessment (e.g., from Volatility Optimization's risk-reward ratio). A higher score may indicate higher reward potential but possibly higher risk.
--   'riskMatchScore': (number, 0.0 to 1.0) How well this pick aligns with the user's input 'riskProfile' ('{{{riskProfile}}}'). A high score means good alignment. This should be heavily influenced by your "Risk Layering" step.
+-   'riskMatchScore': (number, 0.0 to 1.0) How well this pick aligns with the user's input 'riskProfile' ('{{{riskProfile}}}'). A high score means good alignment. This should be heavily influenced by your "Risk Layering" step. Ensure this value is between 0.0 and 1.0.
 -   'predictedEntryWindowDescription': (string, optional) Elaborate on ideal entry conditions or timing from your Cycle Timing Engine.
 -   'predictedExitWindowDescription': (string, optional) Elaborate on ideal exit conditions or signals from your Cycle Timing Engine or Profit Strategy Design.
 -   'simulatedEntryCountdownText': (string, optional) If applicable from Cycle Timing.
@@ -124,6 +124,8 @@ const aiCoinPicksFlow = ai.defineFlow(
       if (pick.confidenceMeter === undefined) pick.confidenceMeter = 0.5;
       if (pick.riskRoiGauge === undefined) pick.riskRoiGauge = 0.5;
       if (pick.riskMatchScore === undefined) pick.riskMatchScore = 0.5; // Default if missing
+      if (pick.riskMatchScore < 0) pick.riskMatchScore = 0; // Ensure within bounds post-hoc
+      if (pick.riskMatchScore > 1) pick.riskMatchScore = 1; // Ensure within bounds post-hoc
       if (!pick.rationale.includes("### Why This Coin?")) {
         pick.rationale = "### Why This Coin?\n- AI analysis suggests potential.\n- Market conditions appear favorable for this type of asset.\n- Monitor closely.\n" + pick.rationale;
       }
@@ -134,3 +136,4 @@ const aiCoinPicksFlow = ai.defineFlow(
     return output!;
   }
 );
+
