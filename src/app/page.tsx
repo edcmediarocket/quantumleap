@@ -10,11 +10,12 @@ import { QuickProfitGoalForm } from "@/components/app/forms/quick-profit-goal-fo
 import { MemeCoinQuickFlipForm } from "@/components/app/forms/meme-coin-quick-flip-form";
 import { AiCoachAvatarPanel } from "@/components/app/ai-coach-avatar-panel";
 import { HowItWorksPanel } from "@/components/app/how-it-works-panel";
-import { CryptoTerminologyPanel } from "@/components/app/crypto-terminology-panel"; // Import new component
+import { CryptoTerminologyPanel } from "@/components/app/crypto-terminology-panel";
+import { PredictiveBreakoutAlertsPanel } from "@/components/app/predictive-breakout-alerts-panel"; // Import new component
 import { LoadingDots } from "@/components/ui/loading-dots";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Terminal, TrendingUpIcon, BarChartIcon, RocketIcon, AlertTriangle } from "lucide-react";
+import { Terminal, TrendingUpIcon, BarChartIcon, RocketIcon, AlertTriangle, Zap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -192,6 +193,8 @@ export default function QuantumLeapPage() {
             </Alert>
         )}
       </div>
+      
+      <PredictiveBreakoutAlertsPanel /> {/* Add the new panel here */}
 
       <main className="mt-6">
         <Tabs defaultValue="aiPicks" className="w-full">
