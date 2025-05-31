@@ -4,10 +4,11 @@
 // IMPORTANT: Replace these placeholder values with your actual Firebase project configuration.
 // These should ideally be stored in environment variables for security.
 export const firebaseConfig = {
-  apiKey: "YOUR_API_KEY", // Replace with your actual API key
-  authDomain: "YOUR_AUTH_DOMAIN", // Replace with your actual auth domain
-  projectId: "YOUR_PROJECT_ID", // Replace with your actual project ID
-  storageBucket: "YOUR_STORAGE_BUCKET", // Replace with your actual storage bucket
-  messagingSenderId: "YOUR_SENDER_ID", // Replace with your actual messaging sender ID
-  appId: "YOUR_APP_ID", // Replace with your actual app ID
+  apiKey: "AIzaSyD_RGlNuK387TdUQoHwT7vTkeikoCeeK28",
+  authDomain: "quantum-leap-c85yq.firebaseapp.com",
+  projectId: "quantum-leap-c85yq",
+  storageBucket: "quantum-leap-c85yq.appspot.com", // Corrected common pattern for storage bucket
+  messagingSenderId: "731435918508",
+  appId: "1:731435918508:web:4a334e8871c98a34082b09"
 };
+
