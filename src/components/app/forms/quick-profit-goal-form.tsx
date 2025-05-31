@@ -73,14 +73,31 @@ export function QuickProfitGoalForm({ onSubmit, isLoading }: QuickProfitGoalForm
         <FormField
           control={form.control}
           name="investmentAmount"
-          render={({ field }) => (
+          render={({ field }) => ( // field includes name, value, onChange, onBlur, ref
             <FormItem>
               <FormLabel className="flex items-center">
                 <DollarSign className="mr-2 h-4 w-4 text-accent" />
                 Your Investment Amount (USD) <span className="text-xs text-muted-foreground ml-1">(Optional)</span>
               </FormLabel>
               <FormControl>
-                <Input type="number" placeholder="e.g., 1000" {...field} onChange={(e) => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
+                <Input
+                  type="number"
+                  placeholder="e.g., 1000"
+                  // Spread field props like name, onBlur, ref
+                  name={field.name}
+                  onBlur={field.onBlur}
+                  ref={field.ref}
+                  // Explicitly set value to an empty string if field.value is undefined/null
+                  // This makes the Input component controlled from the start.
+                  value={field.value ?? ''}
+                  // Use a custom onChange to handle string input and update react-hook-form state
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    // For react-hook-form, we want to store 'undefined' if the input is empty,
+                    // or the parsed number.
+                    field.onChange(val === '' ? undefined : parseFloat(val));
+                  }}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
