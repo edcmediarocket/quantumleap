@@ -182,6 +182,8 @@ export default function QuantumLeapPage() {
   return (
     <div className="container mx-auto min-h-screen px-4 py-8 selection:bg-primary/30 selection:text-primary-foreground">
       <AppHeader />
+      
+      <PredictiveBreakoutAlertsPanel />
 
       <div className="my-8">
         <AiCoachAvatarPanel tipData={coachQuickTip} isLoading={isLoadingCoachQuickTip} />
@@ -194,7 +196,6 @@ export default function QuantumLeapPage() {
         )}
       </div>
       
-      <PredictiveBreakoutAlertsPanel /> {/* Add the new panel here */}
 
       <main className="mt-6">
         <Tabs defaultValue="aiPicks" className="w-full">
