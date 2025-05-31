@@ -31,7 +31,7 @@ if (!getApps().length) {
 if (app! && !auth) {
   try {
     auth = getAuth(app);
-  } catch (error) {
+  } catch (error) { // Added missing brace for catch block
     console.error("Error initializing Firebase Auth in AppHeader:", error);
   }
 }
@@ -79,7 +79,8 @@ export function AppHeader() {
 
   return (
     <header className="py-6 text-center relative">
-      <div className="absolute top-4 right-4 flex items-center gap-2 z-10">
+      {/* Adjusted top-2 from top-4 to move buttons further up */}
+      <div className="absolute top-2 right-4 flex items-center gap-2 z-10">
         {loadingAuth ? (
           <Button variant="ghost" size="sm" disabled>Loading Auth...</Button>
         ) : currentUser ? (
@@ -114,7 +115,6 @@ export function AppHeader() {
         )}
       </div>
 
-      {/* Main Title Content - Removed mt-4 sm:mt-0 for better alignment */}
       <div className="inline-flex items-center gap-3">
         <Waves className="h-10 w-10 md:h-12 md:w-12 text-primary" />
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
