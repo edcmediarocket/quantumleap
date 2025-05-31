@@ -35,6 +35,7 @@ if (app!) {
   }
 }
 
+// Admin UID: qRJOtYXWqLbpQ1yx6qRdwSGwGyl1 (Associated with coreyenglish517@gmail.com as per user)
 const ADMIN_UID = 'qRJOtYXWqLbpQ1yx6qRdwSGwGyl1';
 
 interface FeatureToggles {
