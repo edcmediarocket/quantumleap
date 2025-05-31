@@ -31,7 +31,7 @@ if (!getApps().length) {
 if (app! && !auth) {
   try {
     auth = getAuth(app);
-  } catch (error) { // Added missing brace for catch block
+  } catch (error) {
     console.error("Error initializing Firebase Auth in AppHeader:", error);
   }
 }
@@ -78,9 +78,9 @@ export function AppHeader() {
   const isAdmin = currentUser?.uid === ADMIN_UID;
 
   return (
-    <header className="py-6 text-center relative">
-      {/* Adjusted top-2 from top-4 to move buttons further up */}
-      <div className="absolute top-2 right-4 flex items-center gap-2 z-10">
+    <header className="relative"> {/* Removed py-6 and text-center from here */}
+      {/* Auth buttons container - positioned absolutely to the header */}
+      <div className="absolute top-4 right-4 flex items-center gap-2 z-10">
         {loadingAuth ? (
           <Button variant="ghost" size="sm" disabled>Loading Auth...</Button>
         ) : currentUser ? (
@@ -115,17 +115,22 @@ export function AppHeader() {
         )}
       </div>
 
-      <div className="inline-flex items-center gap-3">
-        <Waves className="h-10 w-10 md:h-12 md:w-12 text-primary" />
-        <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
-          <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            Quantum Leap
-          </span>
-        </h1>
+      {/* Main title and subtitle content - now with its own vertical padding and centering */}
+      <div className="text-center py-6">
+        <div className="inline-flex items-center gap-3">
+          <Waves className="h-10 w-10 md:h-12 md:w-12 text-primary" />
+          <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
+            <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              Quantum Leap
+            </span>
+          </h1>
+        </div>
+        <p className="mt-2 text-md md:text-lg text-muted-foreground">
+          AI-Powered Crypto Insights for Quick Profits
+        </p>
       </div>
-      <p className="mt-2 text-md md:text-lg text-muted-foreground">
-        AI-Powered Crypto Insights for Quick Profits
-      </p>
+      
+      {/* Disclaimer - remains part of the main flow, centered */}
       <Alert variant="default" className="mt-6 max-w-2xl mx-auto text-sm bg-card/30 border-primary/30 text-left">
         <Info className="h-5 w-5 text-primary" />
         <AlertTitle className="text-primary/90">Important Disclaimer</AlertTitle>
