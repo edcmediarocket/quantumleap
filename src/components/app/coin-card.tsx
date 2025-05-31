@@ -31,7 +31,7 @@ import { TrendingUp, HelpCircle, Gauge, Target, Clock, DollarSign, Info, Brain, 
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
-import type { AiCoinPicksOutput } from "@/ai/flows/ai-coin-picks";
+import type { AiCoinPicksOutput, AiCoinPicksInput } from "@/ai/flows/ai-coin-picks"; // Added AiCoinPicksInput
 import type { RecommendCoinsForProfitTargetOutput } from "@/ai/flows/quick-profit-goal";
 import type { MemeCoinQuickFlipOutput } from "@/ai/flows/meme-coin-quick-flip";
 import { aiCoachStrategies, type AiCoachStrategiesInput, type AiCoachStrategiesOutput } from "@/ai/flows/ai-coach-strategies";
@@ -46,6 +46,7 @@ type InvestmentStrategyFromAICoach = AiCoachStrategiesOutput['investmentStrategi
 type AnyCoinData = AiPick | ProfitGoalCoin | MemeFlipCoin;
 type PriceRange = { low: number; high: number };
 type TradingStyle = 'short-term' | 'swing' | 'scalp';
+type RiskProfile = AiCoinPicksInput['riskProfile']; // Get RiskProfile type from AiCoinPicksInput
 
 interface CoinCardProps {
   coinData: AnyCoinData;
@@ -53,6 +54,7 @@ interface CoinCardProps {
   profitTarget?: number;
   riskTolerance?: 'low' | 'medium' | 'high';
   investmentAmount?: number;
+  riskProfile?: RiskProfile; // Added riskProfile for AI Picks
 }
 
 function isAiPick(coinData: AnyCoinData, type: CoinCardProps['type']): coinData is AiPick {
@@ -132,11 +134,12 @@ const formatSecondsToCountdown = (totalSeconds: number): string => {
 };
 
 
-export function CoinCard({ coinData, type, profitTarget, riskTolerance, investmentAmount }: CoinCardProps) {
+export function CoinCard({ coinData, type, profitTarget, riskTolerance, investmentAmount, riskProfile }: CoinCardProps) {
   let name: string;
   let gain: number;
   let confidence: number | undefined;
   let riskRoiGaugeValue: number | undefined;
+  let riskMatchScoreValue: number | undefined; // New field for risk match score
   let predictedPumpPotential: string | undefined;
   let riskLevel: string | undefined;
   let rationale: string;
@@ -167,6 +170,7 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
     gain = coinData.predictedGainPercentage;
     confidence = coinData.confidenceMeter;
     riskRoiGaugeValue = coinData.riskRoiGauge;
+    riskMatchScoreValue = coinData.riskMatchScore; // Assign riskMatchScore for AI Pick
     rationale = coinData.rationale;
     entryPriceRange = coinData.entryPriceRange;
     exitPriceRange = coinData.exitPriceRange;
@@ -180,6 +184,7 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
     gain = coinData.estimatedGain;
     confidence = coinData.tradeConfidence;
     riskRoiGaugeValue = coinData.riskRoiGauge;
+    // riskMatchScoreValue is not applicable for profitGoal type by default
     rationale = coinData.rationale;
     entryPriceRange = coinData.entryPriceRange;
     exitPriceRange = coinData.exitPriceRange;
@@ -194,6 +199,7 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
     confidence = coinData.confidenceScore;
     predictedPumpPotential = coinData.predictedPumpPotential;
     riskLevel = coinData.riskLevel;
+    // riskMatchScoreValue is not applicable for memeFlip type
     rationale = coinData.rationale;
     entryPriceRange = coinData.entryPriceRange;
     exitPriceRange = coinData.exitPriceRange;
@@ -207,6 +213,7 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
     gain = 0;
     confidence = 0;
     riskRoiGaugeValue = 0.5;
+    riskMatchScoreValue = 0.5;
     rationale = "No rationale available.";
   }
 
@@ -291,8 +298,6 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
     if (!canShowCoach) return;
     setIsLoadingCoach(true);
     setCoachError(null);
-    // Do not clear coachStrategies here if you want to show old ones while new ones load
-    // setCoachStrategies(null); 
     try {
       if (!entryPriceRange || !exitPriceRange) {
         throw new Error("Entry or exit price range is missing for AI Coach.");
@@ -320,8 +325,6 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
   };
   
   useEffect(() => {
-    // Fetch initial strategies when dialog opens and coach is available,
-    // and no strategies are loaded yet, and not currently loading or in error.
     if (isDialogOpen && canShowCoach && !coachStrategies && !isLoadingCoach && !coachError) {
         fetchCoachStrategies(currentTradingStylePreference);
     }
@@ -348,13 +351,18 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
   const cardTitleColor = type === 'memeFlip' ? 'text-orange-400' : 'text-primary-foreground group-hover:text-primary transition-colors';
   const gainColor = gain >= 0 ? (type === 'memeFlip' ? 'text-yellow-400' : 'text-green-400') : 'text-red-400';
   
-  const getRiskRoiProgressBg = () => {
-    if (riskRoiGaugeValue === undefined) return 'bg-muted';
-    if (riskRoiGaugeValue < 0.33) return 'bg-green-500/20 [&>div]:bg-gradient-to-r [&>div]:from-green-400 [&>div]:to-green-600';
-    if (riskRoiGaugeValue < 0.66) return 'bg-yellow-500/20 [&>div]:bg-gradient-to-r [&>div]:from-yellow-400 [&>div]:to-yellow-600';
+  const getRiskBasedProgressBg = (score: number | undefined, forRiskProfile: RiskProfile | undefined) => {
+    if (score === undefined) return 'bg-muted';
+    // Green if score is high (good match)
+    if (score >= 0.7) return 'bg-green-500/20 [&>div]:bg-gradient-to-r [&>div]:from-green-400 [&>div]:to-green-600';
+    // Yellow for medium match
+    if (score >= 0.4) return 'bg-yellow-500/20 [&>div]:bg-gradient-to-r [&>div]:from-yellow-400 [&>div]:to-yellow-600';
+    // Red for low match
     return 'bg-red-500/20 [&>div]:bg-gradient-to-r [&>div]:from-red-400 [&>div]:to-red-600';
   };
-  const riskRoiProgressClass = getRiskRoiProgressBg();
+  
+  const riskRoiProgressClass = getRiskBasedProgressBg(riskRoiGaugeValue, undefined); // For Risk/ROI, high is "riskier" so colors are inverted if desired. Current logic is: higher score = more red.
+  const riskMatchProgressClass = getRiskBasedProgressBg(riskMatchScoreValue, riskProfile); // For Risk Match, high is good (green).
 
   const confidenceProgressBg = type === 'memeFlip' ? 'bg-orange-500/20 [&>div]:bg-gradient-to-r [&>div]:from-yellow-500 [&>div]:to-red-500' : 'bg-primary/20 [&>div]:bg-gradient-to-r [&>div]:from-accent [&>div]:to-primary';
 
@@ -409,6 +417,27 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
             <p className="text-xs text-muted-foreground mb-1">Confidence:</p>
             <Progress value={confidence * 100} className={`h-2 w-full ${confidenceProgressBg}`} />
           </div>
+        )}
+        
+        {isAiPick(coinData, type) && riskMatchScoreValue !== undefined && riskProfile && (
+            <TooltipProvider>
+                <Tooltip delayDuration={100}>
+                <TooltipTrigger asChild>
+                    <div className="cursor-help">
+                    <p className="text-xs text-muted-foreground mb-1 flex items-center">
+                        Risk Match ({riskProfile.charAt(0).toUpperCase() + riskProfile.slice(1)})
+                        <ShieldCheck className="h-3 w-3 ml-1 text-muted-foreground group-hover:text-primary transition-colors" />
+                    </p>
+                    <Progress value={riskMatchScoreValue * 100} className={`h-2 w-full ${riskMatchProgressClass}`} />
+                    </div>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs text-center bg-popover text-popover-foreground p-2 rounded-md shadow-lg border">
+                    <p className="text-xs">
+                    AI-assessed alignment of this coin with your selected '{riskProfile}' risk profile. Higher score indicates a better match.
+                    </p>
+                </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
         )}
 
         {riskRoiGaugeValue !== undefined && (isAiPick(coinData, type) || isProfitGoalCoin(coinData, type)) && (

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -20,12 +21,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Target, Zap } from "lucide-react";
+import { Target, Zap, ShieldCheck } from "lucide-react"; // Added ShieldCheck
 import type { AiCoinPicksInput } from "@/ai/flows/ai-coin-picks";
 
 const formSchema = z.object({
   profitTarget: z.coerce.number().positive({ message: "Profit target must be positive." }),
   strategy: z.enum(["short-term", "swing", "scalp"]),
+  riskProfile: z.enum(["cautious", "balanced", "aggressive"]),
 });
 
 type AiCoinPicksFormValues = z.infer<typeof formSchema>;
@@ -41,6 +43,7 @@ export function AiCoinPicksForm({ onSubmit, isLoading }: AiCoinPicksFormProps) {
     defaultValues: {
       profitTarget: 100,
       strategy: "short-term",
+      riskProfile: "balanced", // Default risk profile
     },
   });
 
@@ -86,6 +89,31 @@ export function AiCoinPicksForm({ onSubmit, isLoading }: AiCoinPicksFormProps) {
                   <SelectItem value="short-term">Short-term</SelectItem>
                   <SelectItem value="swing">Swing</SelectItem>
                   <SelectItem value="scalp">Scalp</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="riskProfile"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="flex items-center">
+                <ShieldCheck className="mr-2 h-4 w-4 text-primary" />
+                Risk Profile
+              </FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select your risk profile" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="cautious">Cautious</SelectItem>
+                  <SelectItem value="balanced">Balanced</SelectItem>
+                  <SelectItem value="aggressive">Aggressive</SelectItem>
                 </SelectContent>
               </Select>
               <FormMessage />

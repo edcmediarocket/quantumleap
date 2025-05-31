@@ -103,15 +103,15 @@ export default function QuantumLeapPage() {
     setIsLoadingAiPicks(true);
     setAiPicksError(null);
     setAiCoinPicksResults(null);
-    setCurrentAiPicksInput(data);
-    await fetchAndSetCoachTip('aiPicks', `Target: $${data.profitTarget}, Strat: ${data.strategy}`);
+    setCurrentAiPicksInput(data); // Store the full input including riskProfile
+    await fetchAndSetCoachTip('aiPicks', `Target: $${data.profitTarget}, Strat: ${data.strategy}, Risk: ${data.riskProfile}`);
     try {
       const result = await aiCoinPicks(data);
       setAiCoinPicksResults(result);
       if (!result.picks || result.picks.length === 0) {
         toast({
           title: "AI Coin Picks",
-          description: "No specific coin picks found for your criteria. Try adjusting your profit target or strategy.",
+          description: "No specific coin picks found for your criteria. Try adjusting your profit target, strategy, or risk profile.",
           variant: "default",
         });
       } else {
@@ -303,6 +303,7 @@ export default function QuantumLeapPage() {
                             coinData={pick} 
                             type="aiPick"
                             profitTarget={currentAiPicksInput?.profitTarget}
+                            riskProfile={currentAiPicksInput?.riskProfile}
                           />
                         ))}
                       </div>
