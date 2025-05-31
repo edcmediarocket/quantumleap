@@ -25,6 +25,7 @@ const AiCoachStrategiesInputSchema = z.object({
   estimatedDuration: z.string().describe('The estimated duration to reach the profit target.'),
   profitTarget: z.number().optional().describe('The user\'s desired profit target in USD (if provided).'),
   riskTolerance: z.enum(['low', 'medium', 'high']).optional().describe('The user\'s risk tolerance (if provided).'),
+  tradingStylePreference: z.enum(['short-term', 'swing', 'scalp']).optional().describe('User\'s preferred trading style (if any).'),
 });
 export type AiCoachStrategiesInput = z.infer<typeof AiCoachStrategiesInputSchema>;
 
@@ -36,6 +37,7 @@ const InvestmentStrategySchema = z.object({
   targetSellPrices: z.array(z.number()).min(1).describe('One or more specific, strategically determined target sell prices for taking profits at different levels (e.g., initial conservative target, primary target based on prediction, ambitious stretch target if momentum is strong). Justify these targets.'),
   actionableSteps: z.array(z.string()).describe('A few concrete, actionable steps for implementing this strategy, including setting precise buy orders at the optimal price and sell orders/alerts at target prices. Include key indicators to monitor for entry/exit confirmation.'),
   stopLossSuggestion: z.string().optional().describe('A concrete suggestion for a stop-loss level or dynamic strategy (e.g., "Set a hard stop-loss at $X.XX, representing Y% below optimal buy", "Implement a trailing stop-loss of Z% once price surpasses first target."). Justify the stop-loss approach.'),
+  tradingStyleAlignment: z.string().optional().describe('If a user preference was given, explain how this specific strategy aligns with the preferred trading style (short-term, swing, scalp) for this coin.'),
 });
 
 const AiCoachStrategiesOutputSchema = z.object({
@@ -65,6 +67,7 @@ Exit Price Range: \${{{exitPriceRange.low}}} - \${{{exitPriceRange.high}}}
 Estimated Duration: {{{estimatedDuration}}}
 {{#if profitTarget}}User's Profit Target: \${{{profitTarget}}}{{/if}}
 {{#if riskTolerance}}User's Risk Tolerance: {{{riskTolerance}}}{{/if}}
+{{#if tradingStylePreference}}User's Preferred Trading Style: {{{tradingStylePreference}}}{{/if}}
 
 Based on the information above, provide the following with a strong focus on maximizing profit:
 
@@ -82,12 +85,14 @@ Based on the information above, provide the following with a strong focus on max
     *   **Target Sell Prices**: Provide *at least one, preferably multiple, strategically determined* target sell prices. These could represent different levels for taking partial or full profits (e.g., initial conservative target at R1 resistance, primary target near predicted exit, ambitious stretch target if volume and momentum are exceptionally strong). Justify each target (e.g., based on Fibonacci extensions, psychological levels, measured moves from patterns).
     *   **Actionable Steps**: Provide 2-4 concrete, actionable steps for an advanced trader. Examples: "Set a limit buy order at \${{{optimalBuyPrice}}} with a secondary entry point at \${lower_support_if_applicable}.", "Place tiered take-profit orders at \${target_1}, \${target_2}.", "Monitor [specific advanced indicator like CVD or Open Interest] for confirmation before entry and divergence at exit targets."
     *   **Stop-Loss Suggestion**: Provide a concrete stop-loss price or a sophisticated dynamic strategy. Justify it (e.g., "Set initial stop-loss at \${key_support_level}, then trail by X% of ATR once the first profit target is hit.", "Use a Chandelier Exit based on 22-period ATR with a multiplier of 3.").
+    *   **Trading Style Alignment (tradingStyleAlignment)**: {{#if tradingStylePreference}}If this strategy is tailored to the user's preferred style of '{{{tradingStylePreference}}}', explain *how* it aligns with that style for {{{coinName}}}. If it's a general strategy, this can be omitted or briefly noted as such.{{else}}This can be omitted.{{/if}}
 
 3.  **Overall Coach's Outlook (Profit Max Focus & Advanced Risk Management)**: Summarize your overall outlook for investing in {{{coinName}}} with the primary goal of maximizing profit. Include crucial sophisticated risk management tips tailored for aggressive strategies (e.g., position sizing relative to conviction/volatility, dynamic stop-loss adjustment techniques, strategies for scaling in/out of positions, when to cut losses quickly based on specific invalidation signals, importance of not being greedy and sticking to the plan, how to adjust strategy if broader market conditions shift unexpectedly).
 
 4.  **Disclaimer**: Include the standard disclaimer.
 
 Format the output strictly according to the AiCoachStrategiesOutputSchema. Ensure strategies are practical, well-explained, and focused on maximizing returns while managing associated risks for an advanced user. Be bold, analytical, and intelligent in your suggestions.
+If a tradingStylePreference is provided, ensure at least one strategy clearly addresses it and its alignment.
 `,
 });
 

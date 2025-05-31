@@ -9,6 +9,7 @@ import { AiCoinPicksForm } from "@/components/app/forms/ai-coin-picks-form";
 import { QuickProfitGoalForm } from "@/components/app/forms/quick-profit-goal-form";
 import { MemeCoinQuickFlipForm } from "@/components/app/forms/meme-coin-quick-flip-form";
 import { AiCoachAvatarPanel } from "@/components/app/ai-coach-avatar-panel";
+import { HowItWorksPanel } from "@/components/app/how-it-works-panel"; // Import new component
 import { LoadingDots } from "@/components/ui/loading-dots";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -345,8 +346,10 @@ export default function QuantumLeapPage() {
               </div>
             </div>
           </TabsContent>
-
         </Tabs>
+
+        <HowItWorksPanel /> {/* Add the new How It Works panel here */}
+
       </main>
        <footer className="mt-12 py-4 text-center text-xs text-muted-foreground/70 border-t border-border/20">
         <p>AI-generated insights are for informational purposes only and not financial advice. Cryptocurrency investments are subject to high market risk. Predictions are not guaranteed. DYOR!</p>
@@ -355,3 +358,4 @@ export default function QuantumLeapPage() {
     </div>
   );
 }
+
