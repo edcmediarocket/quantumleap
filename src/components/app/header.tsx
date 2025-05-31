@@ -4,7 +4,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Waves, Info, LogIn, UserPlus, LogOut, UserCircle, Settings } from 'lucide-react'; // Added Settings
+import { Waves, Info, LogIn, UserPlus, LogOut, UserCircle, Settings } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -89,13 +89,13 @@ export function AppHeader() {
               {currentUser.email || 'Signed In'}
             </span>
             {isAdmin && (
-              <Button variant="ghost" size="sm" asChild className="text-primary hover:bg-primary/10 hover:text-primary">
+              <Button variant="outline" size="sm" asChild className="text-primary border-primary hover:bg-primary/10 hover:text-primary">
                 <Link href="/admin">
                   <Settings className="mr-1 h-4 w-4" /> Admin
                 </Link>
               </Button>
             )}
-            <Button variant="outline" size="sm" onClick={handleSignOut} className="text-primary border-primary hover:bg-primary/10 hover:text-primary">
+            <Button variant="outline" size="sm" onClick={handleSignOut} className="text-destructive border-destructive hover:bg-destructive/10 hover:text-destructive-foreground">
               <LogOut className="mr-1 h-4 w-4" />
               Sign Out
             </Button>
