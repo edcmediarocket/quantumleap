@@ -113,24 +113,30 @@
 /* Custom glassmorphism utility for black theme */
 @layer utilities {
   .glass-effect {
-    @apply bg-black/40 backdrop-blur-lg border border-neutral-700/60 shadow-2xl rounded-xl;
+    @apply bg-black/50 backdrop-blur-md border border-primary/60 rounded-xl shadow-lg;
+    /* Default neon purple glow */
+    box-shadow: 0 0 10px 0px hsl(var(--primary)/0.4), 0 0 4px 0px hsl(var(--primary)/0.2) inset;
   }
   .glass-effect-interactive-hover {
-    @apply transition-all duration-300 hover:scale-[1.02] hover:bg-black/60 hover:border-neutral-600/70;
+    @apply transition-all duration-300 hover:scale-[1.01] hover:bg-black/65 hover:border-primary/80;
+  }
+  .glass-effect-interactive-hover:hover {
+     /* Enhanced neon purple glow on hover */
+    box-shadow: 0 0 18px 2px hsl(var(--primary)/0.6), 0 0 8px 1px hsl(var(--primary)/0.3) inset;
   }
 
-  /* Contextual Neon Glow Hovers */
-  .hover-glow-primary { /* Purple glow */
-    @apply hover:shadow-[0_0_25px_3px_hsl(var(--primary)/0.5)];
+  /* Contextual Neon Glow Hovers - These will add to the base glow */
+  .hover-glow-primary { 
+    @apply hover:shadow-[0_0_25px_3px_hsl(var(--primary)/0.5),_0_0_10px_0px_hsl(var(--primary)/0.4),_0_0_4px_0px_hsl(var(--primary)/0.2)_inset];
   }
-  .hover-glow-accent { /* Blue glow */
-    @apply hover:shadow-[0_0_25px_3px_hsl(var(--accent)/0.5)];
+  .hover-glow-accent { 
+    @apply hover:shadow-[0_0_25px_3px_hsl(var(--accent)/0.5),_0_0_10px_0px_hsl(var(--primary)/0.4),_0_0_4px_0px_hsl(var(--primary)/0.2)_inset];
   }
-  .hover-glow-orange { /* Orange glow for meme coins */
-    @apply hover:shadow-[0_0_25px_3px_hsl(24_95%_53%/0.5)];
+  .hover-glow-orange { 
+    @apply hover:shadow-[0_0_25px_3px_hsl(24_95%_53%/0.5),_0_0_10px_0px_hsl(var(--primary)/0.4),_0_0_4px_0px_hsl(var(--primary)/0.2)_inset];
   }
-   .hover-glow-neon-green { /* Neon green glow for top pick */
-    @apply hover:shadow-[0_0_25px_3px_hsla(var(--neon-green-base-hsl),0.6)];
+   .hover-glow-neon-green { 
+    @apply hover:shadow-[0_0_25px_3px_hsla(var(--neon-green-base-hsl),0.6),_0_0_10px_0px_hsl(var(--neon-green-base-hsl)/0.4),_0_0_4px_0px_hsl(var(--neon-green-base-hsl)/0.2)_inset];
   }
 }
 
