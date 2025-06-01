@@ -95,9 +95,9 @@ export function PredictiveBreakoutAlertsPanel() {
             {alertsOutput.alerts.map((alert, index) => (
               <div key={index} className={cn(
                 "p-5 rounded-lg border border-border/40 bg-card/50 shadow-lg transition-all duration-300",
-                "glass-effect glass-effect-interactive-hover default-glow-primary" // Changed from default-glow-accent
+                "glass-effect glass-effect-interactive-hover default-glow-primary" 
               )}>
-                <AlertTitle className="text-xl font-semibold text-primary flex items-center mb-2"> {/* Changed text-accent to text-primary */}
+                <AlertTitle className="text-xl font-semibold text-primary flex items-center mb-2"> 
                   <TrendingUp className="h-6 w-6 mr-2" /> {alert.alertTitle}
                 </AlertTitle>
                 

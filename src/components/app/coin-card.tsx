@@ -368,7 +368,13 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
     }, 3000); 
   };
 
-  const cardTitleColor = type === 'memeFlip' ? 'text-orange-400' : 'text-primary-foreground group-hover:text-primary transition-colors';
+  const cardTitleColor = 
+      type === 'aiPick' ? 'text-primary group-hover:text-primary transition-colors'
+    : type === 'profitGoal' ? 'text-accent group-hover:text-accent transition-colors'
+    : type === 'memeFlip' ? 'text-[hsl(var(--orange-hsl))] group-hover:text-[hsl(var(--orange-hsl))] transition-colors'
+    : 'text-primary-foreground group-hover:text-primary transition-colors';
+
+
   const gainColor = gain >= 0 ? (type === 'memeFlip' ? 'text-yellow-400' : 'text-green-400') : 'text-red-400';
   
   const getRiskBasedProgressBg = (score: number | undefined, forRiskProfile: RiskProfile | undefined) => {
@@ -381,7 +387,11 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
   const riskRoiProgressClass = getRiskBasedProgressBg(riskRoiGaugeValue, undefined); 
   const riskMatchProgressClass = getRiskBasedProgressBg(riskMatchScoreValue, riskProfile); 
 
-  const confidenceProgressBg = type === 'memeFlip' ? 'bg-orange-500/20 [&>div]:bg-gradient-to-r [&>div]:from-yellow-500 [&>div]:to-red-500' : 'bg-primary/20 [&>div]:bg-gradient-to-r [&>div]:from-accent [&>div]:to-primary';
+  const confidenceProgressBg = 
+      type === 'aiPick' ? 'bg-primary/20 [&>div]:bg-gradient-to-r [&>div]:from-accent [&>div]:to-primary'
+    : type === 'profitGoal' ? 'bg-accent/20 [&>div]:bg-gradient-to-r [&>div]:from-blue-400 [&>div]:to-accent'
+    : type === 'memeFlip' ? 'bg-orange-500/20 [&>div]:bg-gradient-to-r [&>div]:from-yellow-500 [&>div]:to-red-500'
+    : 'bg-primary/20 [&>div]:bg-gradient-to-r [&>div]:from-accent [&>div]:to-primary';
 
   const dialogButtonVariant = type === 'memeFlip' ? 'outline' : 'outline';
   const dialogButtonTextColor = 
@@ -403,8 +413,8 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
 
   return (
     <GlassCardRoot className={cn(
-      "glass-effect-interactive-hover", // This provides hover scaling
-      defaultCardGlowClass // This provides the default, theme-specific glow and border
+      "glass-effect-interactive-hover", 
+      defaultCardGlowClass 
     )}>
       <GlassCardHeader>
         <div className="flex items-center justify-between">
@@ -742,8 +752,8 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
                         {coachStrategies.investmentStrategies.map((strategy: InvestmentStrategyFromAICoach, index: number) => (
                           <div key={index} 
                                className={cn(
-                                "p-3 rounded-md bg-card/50 border border-border/40 shadow-md space-y-3 glass-effect-interactive-hover", // Added glass-effect-interactive-hover
-                                strategy.isTopPick ? "default-glow-neon-green" : "border-border/40" // Apply neon green glow if top pick
+                                "p-3 rounded-md bg-card/50 border border-border/40 shadow-md space-y-3 glass-effect-interactive-hover", 
+                                strategy.isTopPick ? "default-glow-neon-green" : "border-border/40" 
                                )}>
                             {strategy.isTopPick && (
                                 <div className="absolute -top-3 -left-3 bg-[hsl(var(--neon-green-base-hsl))] text-[hsl(var(--neon-green-text-on-base-hsl))] p-1.5 rounded-full shadow-lg">
