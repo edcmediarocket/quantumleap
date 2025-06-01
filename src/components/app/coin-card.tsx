@@ -31,11 +31,11 @@ import { TrendingUp, HelpCircle, Gauge, Target, Clock, DollarSign, Info, Brain, 
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
-import type { AiCoinPicksOutput, AiCoinPicksInput } from "@/ai/flows/ai-coin-picks"; // Added AiCoinPicksInput
+import type { AiCoinPicksOutput, AiCoinPicksInput } from "@/ai/flows/ai-coin-picks";
 import type { RecommendCoinsForProfitTargetOutput } from "@/ai/flows/quick-profit-goal";
 import type { MemeCoinQuickFlipOutput } from "@/ai/flows/meme-coin-quick-flip";
 import { aiCoachStrategies, type AiCoachStrategiesInput, type AiCoachStrategiesOutput } from "@/ai/flows/ai-coach-strategies";
-import { StrategyBacktestSimulator } from "./strategy-backtest-simulator"; // Import new component
+import { StrategyBacktestSimulator } from "./strategy-backtest-simulator";
 
 type AiPick = AiCoinPicksOutput['picks'][0];
 type ProfitGoalCoin = RecommendCoinsForProfitTargetOutput['recommendedCoins'][0];
@@ -46,7 +46,7 @@ type InvestmentStrategyFromAICoach = AiCoachStrategiesOutput['investmentStrategi
 type AnyCoinData = AiPick | ProfitGoalCoin | MemeFlipCoin;
 type PriceRange = { low: number; high: number };
 type TradingStyle = 'short-term' | 'swing' | 'scalp';
-type RiskProfile = AiCoinPicksInput['riskProfile']; // Get RiskProfile type from AiCoinPicksInput
+type RiskProfile = AiCoinPicksInput['riskProfile'];
 
 interface CoinCardProps {
   coinData: AnyCoinData;
@@ -54,7 +54,7 @@ interface CoinCardProps {
   profitTarget?: number;
   riskTolerance?: 'low' | 'medium' | 'high';
   investmentAmount?: number;
-  riskProfile?: RiskProfile; // Added riskProfile for AI Picks
+  riskProfile?: RiskProfile;
 }
 
 function isAiPick(coinData: AnyCoinData, type: CoinCardProps['type']): coinData is AiPick {
@@ -69,49 +69,31 @@ function isMemeFlipCoin(coinData: AnyCoinData, type: CoinCardProps['type']): coi
 
 const formatPrice = (price: number | undefined | null): string => {
   if (typeof price !== 'number' || isNaN(price)) return "$N/A";
-  if (price === 0) return "$0.00"; // Exact zero
+  if (price === 0) return "$0.00";
 
   const absPrice = Math.abs(price);
 
   if (absPrice >= 1) {
-    // For numbers 1 and above, use toLocaleString for standard currency formatting.
     return `$${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   } else { 
-    // For numbers between 0 (exclusive) and 1 (exclusive).
-    // Use toFixed with high precision to get a string without scientific notation.
     let priceStr = price.toFixed(20); 
-
-    // Remove trailing zeros.
     priceStr = priceStr.replace(/0+$/, "");
-
-    // If toFixed results in "X." (e.g., from 0.000...0 which became "0."), convert to "X".
     if (priceStr.endsWith('.')) {
       priceStr = priceStr.slice(0, -1);
     }
-
-    // If the number is extremely small (e.g., 1e-22 became "0" after toFixed(20) and stripping), display as $0.00.
     if (priceStr === "0") { 
       return "$0.00";
     }
-
     const parts = priceStr.split('.');
-    if (parts.length === 2) { // Should always be true here if priceStr !== "0"
-      const integerPart = parts[0]; // Should be "0"
+    if (parts.length === 2) {
+      const integerPart = parts[0];
       const decimalPart = parts[1];
-
       if (integerPart === "0") {
         if (absPrice >= 0.01 && decimalPart.length < 2) {
-          // For numbers like 0.5 (became "0.5" from "0.500..."), ensure two decimal places like "0.50".
-          // Applies to 0.1 through 0.99 range.
           priceStr = `${integerPart}.${decimalPart.padEnd(2, '0')}`;
         }
-        // For numbers like "0.123" or "0.00007", they remain as is (e.g., "0.123", "0.00007").
-        // decimalPart already has trailing zeros removed.
       }
     }
-    // If parts.length is 1 and priceStr is not "0", it's an unexpected state for absPrice < 1.
-    // However, the logic above should handle it.
-    
     return `$${priceStr}`;
   }
 };
@@ -162,7 +144,7 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
   let gain: number;
   let confidence: number | undefined;
   let riskRoiGaugeValue: number | undefined;
-  let riskMatchScoreValue: number | undefined; // New field for risk match score
+  let riskMatchScoreValue: number | undefined;
   let predictedPumpPotential: string | undefined;
   let riskLevel: string | undefined;
   let rationale: string;
@@ -193,7 +175,7 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
     gain = coinData.predictedGainPercentage;
     confidence = coinData.confidenceMeter;
     riskRoiGaugeValue = coinData.riskRoiGauge;
-    riskMatchScoreValue = coinData.riskMatchScore; // Assign riskMatchScore for AI Pick
+    riskMatchScoreValue = coinData.riskMatchScore;
     rationale = coinData.rationale;
     entryPriceRange = coinData.entryPriceRange;
     exitPriceRange = coinData.exitPriceRange;
@@ -207,7 +189,6 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
     gain = coinData.estimatedGain;
     confidence = coinData.tradeConfidence;
     riskRoiGaugeValue = coinData.riskRoiGauge;
-    // riskMatchScoreValue is not applicable for profitGoal type by default
     rationale = coinData.rationale;
     entryPriceRange = coinData.entryPriceRange;
     exitPriceRange = coinData.exitPriceRange;
@@ -218,11 +199,10 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
     simulatedPostBuyDropAlertText = coinData.simulatedPostBuyDropAlertText;
   } else if (isMemeFlipCoin(coinData, type)) {
     name = coinData.coinName;
-    gain = coinData.predictedGainPercentage; // or coinData.quickFlipSellTargetPercentage
+    gain = coinData.predictedGainPercentage;
     confidence = coinData.confidenceScore;
     predictedPumpPotential = coinData.predictedPumpPotential;
     riskLevel = coinData.riskLevel;
-    // riskMatchScoreValue is not applicable by default for memeFlip, but coach can provide it later
     rationale = coinData.rationale;
     entryPriceRange = coinData.entryPriceRange;
     exitPriceRange = coinData.exitPriceRange;
@@ -343,7 +323,7 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
         coachInput.riskTolerance = riskTolerance;
       } else if (type === 'memeFlip') {
         coachInput.riskTolerance = 'high'; 
-        if (!coachInput.estimatedDuration) coachInput.estimatedDuration = "Few hours to 2 days"; // Default for meme if undefined
+        if (!coachInput.estimatedDuration) coachInput.estimatedDuration = "Few hours to 2 days";
       }
 
 
@@ -393,11 +373,8 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
   
   const getRiskBasedProgressBg = (score: number | undefined, forRiskProfile: RiskProfile | undefined) => {
     if (score === undefined) return 'bg-muted';
-    // Green if score is high (good match)
     if (score >= 0.7) return 'bg-green-500/20 [&>div]:bg-gradient-to-r [&>div]:from-green-400 [&>div]:to-green-600';
-    // Yellow for medium match
     if (score >= 0.4) return 'bg-yellow-500/20 [&>div]:bg-gradient-to-r [&>div]:from-yellow-400 [&>div]:to-yellow-600';
-    // Red for low match
     return 'bg-red-500/20 [&>div]:bg-gradient-to-r [&>div]:from-red-400 [&>div]:to-red-600';
   };
   
@@ -409,7 +386,7 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
   const dialogButtonVariant = type === 'memeFlip' ? 'outline' : 'outline';
   const dialogButtonTextColor = type === 'memeFlip' ? 'text-orange-500 border-orange-500 hover:bg-orange-500 hover:text-white' : 'border-accent text-accent hover:bg-accent hover:text-accent-foreground';
   const dialogTitleIcon = type === 'memeFlip' ? <RocketIcon className="h-6 w-6"/> : <Brain className="h-6 w-6"/>;
-  const dialogTitleText = `AI Analysis & Strategies for ${name}`; // Unified title
+  const dialogTitleText = `AI Analysis & Strategies for ${name}`;
   const dialogDescriptionText = type === 'memeFlip' ? `Speculative insights and coaching strategies for this meme coin. EXTREME RISK!` : `Detailed insights and coaching strategies powered by AI.`;
 
   const glowClass = type === 'aiPick' ? 'hover-glow-primary'
@@ -741,33 +718,33 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
                     {coachStrategies && !isLoadingCoach && (
                       <div className="space-y-4">
                         {coachStrategies.topPickRationale && (
-                          <div className="p-4 rounded-lg bg-primary/10 border-2 border-primary shadow-lg mb-6">
+                          <div className="p-4 rounded-lg bg-[hsla(var(--neon-green-soft-bg-hsl),0.1)] border-2 border-[hsl(var(--neon-green-base-hsl))] shadow-lg mb-6 hover-glow-neon-green">
                             <div className="flex items-center gap-2 mb-2">
-                               <StarIcon className="h-6 w-6 text-primary fill-primary" />
-                              <h4 className="text-md font-semibold text-primary">AI's Top Strategy Rationale</h4>
+                               <StarIcon className="h-6 w-6 text-[hsl(var(--neon-green-base-hsl))] fill-[hsl(var(--neon-green-base-hsl))]" />
+                              <h4 className="text-md font-semibold text-[hsl(var(--neon-green-base-hsl))]">AI's Top Strategy Rationale</h4>
                             </div>
-                            <p className="text-sm text-primary-foreground/90 italic">{coachStrategies.topPickRationale}</p>
+                            <p className="text-sm text-foreground/90 italic">{coachStrategies.topPickRationale}</p>
                           </div>
                         )}
 
                         <div>
                           <h4 className="font-medium text-primary-foreground/90">Coin-Specific Advice:</h4>
-                          <p className="text-sm text-muted-foreground pl-2 border-l-2 border-primary ml-1 py-1 italic">{coachStrategies.coinSpecificAdvice}</p>
+                          <p className="text-sm text-muted-foreground pl-2 border-l-2 border-accent ml-1 py-1 italic">{coachStrategies.coinSpecificAdvice}</p>
                         </div>
                         
                         {coachStrategies.investmentStrategies.map((strategy: InvestmentStrategyFromAICoach, index: number) => (
                           <div key={index} 
                                className={cn(
                                 "p-3 rounded-md bg-card/50 border border-border/40 shadow-md space-y-3",
-                                strategy.isTopPick && "border-2 border-primary ring-2 ring-primary/50 bg-primary/10 relative"
+                                strategy.isTopPick && "border-2 border-[hsl(var(--neon-green-base-hsl))] ring-2 ring-[hsl(var(--neon-green-base-hsl))] ring-opacity-50 bg-[hsla(var(--neon-green-soft-bg-hsl),0.1)] relative hover-glow-neon-green"
                                )}>
                             {strategy.isTopPick && (
-                                <div className="absolute -top-3 -left-3 bg-primary text-primary-foreground p-1.5 rounded-full shadow-lg">
+                                <div className="absolute -top-3 -left-3 bg-[hsl(var(--neon-green-base-hsl))] text-[hsl(var(--neon-green-text-on-base-hsl))] p-1.5 rounded-full shadow-lg">
                                     <StarIcon className="h-5 w-5" />
                                 </div>
                             )}
                             <div>
-                                <h4 className={cn("font-semibold text-primary-foreground", strategy.isTopPick && "text-primary")}>{strategy.name} {strategy.isTopPick && "(Top Pick)"}</h4>
+                                <h4 className={cn("font-semibold text-primary-foreground", strategy.isTopPick && "text-[hsl(var(--neon-green-base-hsl))]")}>{strategy.name} {strategy.isTopPick && "(Top Pick)"}</h4>
                                 <p className="text-xs text-muted-foreground mt-1">{strategy.description}</p>
                                 {strategy.optimalBuyPrice && <p className="text-xs text-muted-foreground mt-1"><span className="font-medium text-green-400">Optimal Buy:</span> {formatPrice(strategy.optimalBuyPrice)}</p>}
                                 {strategy.targetSellPrices && strategy.targetSellPrices.length > 0 && <p className="text-xs text-muted-foreground mt-1"><span className="font-medium text-red-400">Target Sells:</span> {strategy.targetSellPrices.map(p => formatPrice(p)).join(', ')}</p>}
@@ -791,7 +768,7 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
                         ))}
                          <div>
                           <h4 className="font-medium text-primary-foreground/90">Overall Outlook & Risk Management:</h4>
-                          <p className="text-sm text-muted-foreground pl-2 border-l-2 border-primary ml-1 py-1 italic">{coachStrategies.overallCoachSOutlook}</p>
+                          <p className="text-sm text-muted-foreground pl-2 border-l-2 border-accent ml-1 py-1 italic">{coachStrategies.overallCoachSOutlook}</p>
                         </div>
                         <p className="text-xs text-center text-muted-foreground/70 pt-2">{coachStrategies.disclaimer}</p>
                       </div>

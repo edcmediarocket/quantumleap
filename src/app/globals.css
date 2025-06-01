@@ -5,73 +5,83 @@
 
 @layer base {
   :root {
-    /* Dark theme by default as per request */
-    --background: 271 18% 10%; /* #1A141F - Dark Desaturated Purple */
-    --foreground: 0 0% 88%; /* #E0E0E0 - Light Gray for text */
+    --background: 0 0% 0%; /* Pure Black */
+    --foreground: 0 0% 95%; /* Off-white for text on black */
 
-    --card: 271 18% 13%; /* Slightly lighter than background for opaque cards */
-    --card-foreground: 0 0% 88%;
+    --card: 0 0% 4%; /* Very dark gray for card elements */
+    --card-foreground: 0 0% 95%;
 
-    --popover: 271 18% 12%;
-    --popover-foreground: 0 0% 88%;
+    --popover: 0 0% 3%; /* Even darker for popovers */
+    --popover-foreground: 0 0% 95%;
 
-    --primary: 285 87% 53%; /* #A020F0 - Vibrant Purple */
-    --primary-foreground: 0 0% 98%; /* White/very light for text on primary */
+    --primary: 285 87% 53%; /* #A020F0 - Vibrant Purple (remains for accents) */
+    --primary-foreground: 0 0% 98%; 
 
-    --secondary: 271 15% 25%; /* A muted purple for secondary elements */
-    --secondary-foreground: 0 0% 90%;
+    --secondary: 0 0% 10%; /* Darker secondary for black theme */
+    --secondary-foreground: 0 0% 85%;
 
-    --muted: 271 15% 20%;
+    --muted: 0 0% 8%; /* Dark muted */
     --muted-foreground: 0 0% 60%;
 
-    --accent: 204 87% 53%; /* #20A0F0 - Analogous Blue */
+    --accent: 204 87% 53%; /* #20A0F0 - Analogous Blue (remains for accents) */
     --accent-foreground: 0 0% 98%;
 
-    --destructive: 0 70% 50%; /* Default dark destructive */
+    --destructive: 0 70% 50%; 
     --destructive-foreground: 0 0% 98%;
 
-    --border: 271 15% 40%; /* Brighter border for dark theme */
-    --input: 271 15% 18%;
+    --border: 0 0% 15%; /* Dark gray border, visible on black */
+    --input: 0 0% 8%; /* Dark gray inputs */
     --ring: 204 87% 60%; /* Ring color related to accent blue for focus */
 
-    --radius: 0.75rem; /* Slightly more rounded corners */
+    --radius: 0.75rem;
 
-    --chart-1: 285 87% 53%; /* Primary purple */
-    --chart-2: 204 87% 53%; /* Accent blue */
-    --chart-3: 300 70% 60%; /* Another purple shade */
-    --chart-4: 260 70% 65%; /* Indigo shade */
-    --chart-5: 0 0% 70%;   /* Light gray for contrast */
+    /* Neon Green for Top Pick Highlight */
+    --neon-green-base-hsl: 130 70% 45%;
+    --neon-green-text-on-base-hsl: 130 100% 5%;
+    --neon-green-soft-bg-hsl: 130 70% 45%; /* For bg with alpha - same base */
+
+    --chart-1: 285 87% 53%; 
+    --chart-2: 204 87% 53%; 
+    --chart-3: 300 70% 60%; 
+    --chart-4: 260 70% 65%; 
+    --chart-5: 0 0% 70%;   
     
-    --sidebar-background: 271 18% 8%; /* Even darker for sidebar if used */
-    --sidebar-foreground: 0 0% 88%;
+    --sidebar-background: 0 0% 2%; /* Even darker for sidebar */
+    --sidebar-foreground: 0 0% 90%;
     --sidebar-primary: 285 87% 53%;
     --sidebar-primary-foreground: 0 0% 98%;
     --sidebar-accent: 204 87% 53%;
     --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 271 15% 25%;
+    --sidebar-border: 0 0% 10%;
     --sidebar-ring: 204 87% 60%;
   }
 
   .dark {
-    --background: 271 18% 10%;
-    --foreground: 0 0% 88%;
-    --card: 271 18% 13%;
-    --card-foreground: 0 0% 88%;
-    --popover: 271 18% 12%;
-    --popover-foreground: 0 0% 88%;
+    --background: 0 0% 0%;
+    --foreground: 0 0% 95%;
+    --card: 0 0% 4%;
+    --card-foreground: 0 0% 95%;
+    --popover: 0 0% 3%;
+    --popover-foreground: 0 0% 95%;
     --primary: 285 87% 53%;
     --primary-foreground: 0 0% 98%;
-    --secondary: 271 15% 25%;
-    --secondary-foreground: 0 0% 90%;
-    --muted: 271 15% 20%;
+    --secondary: 0 0% 10%;
+    --secondary-foreground: 0 0% 85%;
+    --muted: 0 0% 8%;
     --muted-foreground: 0 0% 60%;
     --accent: 204 87% 53%;
     --accent-foreground: 0 0% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 271 15% 40%;
-    --input: 271 15% 18%;
+    --border: 0 0% 15%;
+    --input: 0 0% 8%;
     --ring: 204 87% 60%;
+
+    /* Neon Green for Top Pick Highlight */
+    --neon-green-base-hsl: 130 70% 45%;
+    --neon-green-text-on-base-hsl: 130 100% 5%;
+    --neon-green-soft-bg-hsl: 130 70% 45%;
+
 
     --chart-1: 285 87% 53%;
     --chart-2: 204 87% 53%;
@@ -79,13 +89,13 @@
     --chart-4: 260 70% 65%;
     --chart-5: 0 0% 70%;
 
-    --sidebar-background: 271 18% 8%;
-    --sidebar-foreground: 0 0% 88%;
+    --sidebar-background: 0 0% 2%;
+    --sidebar-foreground: 0 0% 90%;
     --sidebar-primary: 285 87% 53%;
     --sidebar-primary-foreground: 0 0% 98%;
     --sidebar-accent: 204 87% 53%;
     --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 271 15% 25%;
+    --sidebar-border: 0 0% 10%;
     --sidebar-ring: 204 87% 60%;
   }
 }
@@ -95,30 +105,32 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground font-sans; /* Use Tailwind's font-sans */
+    @apply bg-background text-foreground font-sans;
     min-height: 100vh;
   }
 }
 
-/* Custom glassmorphism utility */
+/* Custom glassmorphism utility for black theme */
 @layer utilities {
   .glass-effect {
-    @apply bg-[hsl(271,18%,13%)/0.6] backdrop-blur-lg border border-[hsl(271,15%,40%)/0.3] shadow-xl rounded-xl;
+    @apply bg-black/40 backdrop-blur-lg border border-neutral-700/60 shadow-2xl rounded-xl;
   }
-  .glass-effect-interactive-hover { /* Renamed and simplified: only scale and bg change */
-    @apply transition-all duration-300 hover:scale-[1.02] hover:bg-[hsl(271,18%,13%)/0.75];
+  .glass-effect-interactive-hover {
+    @apply transition-all duration-300 hover:scale-[1.02] hover:bg-black/60 hover:border-neutral-600/70;
   }
 
   /* Contextual Neon Glow Hovers */
-  .hover-glow-primary {
-    @apply hover:shadow-[0_0_25px_3px_hsl(var(--primary)/0.4)];
+  .hover-glow-primary { /* Purple glow */
+    @apply hover:shadow-[0_0_25px_3px_hsl(var(--primary)/0.5)];
   }
-  .hover-glow-accent {
-    @apply hover:shadow-[0_0_25px_3px_hsl(var(--accent)/0.4)];
+  .hover-glow-accent { /* Blue glow */
+    @apply hover:shadow-[0_0_25px_3px_hsl(var(--accent)/0.5)];
   }
-  .hover-glow-orange {
-    /* Tailwind orange-500 is approx hsl(24, 95%, 53%) */
-    @apply hover:shadow-[0_0_25px_3px_hsl(24_95%_53%/0.4)];
+  .hover-glow-orange { /* Orange glow for meme coins */
+    @apply hover:shadow-[0_0_25px_3px_hsl(24_95%_53%/0.5)];
+  }
+   .hover-glow-neon-green { /* Neon green glow for top pick */
+    @apply hover:shadow-[0_0_25px_3px_hsla(var(--neon-green-base-hsl),0.6)];
   }
 }
 
