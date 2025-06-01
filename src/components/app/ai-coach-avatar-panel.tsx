@@ -7,14 +7,16 @@ import { Bot, Sparkles, AlertTriangle, Info, Rocket, Brain } from "lucide-react"
 import { cn } from "@/lib/utils";
 import { type GetCoachQuickTipOutput } from "@/ai/flows/get-coach-quick-tip";
 import { LoadingDots } from "@/components/ui/loading-dots";
+import type { ActiveTabType } from '@/app/page'; // Import ActiveTabType
 
 interface AiCoachAvatarPanelProps {
   tipData: GetCoachQuickTipOutput | null;
   isLoading: boolean;
   className?: string;
+  activeTab: ActiveTabType;
 }
 
-export function AiCoachAvatarPanel({ tipData, isLoading, className }: AiCoachAvatarPanelProps) {
+export function AiCoachAvatarPanel({ tipData, isLoading, className, activeTab }: AiCoachAvatarPanelProps) {
   const getIconForTheme = (theme: GetCoachQuickTipOutput['suggestedActionTheme'] | undefined) => {
     switch (theme) {
       case "CAUTION":
@@ -34,9 +36,15 @@ export function AiCoachAvatarPanel({ tipData, isLoading, className }: AiCoachAva
   const tipText = tipData?.quickTip || "Welcome to Quantum Leap! I'm your AI Coach, ready to help you spot opportunities.";
   const theme = tipData?.suggestedActionTheme || 'ENGAGE';
 
+  const panelGlowClass = 
+    activeTab === 'profitGoal' ? 'default-glow-accent' :
+    activeTab === 'memeFlip' ? 'default-glow-orange' :
+    'default-glow-primary';
+
   return (
     <div className={cn(
-        "p-4 rounded-xl glass-effect default-glow-primary glass-effect-interactive-hover max-w-md w-full mx-auto", 
+        "p-4 rounded-xl glass-effect glass-effect-interactive-hover max-w-md w-full mx-auto", 
+        panelGlowClass,
         className
       )}>
       <div className="flex items-center space-x-3">
@@ -69,3 +77,4 @@ export function AiCoachAvatarPanel({ tipData, isLoading, className }: AiCoachAva
     </div>
   );
 }
+

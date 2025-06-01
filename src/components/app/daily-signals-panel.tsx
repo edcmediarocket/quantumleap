@@ -11,6 +11,7 @@ import { LoadingDots } from '@/components/ui/loading-dots';
 import { Rss, Terminal, CalendarDays } from 'lucide-react';
 import { GlassCardRoot } from './glass-card';
 import { cn } from '@/lib/utils';
+import type { ActiveTabType } from '@/app/page'; // Import ActiveTabType
 
 let app: FirebaseApp;
 let db: Firestore;
@@ -39,7 +40,11 @@ interface Signal {
   createdAt: string; // ISO string
 }
 
-export function DailySignalsPanel() {
+interface DailySignalsPanelProps {
+  activeTab: ActiveTabType;
+}
+
+export function DailySignalsPanel({ activeTab }: DailySignalsPanelProps) {
   const [signals, setSignals] = useState<Signal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -89,10 +94,16 @@ export function DailySignalsPanel() {
     }
   };
 
+  const panelGlowClass = 
+    activeTab === 'profitGoal' ? 'default-glow-accent' :
+    activeTab === 'memeFlip' ? 'default-glow-orange' :
+    'default-glow-primary';
+
   return (
     <section className="my-8">
       <GlassCardRoot className={cn(
-          "glass-effect glass-effect-interactive-hover default-glow-primary w-full max-w-3xl mx-auto p-6"
+          "glass-effect glass-effect-interactive-hover w-full max-w-3xl mx-auto p-6",
+          panelGlowClass
         )}>
         <h2 className="text-2xl font-bold text-primary flex items-center mb-4">
           <Rss className="h-7 w-7 mr-3" />
@@ -135,3 +146,4 @@ export function DailySignalsPanel() {
     </section>
   );
 }
+

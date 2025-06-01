@@ -8,11 +8,16 @@ import { Progress } from '@/components/ui/progress';
 import { LoadingDots } from '@/components/ui/loading-dots';
 import { Zap, TrendingUp, Activity, ShieldAlert, Clock, MessageSquare, TargetIcon, Lightbulb } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { predictiveBreakoutAlerts, type PredictiveBreakoutAlertsInput, type PredictiveBreakoutAlertsOutput } from '@/ai/flows/predictive-breakout-alerts';
+import { predictiveBreakoutAlerts, type PredictiveBreakoutAlertsOutput } from '@/ai/flows/predictive-breakout-alerts';
 import { GlassCardRoot } from './glass-card';
 import { useToast } from '@/hooks/use-toast';
+import type { ActiveTabType } from '@/app/page'; // Import ActiveTabType
 
-export function PredictiveBreakoutAlertsPanel() {
+interface PredictiveBreakoutAlertsPanelProps {
+  activeTab: ActiveTabType;
+}
+
+export function PredictiveBreakoutAlertsPanel({ activeTab }: PredictiveBreakoutAlertsPanelProps) {
   const [alertsOutput, setAlertsOutput] = useState<PredictiveBreakoutAlertsOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,9 +57,16 @@ export function PredictiveBreakoutAlertsPanel() {
     return 'bg-orange-500/20 [&>div]:bg-gradient-to-r [&>div]:from-orange-400 [&>div]:to-red-500';
   };
 
+  const panelGlowClass = 
+    activeTab === 'profitGoal' ? 'default-glow-accent' :
+    activeTab === 'memeFlip' ? 'default-glow-orange' :
+    'default-glow-primary';
+
+  const alertItemGlowClass = panelGlowClass; // Make alert items match the panel's glow
+
   return (
     <section className="my-12">
-      <GlassCardRoot className="glass-effect glass-effect-interactive-hover default-glow-primary w-full max-w-4xl mx-auto p-6 md:p-8">
+      <GlassCardRoot className={cn("glass-effect glass-effect-interactive-hover w-full max-w-4xl mx-auto p-6 md:p-8", panelGlowClass)}>
         <div className="flex flex-col sm:flex-row items-center justify-between mb-6">
           <h2 className="text-3xl font-bold tracking-tight text-primary flex items-center mb-4 sm:mb-0">
             <Zap className="h-8 w-8 mr-3" />
@@ -95,7 +107,8 @@ export function PredictiveBreakoutAlertsPanel() {
             {alertsOutput.alerts.map((alert, index) => (
               <div key={index} className={cn(
                 "p-5 rounded-lg border border-border/40 bg-card/50 shadow-lg transition-all duration-300",
-                "glass-effect glass-effect-interactive-hover default-glow-primary" 
+                "glass-effect glass-effect-interactive-hover",
+                alertItemGlowClass 
               )}>
                 <AlertTitle className="text-xl font-semibold text-primary flex items-center mb-2"> 
                   <TrendingUp className="h-6 w-6 mr-2" /> {alert.alertTitle}
@@ -139,3 +152,4 @@ export function PredictiveBreakoutAlertsPanel() {
     </section>
   );
 }
+

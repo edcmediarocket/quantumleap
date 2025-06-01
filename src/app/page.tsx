@@ -41,6 +41,8 @@ const auth = getAuth(app);
 
 const functionsBaseUrl = process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_URL;
 
+export type ActiveTabType = 'aiPicks' | 'profitGoal' | 'memeFlip' | 'none';
+
 export default function QuantumLeapPage() {
   const { toggles, loadingToggles, errorToggles } = useFeatureTogglesContext();
 
@@ -62,7 +64,7 @@ export default function QuantumLeapPage() {
   const [currentAiPicksInput, setCurrentAiPicksInput] = useState<AiCoinPicksInput | null>(null);
   const [currentQuickProfitInput, setCurrentQuickProfitInput] = useState<RecommendCoinsForProfitTargetInput | null>(null);
 
-  const [activeTab, setActiveTab] = useState<string>("aiPicks"); 
+  const [activeTab, setActiveTab] = useState<ActiveTabType>("aiPicks"); 
 
   const { toast } = useToast();
 
@@ -276,13 +278,13 @@ export default function QuantumLeapPage() {
     <div className="container mx-auto min-h-screen px-4 py-8 selection:bg-primary/30 selection:text-primary-foreground">
       <AppHeader />
       
-      {toggles.predictiveAlertsEnabled && <PredictiveBreakoutAlertsPanel />}
-      {toggles.dailySignalsPanelEnabled && <DailySignalsPanel />}
+      {toggles.predictiveAlertsEnabled && <PredictiveBreakoutAlertsPanel activeTab={activeTab} />}
+      {toggles.dailySignalsPanelEnabled && <DailySignalsPanel activeTab={activeTab} />}
 
 
       {toggles.aiCoachEnabled && (
         <div className="my-8">
-          <AiCoachAvatarPanel tipData={coachQuickTip} isLoading={isLoadingCoachQuickTip} />
+          <AiCoachAvatarPanel tipData={coachQuickTip} isLoading={isLoadingCoachQuickTip} activeTab={activeTab} />
           {coachQuickTipError && (
               <Alert variant="destructive" className="mt-2 max-w-md mx-auto text-xs">
                   <Terminal className="h-4 w-4" />
@@ -295,7 +297,7 @@ export default function QuantumLeapPage() {
       
       <main className="mt-6">
         {enabledTabsCount > 0 ? (
-          <Tabs defaultValue={activeTab} value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <Tabs defaultValue={activeTab} value={activeTab} onValueChange={(value) => setActiveTab(value as ActiveTabType)} className="w-full">
             <TabsList 
               className={cn(
                 "grid w-full mx-auto bg-background/50 border border-border/50 md:max-w-xl lg:max-w-2xl",
@@ -490,3 +492,4 @@ export default function QuantumLeapPage() {
     </div>
   );
 }
+
