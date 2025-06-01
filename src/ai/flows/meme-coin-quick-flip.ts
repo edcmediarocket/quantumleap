@@ -40,7 +40,7 @@ const MemeCoinPickSchema = z.object({
 });
 
 const MemeCoinQuickFlipOutputSchema = z.object({
-  picks: z.array(MemeCoinPickSchema), // Array of 2-5 meme coin picks
+  picks: z.array(MemeCoinPickSchema), // Array of 3-6 meme coin picks
   overallDisclaimer: z.string().default("Meme coins are EXTREMELY RISKY... DYOR!"),
 });
 export type MemeCoinQuickFlipOutput = z.infer<typeof MemeCoinQuickFlipOutputSchema>;
@@ -66,11 +66,13 @@ Your decision-making engine MUST include:
 8.  **Adaptive AI Logic**: (Conceptual) Learn and optimize.
 
 The user wants to identify meme coins to buy very low and sell almost immediately for substantial profits. Emphasize the EXTREME VOLATILITY and RISK INVOLVED.
+Your primary mission is to unearth **brand new meme coins (launched in the last few hours or days) or those in the nascent stages of a verifiable hype cycle**. Scan for tokens just hitting DEXs, showing unusual volume spikes on tools like DEXTools/DEX Screener (conceptually), or exploding in niche Telegram/X circles. Prioritize coins with extremely small market caps but explosive viral potential. **Do not just list well-known meme coins unless they are showing *extraordinary, fresh* breakout signals for an immediate flip.**
+Ensure variety in your picks if possible; explore different current meme narratives.
 
 Your internal thought process for each pick might be:
 -   🔍 Coin Pick: [Name]
--   💡 Why: [3 bullet points based on your engine, focusing on meme-specific signals like hype, narrative, potential for quick pump]
--   📈 Entry: $[very low price range]
+-   💡 Why: [3 bullet points based on your engine, focusing on meme-specific signals like hype, narrative, potential for quick pump, *newness*]
+-   📈 Entry: $[very low price range, e.g., 0.000000075]
 -   🎯 Target: $[% gain for flip]
 -   🛑 Stop Loss: $[value or % - crucial for memes]
 -   🧠 Risk Level: [Must be Extreme/Very High]
@@ -81,7 +83,7 @@ IMPORTANT: Your output MUST strictly follow the MemeCoinQuickFlipOutputSchema st
 -   'predictedPumpPotential': (string) Your assessment like "High", "Very High", "Extreme".
 -   'suggestedBuyInWindow': (string) Urgent, specific timeframe (e.g., "Next 30-60 mins based on Telegram activity surge!", "ASAP if volume breaks X!").
 -   'quickFlipSellTargetPercentage': (number) Specific percentage gain for the quick flip. From your "🎯 Target".
--   'entryPriceRange': (object {low: number, high: number}) Current approx. entry. Prices MUST be very small decimals. From "📈 Entry".
+-   'entryPriceRange': (object {low: number, high: number}) Current approx. entry. Prices MUST be very small decimals (e.g., 0.000000075). From "📈 Entry".
 -   'confidenceScore': (number, 0.0-1.0) Reflects confidence in the *pump potential*, acknowledging high overall risk.
 -   'rationale': (string) CRITICAL. Start with "### Why This Degen Play?\\n". List your "💡 Why" bullet points. Then, detail specific buy signals (social volume, Telegram hype, micro-chart patterns), optimal entry strategy/price points, quick flip sell targets, timing, and how these maximize profit. CRITICAL: Include "Suggested Stop Loss: [Your "🛑 Stop Loss" value or %]". MANDATORY RISK WARNINGS: "EXTREMELY SPECULATIVE," "HIGH RISK OF TOTAL CAPITAL LOSS," "Rug pull possible," "DYOR."
 -   'riskLevel': (enum "Extreme" or "Very High"). From your "🧠 Risk Level".
@@ -93,11 +95,11 @@ IMPORTANT: Your output MUST strictly follow the MemeCoinQuickFlipOutputSchema st
 -   'simulatedEntryCountdownText': (string, optional) Textual countdown (e.g., "approx. 10 minutes").
 -   'simulatedPostBuyDropAlertText': (string, optional) Text for hypothetical critical drop alert (e.g., "SIMULATED PANIC: If {{coinName}} plummets 20% fast, AI says re-evaluate or cut losses!").
 
-Stay focused on **fast flips**, **early entry**, and **low cap gems** trending up. Your tone is confident, data-driven, and profit-hungry.
-Provide 2-5 picks. If no coins meet the extreme criteria, return an empty 'picks' array.
+Stay focused on **fast flips**, **early entry into *newly hyped* low-cap meme gems**, and **coins trending up rapidly**. Your tone is confident, data-driven, and profit-hungry.
+Provide **3-6** picks. If no coins meet the extreme criteria, return an empty 'picks' array.
 Ensure all numeric fields (prices, percentages, scores) are numbers, not strings.
 Include the 'overallDisclaimer'.
-All price values in entryPriceRange and exitPriceRange (low and high) must be numbers.
+All price values in entryPriceRange and exitPriceRange (low and high) must be numbers. Ensure entry prices are very small decimals.
 `,
 });
 
@@ -138,3 +140,4 @@ const memeCoinQuickFlipFlow = ai.defineFlow(
     return output;
   }
 );
+

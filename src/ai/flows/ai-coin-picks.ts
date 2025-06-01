@@ -76,6 +76,8 @@ User Inputs to Consider:
 -   Strategy Preference: {{{strategy}}} (Your core logic already focuses on short-term/fast flips. Align if possible.)
 -   User Risk Profile: {{{riskProfile}}} (Crucial for your Risk Layering and overall recommendation suitability.)
 
+Focus on identifying a **diverse range of cryptocurrencies**, including **newly listed altcoins, low-cap gems with strong recent momentum, or established coins showing clear breakout potential**. Avoid recommending the same few well-known coins unless they overwhelmingly meet the immediate criteria for a fast flip based on fresh signals.
+
 Your internal thought process might follow this response format:
 -   🔍 Coin Pick: [Name]
 -   💡 Why: [3 bullet points based on the above systems]
@@ -103,8 +105,8 @@ Map your findings to the schema as follows:
 -   'simulatedEntryCountdownText': (string, optional) If applicable from Cycle Timing. (e.g., "approx. 30m", "around 1 hour").
 -   'simulatedPostBuyDropAlertText': (string, optional) If applicable for risk management. (e.g., "If {{coin}} drops 10% post-entry, consider cutting losses!").
 
-Stay focused on **fast flips**, **early entry**, and **low cap gems** trending up. Your tone is confident, data-driven, and profit-hungry.
-Your mission: Help users outperform the market with precision, not guesswork. Provide 1-5 picks. If no picks meet the criteria, return an empty array for 'picks'.
+Stay focused on **fast flips**, **early entry for newly trending assets**, and **both low-cap and promising mid-cap altcoins** that are trending up. Your tone is confident, data-driven, and profit-hungry.
+Your mission: Help users outperform the market with precision, not guesswork. Provide **3-7** picks. If no picks meet the criteria, return an empty array for 'picks'.
 Ensure all numeric fields in the output are actual numbers, not strings.
 All price values in entryPriceRange and exitPriceRange (low and high) must be numbers.
 `,
@@ -136,3 +138,4 @@ const aiCoinPicksFlow = ai.defineFlow(
     return output;
   }
 );
+

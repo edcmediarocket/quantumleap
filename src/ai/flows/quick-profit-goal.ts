@@ -80,11 +80,12 @@ Leverage your advanced decision-making engine:
 7.  **Profit Strategy Design**: Devise a clear plan for each recommendation.
 8.  **Adaptive AI Logic**: (Conceptual) Learn and optimize.
 
-Your primary goal is to recommend 3-5 coins that can realistically help the user achieve their {{{profitTarget}}} USD profit, considering their {{{riskTolerance}}}.
+Your primary goal is to recommend **3-6 coins** that can realistically help the user achieve their {{{profitTarget}}} USD profit, considering their {{{riskTolerance}}}.
+Strive to recommend a **diverse basket of altcoins** that could contribute to the profit target. This should include not only well-established altcoins but also **promising mid-cap and small-cap altcoins, and even newly listed tokens** that show strong fundamental or technical catalysts aligning with the user's risk profile ({{{riskTolerance}}}). Look for coins with recent significant developments, protocol upgrades, or upcoming exchange listings that could drive profitability. **Move beyond just the top 20 coins and consider a broader spectrum of the altcoin market.**
 While fast flips are good, the strategy should align with the profit target's achievability.
 
 For each recommended coin, map your findings to the RecommendCoinsForProfitTargetOutputSchema:
--   'coinName': (string) Full name and ticker (e.g., Bitcoin (BTC)).
+-   'coinName': (string) Full name and ticker (e.g., Bitcoin (BTC)). Must be a specific coin, not a category.
 -   'estimatedGain': (number) The potential percentage profit needed to contribute to the overall profit target, or if a single coin strategy, to meet it.
 -   'estimatedDuration': (string) How long it might take (e.g., "5-10 days", "2 weeks").
 -   'entryPriceRange': (object {low: number, high: number}). Ensure values are numeric.
@@ -95,8 +96,8 @@ For each recommended coin, map your findings to the RecommendCoinsForProfitTarge
 -   'riskRoiGauge': (number, 0.0-1.0, optional) Your assessment of risk vs. reward for this specific coin in context of the user's goal.
 -   'rationale': (string) A detailed explanation (3-4 paragraphs for advanced users). Cover:
     *   Relevant technical analysis (support/resistance, patterns, indicators).
-    *   Key fundamental factors (project developments, news, tokenomics).
-    *   Current market sentiment, whale/social activity.
+    *   Key fundamental factors (project developments, news, tokenomics, team, utility).
+    *   Current market sentiment, whale/social activity, or recent news catalysts.
     *   How it aligns with {{{riskTolerance}}} and contributes to achieving {{{profitTarget}}}.
     *   Potential catalysts and key risks/invalidation points. Include a "Suggested Stop Loss" within this rationale.
 -   'predictedEntryWindowDescription': (string, optional) Ideal entry window/conditions.
@@ -107,6 +108,7 @@ For each recommended coin, map your findings to the RecommendCoinsForProfitTarge
 Your tone should be confident, data-driven, and profit-hungry, but also mindful of the user's specific profit goal and risk tolerance.
 Ensure all numeric fields are numbers. Price values in ranges must be numbers.
 If no suitable coins are found, return an empty array for 'recommendedCoins'.
+Ensure the 'coinName' field always refers to a specific tradable cryptocurrency, not a general category or concept.
 `,
 });
 
@@ -131,3 +133,4 @@ const recommendCoinsForProfitTargetFlow = ai.defineFlow(
     return output;
   }
 );
+
