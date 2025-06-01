@@ -332,18 +332,20 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
         predictedGainPercentage: gain,
         entryPriceRange: entryPriceRange,
         exitPriceRange: exitPriceRange,
-        estimatedDuration: estimatedDuration || "Short-term", // Default for meme if undefined
+        estimatedDuration: estimatedDuration || "Short-term", 
       };
       
-      if (type === 'aiPick' && riskProfile) { // Use riskProfile from aiPick
+      if (type === 'aiPick' && riskProfile) { 
          if (riskProfile === 'cautious') coachInput.riskTolerance = 'low';
          else if (riskProfile === 'balanced') coachInput.riskTolerance = 'medium';
          else if (riskProfile === 'aggressive') coachInput.riskTolerance = 'high';
-      } else if (type === 'profitGoal' && riskTolerance) { // Use riskTolerance from profitGoal
+      } else if (type === 'profitGoal' && riskTolerance) { 
         coachInput.riskTolerance = riskTolerance;
       } else if (type === 'memeFlip') {
-        coachInput.riskTolerance = 'high'; // Meme coins are inherently high risk
+        coachInput.riskTolerance = 'high'; 
+        if (!coachInput.estimatedDuration) coachInput.estimatedDuration = "Few hours to 2 days"; // Default for meme if undefined
       }
+
 
       if (profitTarget) coachInput.profitTarget = profitTarget;
       
@@ -739,10 +741,10 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
                     {coachStrategies && !isLoadingCoach && (
                       <div className="space-y-4">
                         {coachStrategies.topPickRationale && (
-                          <div className="p-4 rounded-lg bg-primary/10 border-2 border-yellow-400 shadow-lg mb-6">
+                          <div className="p-4 rounded-lg bg-primary/10 border-2 border-primary shadow-lg mb-6">
                             <div className="flex items-center gap-2 mb-2">
-                               <StarIcon className="h-6 w-6 text-yellow-400 fill-yellow-400" />
-                              <h4 className="text-md font-semibold text-yellow-300">AI's Top Strategy Rationale</h4>
+                               <StarIcon className="h-6 w-6 text-primary fill-primary" />
+                              <h4 className="text-md font-semibold text-primary">AI's Top Strategy Rationale</h4>
                             </div>
                             <p className="text-sm text-primary-foreground/90 italic">{coachStrategies.topPickRationale}</p>
                           </div>
@@ -757,15 +759,15 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
                           <div key={index} 
                                className={cn(
                                 "p-3 rounded-md bg-card/50 border border-border/40 shadow-md space-y-3",
-                                strategy.isTopPick && "border-2 border-yellow-400 ring-2 ring-yellow-400/50 bg-primary/5 relative"
+                                strategy.isTopPick && "border-2 border-primary ring-2 ring-primary/50 bg-primary/10 relative"
                                )}>
                             {strategy.isTopPick && (
-                                <div className="absolute -top-3 -left-3 bg-yellow-400 text-black p-1.5 rounded-full shadow-lg">
+                                <div className="absolute -top-3 -left-3 bg-primary text-primary-foreground p-1.5 rounded-full shadow-lg">
                                     <StarIcon className="h-5 w-5" />
                                 </div>
                             )}
                             <div>
-                                <h4 className={cn("font-semibold text-primary-foreground", strategy.isTopPick && "text-yellow-300")}>{strategy.name} {strategy.isTopPick && "(Top Pick)"}</h4>
+                                <h4 className={cn("font-semibold text-primary-foreground", strategy.isTopPick && "text-primary")}>{strategy.name} {strategy.isTopPick && "(Top Pick)"}</h4>
                                 <p className="text-xs text-muted-foreground mt-1">{strategy.description}</p>
                                 {strategy.optimalBuyPrice && <p className="text-xs text-muted-foreground mt-1"><span className="font-medium text-green-400">Optimal Buy:</span> {formatPrice(strategy.optimalBuyPrice)}</p>}
                                 {strategy.targetSellPrices && strategy.targetSellPrices.length > 0 && <p className="text-xs text-muted-foreground mt-1"><span className="font-medium text-red-400">Target Sells:</span> {strategy.targetSellPrices.map(p => formatPrice(p)).join(', ')}</p>}
@@ -812,3 +814,4 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
     </GlassCardRoot>
   );
 }
+
