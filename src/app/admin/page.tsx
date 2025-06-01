@@ -215,7 +215,7 @@ const AdminDashboard = () => {
           </div>
         </div>
          <footer className="mt-12 text-center text-xs text-muted-foreground/70">
-            <p>Admin Panel &copy; {new Date().getFullYear()} Quantum Leap</p>
+            <p>©️ 2025 Designed By Corey Dean | All Rights Reserved</p>
         </footer>
     </div>
   );

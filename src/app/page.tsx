@@ -95,7 +95,7 @@ export default function QuantumLeapPage() {
 
     console.log(`Attempting to log to: ${functionsBaseUrl} for flow: ${flowName}`);
     try {
-      const response = await fetch(functionsBaseUrl, { // Corrected: Use functionsBaseUrl directly
+      const response = await fetch(functionsBaseUrl, { 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -508,7 +508,7 @@ export default function QuantumLeapPage() {
       </main>
        <footer className="mt-12 py-4 text-center text-xs text-muted-foreground/70 border-t border-border/20">
         <p>AI-generated insights are for informational purposes only and not financial advice. Cryptocurrency investments are subject to high market risk. Predictions are not guaranteed. DYOR!</p>
-        <p>&copy; {new Date().getFullYear()} Quantum Leap. All rights reserved.</p>
+        <p>©️ 2025 Designed By Corey Dean | All Rights Reserved</p>
       </footer>
     </div>
   );

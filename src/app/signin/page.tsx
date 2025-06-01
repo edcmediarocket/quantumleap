@@ -24,7 +24,7 @@ export default function SignInPage() {
       </div>
       <SignInForm />
        <footer className="mt-12 py-4 text-center text-xs text-muted-foreground/70 border-t border-border/20 w-full max-w-md">
-        <p>&copy; {new Date().getFullYear()} Quantum Leap. All rights reserved.</p>
+        <p>©️ 2025 Designed By Corey Dean | All Rights Reserved</p>
       </footer>
     </div>
   );
