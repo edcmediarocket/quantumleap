@@ -1,4 +1,4 @@
-
+// src/components/app/predictive-breakout-alerts-panel.tsx
 "use client";
 
 import React, { useState } from 'react';
@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 import { predictiveBreakoutAlerts, type PredictiveBreakoutAlertsOutput } from '@/ai/flows/predictive-breakout-alerts';
 import { GlassCardRoot } from './glass-card';
 import { useToast } from '@/hooks/use-toast';
-import type { ActiveTabType } from '@/app/page'; // Import ActiveTabType
+import type { ActiveTabType } from '@/app/page'; 
 
 interface PredictiveBreakoutAlertsPanelProps {
   activeTab: ActiveTabType;
@@ -62,17 +62,27 @@ export function PredictiveBreakoutAlertsPanel({ activeTab }: PredictiveBreakoutA
     activeTab === 'memeFlip' ? 'default-glow-orange' :
     'default-glow-primary';
 
-  const alertItemGlowClass = panelGlowClass; // Make alert items match the panel's glow
+  const titleTextColor = 
+    activeTab === 'profitGoal' ? 'text-accent' :
+    activeTab === 'memeFlip' ? 'text-[hsl(var(--orange-hsl))]' :
+    'text-primary';
+  
+  const buttonBgColor =
+    activeTab === 'profitGoal' ? 'bg-accent hover:bg-accent/90' :
+    activeTab === 'memeFlip' ? 'bg-[hsl(var(--orange-hsl))] hover:bg-[hsl(var(--orange-hsl))]/90 text-white' :
+    'bg-primary hover:bg-primary/90';
+
+  const alertItemGlowClass = panelGlowClass; 
 
   return (
     <section className="my-12">
       <GlassCardRoot className={cn("glass-effect glass-effect-interactive-hover w-full max-w-4xl mx-auto p-6 md:p-8", panelGlowClass)}>
         <div className="flex flex-col sm:flex-row items-center justify-between mb-6">
-          <h2 className="text-3xl font-bold tracking-tight text-primary flex items-center mb-4 sm:mb-0">
-            <Zap className="h-8 w-8 mr-3" />
+          <h2 className={cn("text-3xl font-bold tracking-tight flex items-center mb-4 sm:mb-0", titleTextColor)}>
+            <Zap className={cn("h-8 w-8 mr-3", titleTextColor)} />
             Predictive Breakout Alerts
           </h2>
-          <Button onClick={handleScanForAlerts} disabled={isLoading} size="lg" className="bg-primary hover:bg-primary/90">
+          <Button onClick={handleScanForAlerts} disabled={isLoading} size="lg" className={cn(buttonBgColor)}>
             {isLoading ? <LoadingDots /> : <><Activity className="mr-2 h-5 w-5" /> Scan for Opportunities</>}
           </Button>
         </div>
@@ -92,7 +102,7 @@ export function PredictiveBreakoutAlertsPanel({ activeTab }: PredictiveBreakoutA
 
         {alertsOutput && !isLoading && alertsOutput.alerts.length === 0 && !error && (
           <div className="text-center py-10 text-muted-foreground bg-card/30 rounded-lg p-6">
-            <Lightbulb className="h-12 w-12 mx-auto mb-4 text-primary/50" />
+            <Lightbulb className={cn("h-12 w-12 mx-auto mb-4", titleTextColor, "opacity-50")} />
             <h3 className="text-xl font-semibold mb-2">No Strong Breakout Signals Detected</h3>
             <p className="text-sm">The AI didn't find any coins with a high confluence of breakout signals in the current (simulated) scan. Markets might be consolidating, or early signals are not yet strong enough. Try scanning again later.</p>
             {alertsOutput.lastScanned && <p className="text-xs mt-3">Last scan: {new Date(alertsOutput.lastScanned).toLocaleString()}</p>}
@@ -110,7 +120,7 @@ export function PredictiveBreakoutAlertsPanel({ activeTab }: PredictiveBreakoutA
                 "glass-effect glass-effect-interactive-hover",
                 alertItemGlowClass 
               )}>
-                <AlertTitle className="text-xl font-semibold text-primary flex items-center mb-2"> 
+                <AlertTitle className={cn("text-xl font-semibold flex items-center mb-2", titleTextColor)}> 
                   <TrendingUp className="h-6 w-6 mr-2" /> {alert.alertTitle}
                 </AlertTitle>
                 
@@ -121,7 +131,7 @@ export function PredictiveBreakoutAlertsPanel({ activeTab }: PredictiveBreakoutA
 
                 <div className="grid md:grid-cols-2 gap-4 text-sm mb-3">
                     <div>
-                        <h4 className="font-medium text-primary-foreground/80 mb-1 flex items-center"><Activity className="h-4 w-4 mr-1.5 text-primary/70" />Key Signals:</h4>
+                        <h4 className="font-medium text-primary-foreground/80 mb-1 flex items-center"><Activity className={cn("h-4 w-4 mr-1.5", titleTextColor, "opacity-70")} />Key Signals:</h4>
                         <ul className="list-disc list-inside text-muted-foreground space-y-1 pl-4 text-xs">
                         {alert.keySignals.map((signal, i) => <li key={i}>{signal}</li>)}
                         </ul>
@@ -135,7 +145,7 @@ export function PredictiveBreakoutAlertsPanel({ activeTab }: PredictiveBreakoutA
                 </div>
                 
                 <div className="mb-3">
-                    <h4 className="font-medium text-primary-foreground/80 mb-1 flex items-center"><MessageSquare className="h-4 w-4 mr-1.5 text-purple-400" />AI Rationale:</h4>
+                    <h4 className="font-medium text-primary-foreground/80 mb-1 flex items-center"><MessageSquare className={cn("h-4 w-4 mr-1.5", titleTextColor === 'text-primary' ? 'text-purple-400' : titleTextColor === 'text-accent' ? 'text-blue-400' : 'text-orange-400')} />AI Rationale:</h4>
                     <p className="text-xs text-muted-foreground italic bg-background/30 p-2 rounded-md border border-border/20">{alert.briefRationale}</p>
                 </div>
                 
@@ -152,4 +162,3 @@ export function PredictiveBreakoutAlertsPanel({ activeTab }: PredictiveBreakoutA
     </section>
   );
 }
-

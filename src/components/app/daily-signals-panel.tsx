@@ -1,4 +1,3 @@
-
 // src/components/app/daily-signals-panel.tsx
 "use client";
 
@@ -11,7 +10,7 @@ import { LoadingDots } from '@/components/ui/loading-dots';
 import { Rss, Terminal, CalendarDays } from 'lucide-react';
 import { GlassCardRoot } from './glass-card';
 import { cn } from '@/lib/utils';
-import type { ActiveTabType } from '@/app/page'; // Import ActiveTabType
+import type { ActiveTabType } from '@/app/page'; 
 
 let app: FirebaseApp;
 let db: Firestore;
@@ -77,7 +76,7 @@ export function DailySignalsPanel({ activeTab }: DailySignalsPanelProps) {
       }
     );
 
-    return () => unsubscribe(); // Cleanup listener on unmount
+    return () => unsubscribe(); 
   }, []);
 
   const formatDate = (isoString: string) => {
@@ -99,14 +98,19 @@ export function DailySignalsPanel({ activeTab }: DailySignalsPanelProps) {
     activeTab === 'memeFlip' ? 'default-glow-orange' :
     'default-glow-primary';
 
+  const titleTextColor = 
+    activeTab === 'profitGoal' ? 'text-accent' :
+    activeTab === 'memeFlip' ? 'text-[hsl(var(--orange-hsl))]' :
+    'text-primary';
+
   return (
     <section className="my-8">
       <GlassCardRoot className={cn(
           "glass-effect glass-effect-interactive-hover w-full max-w-3xl mx-auto p-6",
           panelGlowClass
         )}>
-        <h2 className="text-2xl font-bold text-primary flex items-center mb-4">
-          <Rss className="h-7 w-7 mr-3" />
+        <h2 className={cn("text-2xl font-bold flex items-center mb-4", titleTextColor)}>
+          <Rss className={cn("h-7 w-7 mr-3", titleTextColor)} />
           Latest Daily Signals
         </h2>
 
@@ -146,4 +150,3 @@ export function DailySignalsPanel({ activeTab }: DailySignalsPanelProps) {
     </section>
   );
 }
-

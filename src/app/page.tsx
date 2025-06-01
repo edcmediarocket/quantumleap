@@ -1,4 +1,3 @@
-
 // src/app/page.tsx
 "use client";
 
@@ -276,7 +275,7 @@ export default function QuantumLeapPage() {
 
   return (
     <div className="container mx-auto min-h-screen px-4 py-8 selection:bg-primary/30 selection:text-primary-foreground">
-      <AppHeader />
+      <AppHeader activeTab={activeTab} />
       
       {toggles.predictiveAlertsEnabled && <PredictiveBreakoutAlertsPanel activeTab={activeTab} />}
       {toggles.dailySignalsPanelEnabled && <DailySignalsPanel activeTab={activeTab} />}
@@ -492,4 +491,3 @@ export default function QuantumLeapPage() {
     </div>
   );
 }
-
