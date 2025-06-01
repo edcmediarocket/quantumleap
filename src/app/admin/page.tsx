@@ -9,7 +9,7 @@ import Toggle from '@/components/app/admin/Toggle';
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import { firebaseConfig } from '@/lib/firebaseConfig';
 import { Button } from '@/components/ui/button';
-import { ShieldCheck, Settings, ArrowLeftCircle, Brain, RefreshCw, AlertTriangle, ListChecks } from 'lucide-react';
+import { ShieldCheck, Settings, ArrowLeftCircle, Brain, RefreshCw, AlertTriangle, ListChecks, MessageSquare } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import Link from 'next/link';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -50,6 +50,7 @@ export interface FeatureToggles {
   predictiveAlertsEnabled: boolean;
   aiCoachEnabled: boolean;
   dailySignalsPanelEnabled: boolean;
+  aiCoachChatboxEnabled: boolean; // New toggle
 }
 
 const initialFeatureTogglesState: FeatureToggles = {
@@ -61,6 +62,7 @@ const initialFeatureTogglesState: FeatureToggles = {
   predictiveAlertsEnabled: true,
   aiCoachEnabled: true,
   dailySignalsPanelEnabled: true,
+  aiCoachChatboxEnabled: true, // Default to true for now
 };
 
 interface CoachLog {
@@ -84,7 +86,7 @@ const AdminDashboard = () => {
   const fetchToggles = useCallback(async (user: User) => {
     if (!user || user.uid !== ADMIN_UID || !db) {
         toast({ title: "Access Issue", description: "Admin user not verified or DB unavailable for fetching toggles.", variant: "warning" });
-        return false; // Indicate failure
+        return false; 
     }
     try {
       const docRef = doc(db, 'adminSettings', 'featureToggles');
@@ -100,12 +102,12 @@ const AdminDashboard = () => {
         setFeatureToggles(initialFeatureTogglesState); 
         toast({ title: "Admin Setup", description: "Initial feature toggles set in Firestore."});
       }
-      return true; // Indicate success
+      return true; 
     } catch (error) {
         console.error("Error fetching toggles:", error);
         toast({ title: "Error", description: `Failed to fetch toggles: ${error instanceof Error ? error.message : "Unknown error"}`, variant: "destructive"});
         setFeatureToggles(initialFeatureTogglesState);
-        return false; // Indicate failure
+        return false; 
     }
   }, [toast]);
 
@@ -140,19 +142,19 @@ const AdminDashboard = () => {
   useEffect(() => {
     if (!auth) {
         console.warn("Firebase Auth is not initialized yet for AdminDashboard effect.");
-        setLoading(false); // Stop main loading if auth isn't ready
+        setLoading(false); 
         return;
     }
 
     const unsubscribe = auth.onAuthStateChanged(async user => {
       setCurrentUser(user);
       if (user && user.uid === ADMIN_UID) {
-        setLoading(true); // Start loading for admin-specific data
+        setLoading(true); 
         const togglesSuccess = await fetchToggles(user);
-        if (togglesSuccess) { // Only fetch logs if toggles were fetched (implies DB is available)
+        if (togglesSuccess) { 
           await fetchCoachLogs();
         }
-        setLoading(false); // All admin data fetching done
+        setLoading(false); 
       } else {
         setLoading(false); 
       }
@@ -180,6 +182,7 @@ const AdminDashboard = () => {
   };
 
   const truncateText = (text: string, maxLength: number = 100) => {
+    if (!text || typeof text !== 'string') return '';
     if (text.length <= maxLength) return text;
     return text.substring(0, maxLength) + "...";
   };
@@ -191,7 +194,7 @@ const AdminDashboard = () => {
         hour: '2-digit', minute: '2-digit', second: '2-digit' 
       });
     } catch {
-      return isoString; // fallback to raw string if parsing fails
+      return isoString; 
     }
   };
 
@@ -329,3 +332,5 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
+
+    

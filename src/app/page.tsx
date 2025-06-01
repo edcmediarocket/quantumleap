@@ -13,10 +13,11 @@ import { HowItWorksPanel } from "@/components/app/how-it-works-panel";
 import { CryptoTerminologyPanel } from "@/components/app/crypto-terminology-panel";
 import { PredictiveBreakoutAlertsPanel } from "@/components/app/predictive-breakout-alerts-panel";
 import { DailySignalsPanel } from "@/components/app/daily-signals-panel";
+import { AiCoachChatbox } from "@/components/app/ai-coach-chatbox"; // New Chatbox import
 import { LoadingDots } from "@/components/ui/loading-dots";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Terminal, TrendingUpIcon, BarChartIcon, RocketIcon, AlertTriangle, ShieldOff } from "lucide-react";
+import { Terminal, TrendingUpIcon, BarChartIcon, RocketIcon, AlertTriangle, ShieldOff, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useFeatureTogglesContext } from "@/contexts/FeatureTogglesContext"; 
@@ -79,12 +80,15 @@ export default function QuantumLeapPage() {
   
   const logAiInteraction = async (userPrompt: string, aiResult: any, flowName: string) => {
     const user = auth.currentUser;
-    if (!user || !user.uid) {
-      console.warn("User not logged in, cannot log AI interaction for", flowName);
+     if (!user || !user.uid) {
+      console.warn(`User not logged in or UID missing. Cannot log AI interaction for "${flowName}". Interaction details: Prompt - "${userPrompt}"`);
+      // Optionally, show a subtle toast if this is a critical logging path, but often it's a background task.
+      // toast({ title: "Logging Notice", description: "Sign in to log your AI interactions.", variant: "default" });
       return;
     }
+
     if (!functionsBaseUrl) {
-      console.warn("CRITICAL: Firebase Functions URL (NEXT_PUBLIC_FIREBASE_FUNCTIONS_URL) is not set in the environment. Cannot log AI interaction for", flowName, ". URL was:", functionsBaseUrl);
+      console.warn(`CRITICAL: Firebase Functions URL (NEXT_PUBLIC_FIREBASE_FUNCTIONS_URL) is not set in the environment. Cannot log AI interaction for "${flowName}". URL was: ${functionsBaseUrl}. Prompt: "${userPrompt}"`);
       toast({
         title: "Logging Configuration Error",
         description: "The AI interaction logging service URL is not configured. Please check environment variables.",
@@ -92,8 +96,10 @@ export default function QuantumLeapPage() {
       });
       return;
     }
+    
+    console.log(`logAiInteraction: Using functionsBaseUrl: ${functionsBaseUrl}`);
+    console.log(`Attempting to POST to: ${functionsBaseUrl} for flow: ${flowName}`);
 
-    console.log(`Attempting to log to: ${functionsBaseUrl} for flow: ${flowName}`);
     try {
       const response = await fetch(functionsBaseUrl, { 
         method: 'POST',
@@ -108,21 +114,18 @@ export default function QuantumLeapPage() {
       if (!response.ok) {
         const errorData = await response.text();
         console.error(`Error logging AI interaction: ${response.status} ${response.statusText}`, errorData);
-        throw new Error(`Server error ${response.status}: ${errorData || response.statusText}`);
+        throw new Error(`Server error ${response.status}: ${errorData || response.statusText}. Full URL was: ${functionsBaseUrl}`);
       }
       // console.log("AI Interaction logged successfully for", flowName);
 
     } catch (error) {
-      console.error(`Error logging AI interaction to backend for "${flowName}" :`, error);
-      // Avoid showing too many toasts for background logging failures unless specifically helpful.
-      // A generic "Failed to fetch" in the console is often the primary indicator.
-      // toast({
-      //   title: "Logging Issue",
-      //   description: `Could not log AI interaction for ${flowName}. Details in console.`,
-      //   variant: "default", 
-      // });
+      console.error(`Client-side error in logAiInteraction for "${flowName}". URL: ${functionsBaseUrl}. Error object:`, error);
+      if (error instanceof TypeError && error.message === "Failed to fetch") {
+          console.error("Detailed 'Failed to fetch' info: This often indicates a network issue, CORS misconfiguration on the server, the server not being reachable, or an issue with the request URL itself. Check the browser's network tab for more details on the failed request.");
+      }
     }
   };
+
 
   useEffect(() => {
     if (loadingToggles || !toggles.aiCoachEnabled) return; 
@@ -503,6 +506,23 @@ export default function QuantumLeapPage() {
             </div>
         )}
 
+        {/* AI Coach Chatbox Section */}
+        {toggles.aiCoachChatboxEnabled && (
+          <section className="mt-16 mb-8">
+            <div className="text-center mb-10">
+              <h2 className="text-3xl font-bold tracking-tight text-primary flex items-center justify-center gap-3">
+                <MessageSquare className="h-8 w-8" />
+                Chat with Quantum AI Coach
+              </h2>
+              <p className="text-muted-foreground mt-2 md:text-lg">
+                Ask questions, get explanations, and learn about crypto trading.
+              </p>
+            </div>
+            <AiCoachChatbox logAiInteraction={logAiInteraction} />
+          </section>
+        )}
+
+
         <HowItWorksPanel activeTab={activeTab} />
         <CryptoTerminologyPanel activeTab={activeTab} />
 
@@ -514,3 +534,5 @@ export default function QuantumLeapPage() {
     </div>
   );
 }
+
+    

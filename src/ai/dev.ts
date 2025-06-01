@@ -7,10 +7,13 @@ import '@/ai/flows/ai-coin-rationale.ts'; // This flow might become redundant or
 import '@/ai/flows/ai-coin-picks.ts';
 import '@/ai/flows/ai-coach-strategies.ts';
 import '@/ai/flows/meme-coin-quick-flip.ts';
-import '@/ai/flows/get-coach-quick-tip.ts'; // Added new flow
-import '@/ai/flows/simulate-strategy-backtest.ts'; // Added new flow for backtesting simulator
-import '@/ai/flows/predictive-breakout-alerts.ts'; // Added new flow for breakout alerts
+import '@/ai/flows/get-coach-quick-tip.ts'; 
+import '@/ai/flows/simulate-strategy-backtest.ts'; 
+import '@/ai/flows/predictive-breakout-alerts.ts'; 
+import '@/ai/flows/ai-coach-chat.ts'; // New AI Coach Chat flow
+    
 
     
+
 
     

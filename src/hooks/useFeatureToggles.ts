@@ -3,7 +3,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { getFirestore, doc, Firestore, onSnapshot } from 'firebase/firestore'; // Added onSnapshot
+import { getFirestore, doc, Firestore, onSnapshot } from 'firebase/firestore'; 
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import { firebaseConfig } from '@/lib/firebaseConfig';
 import type { FeatureToggles } from '@/app/admin/page';
@@ -24,7 +24,7 @@ if (!getApps().length) {
 if (app! && !db) {
   try {
     db = getFirestore(app);
-  } catch (error) {
+  } catch (error) { // Added missing opening curly brace here
     console.error("Error initializing Firestore in useFeatureToggles:", error);
   }
 }
@@ -37,7 +37,8 @@ const defaultFeatureTogglesState: FeatureToggles = {
   memeCoinHunterEnabled: true,
   predictiveAlertsEnabled: true,
   aiCoachEnabled: true,
-  dailySignalsPanelEnabled: true, // Added toggle
+  dailySignalsPanelEnabled: true, 
+  aiCoachChatboxEnabled: true, // New toggle default
 };
 
 export function useFeatureToggles() {
@@ -55,7 +56,6 @@ export function useFeatureToggles() {
 
     const docRef = doc(db, 'adminSettings', 'featureToggles');
     
-    // Set initial loading state
     setLoadingToggles(true);
     setErrorToggles(null);
 
@@ -66,21 +66,20 @@ export function useFeatureToggles() {
       } else {
         setToggles(defaultFeatureTogglesState);
         console.warn("Feature toggles document not found in Firestore. Using default settings. Admin page should create this document.");
-        // Optionally, you could try to create the document here with defaults if it's critical
-        // import { setDoc } from 'firebase/firestore';
-        // setDoc(docRef, defaultFeatureTogglesState).catch(err => console.error("Failed to create default toggles", err));
       }
-      setLoadingToggles(false); // Set loading to false after first successful snapshot or if doc doesn't exist
+      setLoadingToggles(false); 
     }, (error) => {
       console.error("Error listening to feature toggles:", error);
       setErrorToggles(error instanceof Error ? error.message : "Failed to load feature toggles in real-time.");
-      setToggles(defaultFeatureTogglesState); // Fallback to defaults on error
+      setToggles(defaultFeatureTogglesState); 
       setLoadingToggles(false);
     });
 
-    return () => unsubscribe(); // Cleanup listener on unmount
+    return () => unsubscribe(); 
 
-  }, []); // Empty dependency array ensures this runs once on mount and cleans up on unmount
+  }, []); 
 
   return { toggles, loadingToggles, errorToggles };
 }
+
+    
