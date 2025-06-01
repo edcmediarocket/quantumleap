@@ -17,6 +17,7 @@ import ReactMarkdown from 'react-markdown';
 import { getAuth, User as FirebaseUser } from 'firebase/auth'; // Import FirebaseUser
 import { firebaseConfig } from '@/lib/firebaseConfig';
 import { initializeApp, getApps } from 'firebase/app';
+import type { ActiveTabType } from '@/app/page';
 
 let app;
 if (!getApps().length) {
@@ -32,6 +33,7 @@ const functionsBaseUrl = process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_URL; // For 
 interface AiCoachChatboxProps {
   className?: string;
   logAiInteraction: (userPrompt: string, aiResult: any, flowName: string) => Promise<void>;
+  activeTab: ActiveTabType;
 }
 
 interface ChatMessage {
@@ -41,7 +43,7 @@ interface ChatMessage {
   timestamp: Date;
 }
 
-export function AiCoachChatbox({ className, logAiInteraction }: AiCoachChatboxProps) {
+export function AiCoachChatbox({ className, logAiInteraction, activeTab }: AiCoachChatboxProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -125,11 +127,43 @@ export function AiCoachChatbox({ className, logAiInteraction }: AiCoachChatboxPr
     }
   };
 
+  const cardGlowClass = 
+    activeTab === 'profitGoal' ? 'default-glow-accent' :
+    activeTab === 'memeFlip' ? 'default-glow-orange' :
+    'default-glow-primary';
+
+  const headerIconColor =
+    activeTab === 'profitGoal' ? 'text-accent' :
+    activeTab === 'memeFlip' ? 'text-[hsl(var(--orange-hsl))]' :
+    'text-primary';
+  
+  const headerTitleColor = 
+    activeTab === 'profitGoal' ? 'text-accent-foreground' : // Assuming accent-foreground for blue themes
+    activeTab === 'memeFlip' ? 'text-white' : // On orange, white text might be better
+    'text-primary-foreground'; // Default
+
+  const aiMessageBubbleClasses = 
+    activeTab === 'profitGoal' ? 'bg-accent/10 text-accent-foreground border-accent/20' :
+    activeTab === 'memeFlip' ? 'bg-orange-500/10 text-foreground border-orange-500/20' :
+    'bg-primary/10 text-primary-foreground border-primary/20';
+
+  const userMessageBubbleClasses =
+    activeTab === 'profitGoal' ? 'bg-blue-500/20 text-blue-100 border-blue-500/30 rounded-br-none' : // Custom user bubble for accent
+    activeTab === 'memeFlip' ? 'bg-red-500/20 text-red-100 border-red-500/30 rounded-br-none' : // Custom user bubble for orange
+    'bg-accent/20 text-accent-foreground border-accent/30 rounded-br-none'; // Default user bubble (current uses accent)
+
+  const sendButtonClasses =
+    activeTab === 'profitGoal' ? 'bg-accent hover:bg-accent/90' :
+    activeTab === 'memeFlip' ? 'bg-[hsl(var(--orange-hsl))] hover:bg-[hsl(var(--orange-hsl))]/90 text-white' :
+    'bg-primary hover:bg-primary/90';
+  
+  const botIconColor = headerIconColor; // Match bot icon to header icon color for consistency
+
   return (
-    <GlassCardRoot className={cn("glass-effect default-glow-primary w-full max-w-2xl mx-auto p-0 flex flex-col", className)} style={{height: '70vh'}}>
+    <GlassCardRoot className={cn("glass-effect w-full max-w-2xl mx-auto p-0 flex flex-col", cardGlowClass, className)} style={{height: '70vh'}}>
       <header className="p-4 border-b border-border/30 flex items-center gap-3">
-        <Brain className="h-7 w-7 text-primary" />
-        <h2 className="text-xl font-semibold text-primary-foreground">Quantum AI Coach Chat</h2>
+        <Brain className={cn("h-7 w-7", headerIconColor)} />
+        <h2 className={cn("text-xl font-semibold", headerTitleColor)}>Quantum AI Coach Chat</h2>
       </header>
       
       <ScrollArea className="flex-grow p-4" ref={scrollAreaRef}>
@@ -142,14 +176,14 @@ export function AiCoachChatbox({ className, logAiInteraction }: AiCoachChatboxPr
                 msg.role === 'user' ? 'ml-auto flex-row-reverse' : 'mr-auto'
               )}
             >
-              {msg.role === 'model' && <Bot className="h-7 w-7 text-primary shrink-0 mb-1" />}
-              {msg.role === 'user' && <User className="h-7 w-7 text-accent shrink-0 mb-1" />}
+              {msg.role === 'model' && <Bot className={cn("h-7 w-7 shrink-0 mb-1", botIconColor)} />}
+              {msg.role === 'user' && <User className={cn("h-7 w-7 shrink-0 mb-1", userMessageBubbleClasses.includes('accent') || userMessageBubbleClasses.includes('blue') ? 'text-accent' : userMessageBubbleClasses.includes('red') ? 'text-red-400' : 'text-accent')} />}
               <div
                 className={cn(
                   "p-3 rounded-xl text-sm shadow-md min-w-[80px]",
                   msg.role === 'user' 
-                    ? 'bg-accent/20 text-accent-foreground border border-accent/30 rounded-br-none' 
-                    : 'bg-primary/10 text-primary-foreground border border-primary/20 rounded-bl-none'
+                    ? cn(userMessageBubbleClasses) 
+                    : cn(aiMessageBubbleClasses, 'rounded-bl-none')
                 )}
               >
                 <ReactMarkdown
@@ -157,14 +191,14 @@ export function AiCoachChatbox({ className, logAiInteraction }: AiCoachChatboxPr
                     p: ({node, ...props}) => <p className="mb-2 last:mb-0" {...props} />,
                     ul: ({node, ...props}) => <ul className="list-disc pl-5 mb-2 space-y-1" {...props} />,
                     ol: ({node, ...props}) => <ol className="list-decimal pl-5 mb-2 space-y-1" {...props} />,
-                    strong: ({node, ...props}) => <strong className="font-semibold text-primary-foreground/90" {...props} />,
+                    strong: ({node, ...props}) => <strong className={cn("font-semibold", activeTab === 'memeFlip' ? 'text-orange-300' : activeTab === 'profitGoal' ? 'text-blue-300' : 'text-purple-300')} {...props} />,
                     em: ({node, ...props}) => <em className="italic" {...props} />,
-                    code: ({node, inline, className, children, ...props}) => {
-                        const match = /language-(\w+)/.exec(className || '')
+                    code: ({node, inline, className: mdClassName, children, ...props}) => {
+                        const match = /language-(\w+)/.exec(mdClassName || '')
                         return !inline && match ? (
-                        <pre className="my-2 bg-background/50 p-2 rounded-md overflow-x-auto text-xs border border-border/30"><code className={className} {...props}>{children}</code></pre>
+                        <pre className="my-2 bg-background/50 p-2 rounded-md overflow-x-auto text-xs border border-border/30"><code className={mdClassName} {...props}>{children}</code></pre>
                         ) : (
-                        <code className="bg-muted px-1 py-0.5 rounded text-xs text-amber-400" {...props}>{children}</code>
+                        <code className={cn("bg-muted px-1 py-0.5 rounded text-xs", activeTab === 'memeFlip' ? 'text-amber-400' : activeTab === 'profitGoal' ? 'text-sky-400' : 'text-fuchsia-400')} {...props}>{children}</code>
                         )
                     }
                   }}
@@ -179,8 +213,8 @@ export function AiCoachChatbox({ className, logAiInteraction }: AiCoachChatboxPr
           ))}
           {isLoading && (
             <div className="flex items-end gap-2 max-w-[85%] mr-auto">
-              <Bot className="h-7 w-7 text-primary shrink-0 mb-1" />
-              <div className="p-3 rounded-xl text-sm shadow-md bg-primary/10 text-primary-foreground border border-primary/20 rounded-bl-none">
+              <Bot className={cn("h-7 w-7 shrink-0 mb-1", botIconColor)} />
+              <div className={cn("p-3 rounded-xl text-sm shadow-md rounded-bl-none", aiMessageBubbleClasses)}>
                 <LoadingDots size="sm" />
               </div>
             </div>
@@ -200,7 +234,12 @@ export function AiCoachChatbox({ className, logAiInteraction }: AiCoachChatboxPr
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           placeholder="Ask Quantum anything about crypto trading..."
-          className="flex-grow resize-none min-h-[40px] max-h-[120px] text-sm rounded-lg focus-visible:ring-primary/80"
+          className={cn(
+            "flex-grow resize-none min-h-[40px] max-h-[120px] text-sm rounded-lg",
+            activeTab === 'profitGoal' && 'focus-visible:ring-accent/80',
+            activeTab === 'memeFlip' && 'focus-visible:ring-orange-500/80',
+            activeTab === 'aiPicks' && 'focus-visible:ring-primary/80'
+          )}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault();
@@ -209,7 +248,7 @@ export function AiCoachChatbox({ className, logAiInteraction }: AiCoachChatboxPr
           }}
           rows={1}
         />
-        <Button type="submit" disabled={isLoading || !inputValue.trim()} className="bg-primary hover:bg-primary/90 h-10 px-4">
+        <Button type="submit" disabled={isLoading || !inputValue.trim()} className={cn("h-10 px-4", sendButtonClasses)}>
           <Send className="h-4 w-4" />
           <span className="sr-only">Send</span>
         </Button>

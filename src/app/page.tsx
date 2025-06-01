@@ -92,7 +92,9 @@ export default function QuantumLeapPage() {
     
      if (!user || !user.uid) {
       console.warn(`User not logged in or UID missing. Cannot log AI interaction for "${flowName}". Interaction details: Prompt - "${userPrompt}"`);
-      return;
+      // Optionally, you could show a toast here to inform the user, but it might be too noisy.
+      // For now, just a console warning.
+      return; // Do not proceed with the fetch call if user is not authenticated
     }
     
     console.log(`logAiInteraction: Using functionsBaseUrl: ${functionsBaseUrl}`);
@@ -516,7 +518,7 @@ export default function QuantumLeapPage() {
                 Ask questions, get explanations, and learn about crypto trading.
               </p>
             </div>
-            <AiCoachChatbox logAiInteraction={logAiInteraction} />
+            <AiCoachChatbox logAiInteraction={logAiInteraction} activeTab={activeTab} />
           </section>
         )}
 
