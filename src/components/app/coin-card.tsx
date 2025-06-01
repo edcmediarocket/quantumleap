@@ -218,11 +218,11 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
     simulatedPostBuyDropAlertText = coinData.simulatedPostBuyDropAlertText;
   } else if (isMemeFlipCoin(coinData, type)) {
     name = coinData.coinName;
-    gain = coinData.predictedGainPercentage;
+    gain = coinData.predictedGainPercentage; // or coinData.quickFlipSellTargetPercentage
     confidence = coinData.confidenceScore;
     predictedPumpPotential = coinData.predictedPumpPotential;
     riskLevel = coinData.riskLevel;
-    // riskMatchScoreValue is not applicable for memeFlip type
+    // riskMatchScoreValue is not applicable by default for memeFlip, but coach can provide it later
     rationale = coinData.rationale;
     entryPriceRange = coinData.entryPriceRange;
     exitPriceRange = coinData.exitPriceRange;
@@ -315,7 +315,7 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
   const [coachError, setCoachError] = useState<string | null>(null);
   const [currentTradingStylePreference, setCurrentTradingStylePreference] = useState<TradingStyle | null>(null);
 
-  const canShowCoach = type === 'aiPick' || type === 'profitGoal';
+  const canShowCoach = type === 'aiPick' || type === 'profitGoal' || type === 'memeFlip';
 
   const fetchCoachStrategies = async (stylePref: TradingStyle | null = null) => {
     if (!canShowCoach) return;
@@ -325,18 +325,31 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
       if (!entryPriceRange || !exitPriceRange) {
         throw new Error("Entry or exit price range is missing for AI Coach.");
       }
-      const input: AiCoachStrategiesInput = {
+
+      let coachInput: AiCoachStrategiesInput = {
         coinName: name,
         currentRationale: rationale,
         predictedGainPercentage: gain,
         entryPriceRange: entryPriceRange,
         exitPriceRange: exitPriceRange,
-        estimatedDuration: estimatedDuration || "Not specified",
-        ...(profitTarget && { profitTarget }),
-        ...(riskTolerance && { riskTolerance }),
-        ...(stylePref && { tradingStylePreference: stylePref }),
+        estimatedDuration: estimatedDuration || "Short-term", // Default for meme if undefined
       };
-      const result = await aiCoachStrategies(input);
+
+      if (type === 'aiPick' || type === 'profitGoal') {
+        if (profitTarget) coachInput.profitTarget = profitTarget;
+        if (riskTolerance) coachInput.riskTolerance = riskTolerance;
+      } else if (type === 'memeFlip') {
+        // For meme flips, risk is inherently high.
+        // We can set it or let the coach infer.
+        // The coach prompt is already geared for advanced users and profit maximization.
+        coachInput.riskTolerance = 'high'; // Explicitly set for meme context if desired
+      }
+      
+      if (stylePref) {
+        coachInput.tradingStylePreference = stylePref;
+      }
+
+      const result = await aiCoachStrategies(coachInput);
       setCoachStrategies(result);
     } catch (error) {
       console.error("Error fetching AI coach strategies:", error);
@@ -351,7 +364,7 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
     if (isDialogOpen && canShowCoach && !coachStrategies && !isLoadingCoach && !coachError) {
         fetchCoachStrategies(currentTradingStylePreference);
     }
-  }, [isDialogOpen, canShowCoach, coachStrategies, isLoadingCoach, coachError, currentTradingStylePreference, name, rationale, gain, entryPriceRange, exitPriceRange, estimatedDuration, profitTarget, riskTolerance]);
+  }, [isDialogOpen, canShowCoach, coachStrategies, isLoadingCoach, coachError, currentTradingStylePreference, name, rationale, gain, entryPriceRange, exitPriceRange, estimatedDuration, profitTarget, riskTolerance, type]);
 
 
   const handleTradingStyleSelect = (style: TradingStyle) => {
@@ -384,16 +397,16 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
     return 'bg-red-500/20 [&>div]:bg-gradient-to-r [&>div]:from-red-400 [&>div]:to-red-600';
   };
   
-  const riskRoiProgressClass = getRiskBasedProgressBg(riskRoiGaugeValue, undefined); // For Risk/ROI, high is "riskier" so colors are inverted if desired. Current logic is: higher score = more red.
-  const riskMatchProgressClass = getRiskBasedProgressBg(riskMatchScoreValue, riskProfile); // For Risk Match, high is good (green).
+  const riskRoiProgressClass = getRiskBasedProgressBg(riskRoiGaugeValue, undefined); 
+  const riskMatchProgressClass = getRiskBasedProgressBg(riskMatchScoreValue, riskProfile); 
 
   const confidenceProgressBg = type === 'memeFlip' ? 'bg-orange-500/20 [&>div]:bg-gradient-to-r [&>div]:from-yellow-500 [&>div]:to-red-500' : 'bg-primary/20 [&>div]:bg-gradient-to-r [&>div]:from-accent [&>div]:to-primary';
 
   const dialogButtonVariant = type === 'memeFlip' ? 'outline' : 'outline';
   const dialogButtonTextColor = type === 'memeFlip' ? 'text-orange-500 border-orange-500 hover:bg-orange-500 hover:text-white' : 'border-accent text-accent hover:bg-accent hover:text-accent-foreground';
   const dialogTitleIcon = type === 'memeFlip' ? <RocketIcon className="h-6 w-6"/> : <Brain className="h-6 w-6"/>;
-  const dialogTitleText = type === 'memeFlip' ? `Meme Analysis for ${name}` : `AI Analysis for ${name}`;
-  const dialogDescriptionText = type === 'memeFlip' ? `Speculative insights for this meme coin. EXTREME RISK!` : `Detailed insights and coaching strategies powered by AI.`;
+  const dialogTitleText = `AI Analysis & Strategies for ${name}`; // Unified title
+  const dialogDescriptionText = type === 'memeFlip' ? `Speculative insights and coaching strategies for this meme coin. EXTREME RISK!` : `Detailed insights and coaching strategies powered by AI.`;
 
   const glowClass = type === 'aiPick' ? 'hover-glow-primary'
                   : type === 'profitGoal' ? 'hover-glow-accent'
@@ -648,7 +661,7 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button variant={dialogButtonVariant} size="sm" className={`w-full ${dialogButtonTextColor}`}>
-              <HelpCircle className="mr-2 h-4 w-4" /> {canShowCoach ? "Why This Coin & AI Coach" : "Why This Meme Coin?"}
+              <HelpCircle className="mr-2 h-4 w-4" /> {canShowCoach ? "Why This Coin & AI Coach" : "Why This Coin?"}
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-xl md:max-w-2xl lg:max-w-4xl xl:max-w-5xl max-h-[90vh] overflow-y-auto bg-popover text-popover-foreground glass-effect !rounded-xl">
