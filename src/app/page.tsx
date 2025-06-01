@@ -84,10 +84,10 @@ export default function QuantumLeapPage() {
       return;
     }
     if (!functionsBaseUrl) {
-      console.warn("Firebase Functions URL not set. Cannot log AI interaction for", flowName, ". URL:", functionsBaseUrl);
+      console.warn("CRITICAL: Firebase Functions URL (NEXT_PUBLIC_FIREBASE_FUNCTIONS_URL) is not set in the environment. Cannot log AI interaction for", flowName, ". URL was:", functionsBaseUrl);
       toast({
-        title: "Logging Error",
-        description: "AI interaction logging service is not configured.",
+        title: "Logging Configuration Error",
+        description: "The AI interaction logging service URL is not configured. Please check environment variables.",
         variant: "destructive",
       });
       return;
@@ -114,10 +114,11 @@ export default function QuantumLeapPage() {
 
     } catch (error) {
       console.error(`Error logging AI interaction to backend for "${flowName}" :`, error);
-      // Avoid showing too many toasts for background logging failures
+      // Avoid showing too many toasts for background logging failures unless specifically helpful.
+      // A generic "Failed to fetch" in the console is often the primary indicator.
       // toast({
       //   title: "Logging Issue",
-      //   description: `Could not log AI interaction for ${flowName}.`,
+      //   description: `Could not log AI interaction for ${flowName}. Details in console.`,
       //   variant: "default", 
       // });
     }
@@ -142,7 +143,7 @@ export default function QuantumLeapPage() {
     };
     fetchInitialTip();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loadingToggles, toggles.aiCoachEnabled]); // Removed logAiInteraction from deps
+  }, [loadingToggles, toggles.aiCoachEnabled]);
 
   const fetchAndSetCoachTip = async (context: GetCoachQuickTipInput['userActionContext'], summary?: string) => {
     if (!toggles.aiCoachEnabled) return; 
