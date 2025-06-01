@@ -9,19 +9,20 @@ if (admin.apps.length === 0) {
 }
 
 export const investmentCoachAgent = onRequest(async (req, res) => {
+  console.log(`investmentCoachAgent: Received request method: ${req.method}, path: ${req.path}, origin: ${req.headers.origin}`);
   // Set CORS headers
-  // For development, '*' is often used. For production, restrict this to your app's domain.
   res.set('Access-Control-Allow-Origin', '*'); 
   res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization'); // Added Authorization if you plan to use it
+  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   // Handle preflight OPTIONS requests
   if (req.method === 'OPTIONS') {
-    res.status(204).send('');
-    return;
+    console.log('investmentCoachAgent: Handling OPTIONS preflight request. Sending 204 with CORS headers.');
+    res.status(204).send(''); // Successfully respond to OPTIONS
+    return; // Important to return here
   }
 
-  console.log('investmentCoachAgent function invoked. Request body keys:', Object.keys(req.body).join(', '));
+  console.log('investmentCoachAgent function invoked (POST request). Request body keys:', Object.keys(req.body).join(', '));
   try {
     const { userId, userPrompt, aiResult } = req.body;
 
@@ -34,7 +35,7 @@ export const investmentCoachAgent = onRequest(async (req, res) => {
 
     if (!userId || !userPrompt || !aiResult) {
       console.error('Validation Error: Missing required fields in request body.', {
-          bodyReceived: req.body, // Log the whole body for debugging missing fields
+          bodyReceived: req.body, 
           userIdProvided: !!userId,
           userPromptProvided: !!userPrompt,
           aiResultProvided: !!aiResult
@@ -46,8 +47,8 @@ export const investmentCoachAgent = onRequest(async (req, res) => {
     console.log(`Attempting to log to coachLogs for userId: ${userId}`);
     await admin.firestore().collection('coachLogs').add({
       userId,
-      userPrompt, // What the user initiated/configured
-      aiResult,   // The stringified JSON result from Genkit
+      userPrompt, 
+      aiResult,   
       timestamp: new Date().toISOString(),
     });
     console.log('Successfully logged to coachLogs.');
@@ -63,7 +64,7 @@ export const investmentCoachAgent = onRequest(async (req, res) => {
     } else {
         console.error("Unknown error structure:", error);
     }
-    // Ensure CORS headers are also set on error responses
     res.status(500).send({ error: 'Failed to log AI interaction due to an internal server error.' });
   }
 });
+

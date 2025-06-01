@@ -80,13 +80,6 @@ export default function QuantumLeapPage() {
   
   const logAiInteraction = async (userPrompt: string, aiResult: any, flowName: string) => {
     const user = auth.currentUser;
-     if (!user || !user.uid) {
-      console.warn(`User not logged in or UID missing. Cannot log AI interaction for "${flowName}". Interaction details: Prompt - "${userPrompt}"`);
-      // Optionally, show a subtle toast if this is a critical logging path, but often it's a background task.
-      // toast({ title: "Logging Notice", description: "Sign in to log your AI interactions.", variant: "default" });
-      return;
-    }
-
     if (!functionsBaseUrl) {
       console.warn(`CRITICAL: Firebase Functions URL (NEXT_PUBLIC_FIREBASE_FUNCTIONS_URL) is not set in the environment. Cannot log AI interaction for "${flowName}". URL was: ${functionsBaseUrl}. Prompt: "${userPrompt}"`);
       toast({
@@ -94,6 +87,11 @@ export default function QuantumLeapPage() {
         description: "The AI interaction logging service URL is not configured. Please check environment variables.",
         variant: "destructive",
       });
+      return;
+    }
+    
+     if (!user || !user.uid) {
+      console.warn(`User not logged in or UID missing. Cannot log AI interaction for "${flowName}". Interaction details: Prompt - "${userPrompt}"`);
       return;
     }
     
@@ -121,7 +119,7 @@ export default function QuantumLeapPage() {
     } catch (error) {
       console.error(`Client-side error in logAiInteraction for "${flowName}". URL: ${functionsBaseUrl}. Error object:`, error);
       if (error instanceof TypeError && error.message === "Failed to fetch") {
-          console.error("Detailed 'Failed to fetch' info: This often indicates a network issue, CORS misconfiguration on the server, the server not being reachable, or an issue with the request URL itself. Check the browser's network tab for more details on the failed request.");
+          console.error("Detailed 'Failed to fetch' info: This often indicates a network issue, CORS misconfiguration on the server, the server not being reachable (check Firebase Function logs in Google Cloud Console for errors), or an issue with the request URL itself. Verify the function is deployed and healthy. Check the browser's Network tab for more details on the failed request.");
       }
     }
   };
