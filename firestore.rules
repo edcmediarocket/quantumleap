@@ -4,35 +4,40 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Daily Signals: Publicly readable, but writable only by backend functions.
+    // Daily Signals: Publicly readable, only backend can write.
     match /dailySignals/{signalId} {
       allow read: if true;
-      allow write: if false; // Writes should come from backend functions
+      allow write: if false; // Prevent client-side writes
     }
 
-    // User-specific data: Typically, users can read/write their own data.
-    match /users/{userId}/{document=**} {
+    // User Preferences: Users can read/write their own preferences.
+    match /users/{userId}/preferences/{prefDoc} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Admin Settings: Readable by authenticated users (for feature toggles),
-    // writable only by authenticated users (admin UID check done in app/functions).
-    // For stricter security, you might restrict read to specific admin roles via custom claims.
+    // Admin Settings: Only authenticated admins (or backend) should manage.
+    // This rule is a placeholder; actual admin UID check might be more complex or handled by backend.
+    // For simplicity, allowing any authenticated user to read. Writes should be backend-only or admin-only.
     match /adminSettings/{settingId} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null; // Further admin checks should be in your Cloud Functions or app logic
+      allow write: if false; // Strongly recommend backend/admin only for writes
     }
 
-    // Coach Logs: Generally, these should only be writable by your backend functions.
-    // Read access might be restricted to admins or users for their own logs.
-    // This rule assumes writes only from backend and denies client reads/writes.
+    // Coach Logs: Users can potentially create their own logs.
+    // Reading logs might be restricted to users for their own logs, or admins.
     match /coachLogs/{logId} {
-      allow read, write: if false; // Writes from backend, client reads TBD based on needs
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      // Example: Allow users to read their own logs
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      // Example: Deny updates/deletes from client
+      allow update, delete: if false;
     }
 
-    // Default deny all other access
-    match /{document=**} {
-      allow read, write: if false;
-    }
+    // Add rules for other collections as needed.
+    // Example: Allow read for any other collection if user is authenticated.
+    // match /{document=**} {
+    //   allow read: if request.auth != null;
+    //   allow write: if false; // Default to no client writes for other paths
+    // }
   }
 }
