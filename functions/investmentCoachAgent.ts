@@ -9,8 +9,10 @@ if (admin.apps.length === 0) {
 }
 
 export const investmentCoachAgent = onRequest(async (req, res) => {
-  console.log(`investmentCoachAgent: Received request method: ${req.method}, path: ${req.path}, origin: ${req.headers.origin}`);
-  // Set CORS headers
+  // Log details for every request
+  console.log(`investmentCoachAgent: Request received. Method: ${req.method}, Path: ${req.path}, Origin Header: ${req.headers.origin}`);
+
+  // Set CORS headers for all responses
   res.set('Access-Control-Allow-Origin', '*'); 
   res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -22,7 +24,9 @@ export const investmentCoachAgent = onRequest(async (req, res) => {
     return; // Important to return here
   }
 
-  console.log('investmentCoachAgent function invoked (POST request). Request body keys:', Object.keys(req.body).join(', '));
+  // For non-OPTIONS requests (e.g., POST)
+  console.log(`investmentCoachAgent: Processing ${req.method} request. Request body keys (if any):`, req.body ? Object.keys(req.body).join(', ') : 'No body or body not parsed');
+  
   try {
     const { userId, userPrompt, aiResult } = req.body;
 
@@ -30,7 +34,7 @@ export const investmentCoachAgent = onRequest(async (req, res) => {
     console.log(`Received userId: ${userId ? `Present (value: ${userId})` : 'MISSING!'}`);
     console.log(`Received userPrompt: ${userPrompt ? 'Present' : 'MISSING!'}`);
     // For aiResult, which can be large, just log its presence or a snippet if needed
-    console.log(`Received aiResult: ${aiResult ? `Present (type: ${typeof aiResult}, length: ${String(aiResult).length})` : 'MISSING!'}`);
+    console.log(`Received aiResult: ${aiResult ? `Present (type: ${typeof aiResult}, length: String(aiResult).length)` : 'MISSING!'}`);
 
 
     if (!userId || !userPrompt || !aiResult) {
@@ -56,7 +60,7 @@ export const investmentCoachAgent = onRequest(async (req, res) => {
     res.status(200).send({ success: true, message: 'Log received and processed.' });
 
   } catch (error) {
-    console.error("Critical Error in investmentCoachAgent during Firestore operation:", error);
+    console.error("Critical Error in investmentCoachAgent during Firestore operation or other processing:", error);
     if (error instanceof Error) {
         console.error("Error Name:", error.name);
         console.error("Error Message:", error.message);
