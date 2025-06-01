@@ -8,4 +8,4 @@ runConfig:
 
 env:
   - variable: NEXT_PUBLIC_FIREBASE_FUNCTIONS_URL
-    value: "https://YOUR_REGION-YOUR_PROJECT_ID.cloudfunctions.net" # IMPORTANT: Replace with your actual functions URL
+    value: "https://us-central1-quantum-leap-c85yq.cloudfunctions.net/investmentCoachAgent"
