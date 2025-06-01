@@ -9,20 +9,20 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import {
-  GlassCardRoot,
-  GlassCardHeader,
-  GlassCardTitle,
-  GlassCardContent,
-  GlassCardDescription,
-} from "./glass-card";
-import { Brain, Search, Users, LineChart, Rss, Bot } from 'lucide-react';
+  Brain, Search, Users, LineChart, Rss, Bot
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
+import type { ActiveTabType } from '@/app/page';
+
+interface HowItWorksPanelProps {
+  activeTab: ActiveTabType;
+}
 
 const aiLogicTopics = [
   {
     id: "core-logic",
     title: "AI's Core Decision Process",
-    icon: <Bot className="h-5 w-5 mr-2 text-primary" />,
+    icon: <Bot className="h-5 w-5 mr-2 text-primary" />, // Icon color will be overridden by parent's text color
     description: "Our AI synthesizes data from multiple advanced analytical techniques to identify potential crypto opportunities. It doesn't just look at one factor, but a confluence of signals.",
     content: [
       "The AI operates on a sophisticated framework that integrates various data streams and analytical models. Here's a simplified overview of its process:",
@@ -39,7 +39,7 @@ const aiLogicTopics = [
   {
     id: "nlp-sentiment",
     title: "Natural Language Processing (NLP) & Sentiment Analysis",
-    icon: <Search className="h-5 w-5 mr-2 text-accent" />,
+    icon: <Search className="h-5 w-5 mr-2 text-accent" />, // Icon color will be overridden
     description: "The AI scans news articles, social media, and forums to gauge the emotional tone and key topics surrounding cryptocurrencies.",
     content: [
       "NLP allows the AI to understand and interpret human language from various online sources. Sentiment analysis, a subset of NLP, focuses on determining the emotional tone—positive, negative, or neutral—expressed in text.",
@@ -54,7 +54,7 @@ const aiLogicTopics = [
   {
     id: "whale-tracking",
     title: "Whale Transaction Monitoring",
-    icon: <Users className="h-5 w-5 mr-2 text-green-500" />,
+    icon: <Users className="h-5 w-5 mr-2 text-green-500" />, // Icon color will be overridden
     description: "Tracks large transactions by significant holders ('whales') which can indicate potential market moves.",
     content: [
       "'Whales' are individuals or entities holding large amounts of a particular cryptocurrency. Their transactions can significantly impact the market due to the sheer volume.",
@@ -71,7 +71,7 @@ const aiLogicTopics = [
   {
     id: "price-volume",
     title: "Price & Volume Analysis (Technical Analysis)",
-    icon: <LineChart className="h-5 w-5 mr-2 text-red-500" />,
+    icon: <LineChart className="h-5 w-5 mr-2 text-red-500" />, // Icon color will be overridden
     description: "Analyzes historical price charts and trading volumes to identify trends, support/resistance levels, and patterns.",
     content: [
       "Technical Analysis (TA) is a trading discipline employed to evaluate investments and identify trading opportunities by analyzing statistical trends gathered from trading activity, such as price movement and volume.",
@@ -88,7 +88,7 @@ const aiLogicTopics = [
   {
     id: "hype-monitoring",
     title: "Social Hype & Trend Monitoring",
-    icon: <Rss className="h-5 w-5 mr-2 text-yellow-500" />,
+    icon: <Rss className="h-5 w-5 mr-2 text-yellow-500" />, // Icon color will be overridden
     description: "Monitors social media platforms for trending coins, rapidly increasing mentions, and viral narratives, especially for meme coins.",
     content: [
       "For certain cryptocurrencies, especially meme coins, social hype and narrative can be a primary driver of price action, often outweighing fundamentals.",
@@ -103,12 +103,43 @@ const aiLogicTopics = [
   }
 ];
 
-export function HowItWorksPanel() {
+export function HowItWorksPanel({ activeTab }: HowItWorksPanelProps) {
+  
+  const titleTextColor = 
+    activeTab === 'profitGoal' ? 'text-accent' :
+    activeTab === 'memeFlip' ? 'text-[hsl(var(--orange-hsl))]' :
+    'text-primary';
+
+  const itemGlowClass = 
+    activeTab === 'profitGoal' ? 'default-glow-accent' :
+    activeTab === 'memeFlip' ? 'default-glow-orange' :
+    'default-glow-primary';
+
+  const getIconClass = (topicId: string) => {
+    if (activeTab === 'profitGoal') return 'text-accent';
+    if (activeTab === 'memeFlip') return 'text-[hsl(var(--orange-hsl))]';
+    // Default to primary, but specific topic icons can retain their original more distinct color
+    // if they are not the main panel icon. For panel icon, it should match tab.
+    // For item icons, let's make them match the tab color for consistency
+    const defaultClasses = {
+      "core-logic": "text-primary",
+      "nlp-sentiment": "text-accent",
+      "whale-tracking": "text-green-500",
+      "price-volume": "text-red-500",
+      "hype-monitoring": "text-yellow-500",
+    };
+    // Override with tab color for consistency
+    if (activeTab === 'profitGoal') return 'text-accent';
+    if (activeTab === 'memeFlip') return 'text-[hsl(var(--orange-hsl))]';
+    return defaultClasses[topicId as keyof typeof defaultClasses] || 'text-primary';
+  };
+
+
   return (
     <section className="mt-16 mb-8">
       <div className="text-center mb-10">
-        <h2 className="text-3xl font-bold tracking-tight flex items-center justify-center">
-          <Brain className="h-8 w-8 mr-3 text-primary" />
+        <h2 className={cn("text-3xl font-bold tracking-tight flex items-center justify-center", titleTextColor)}>
+          <Brain className={cn("h-8 w-8 mr-3", titleTextColor)} />
           How Our AI Thinks
         </h2>
         <p className="text-muted-foreground mt-2 md:text-lg">
@@ -122,18 +153,18 @@ export function HowItWorksPanel() {
             key={topic.id} 
             value={topic.id} 
             className={cn(
-              "glass-effect default-glow-primary glass-effect-interactive-hover",
+              "glass-effect glass-effect-interactive-hover",
+              itemGlowClass, // Apply dynamic glow to each accordion item
               "!border-border/50 !rounded-xl overflow-hidden"
             )}
           >
             <AccordionTrigger className="p-4 text-left hover:no-underline">
-              <div className="flex items-center text-base md:text-lg font-medium text-primary-foreground">
-                {topic.icon}
+               <div className={cn("flex items-center text-base md:text-lg font-medium", titleTextColor === 'text-primary' ? 'text-primary-foreground' : titleTextColor)}>
+                {React.cloneElement(topic.icon, { className: cn("h-5 w-5 mr-2", getIconClass(topic.id)) })}
                 {topic.title}
               </div>
             </AccordionTrigger>
             <AccordionContent className="p-1">
-              {/* Using a simple div for content wrapper, no nested GlassCardRoot */}
               <div className="!p-4 !bg-transparent !border-none !shadow-none !backdrop-blur-none">
                 <div className="!text-sm text-muted-foreground space-y-2">
                   <p className="text-muted-foreground mb-3 italic">{topic.description}</p>

@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/accordion";
 import {
   BookOpenText, 
-  Coins, // Changed from Bitcoin
+  Coins,
   Network, 
   Store, 
   Wallet, 
@@ -20,31 +20,34 @@ import {
   AreaChart, 
   Search, 
   Flame, 
-  HandHeart, // Changed from Archive
+  HandHeart,
   Fuel, 
   Waves, 
   LayoutGrid, 
   Landmark,
-  Blocks, // Added for Blockchain
+  Blocks,
   TrendingDown,
   TrendingUp,
   DollarSign,
   ClipboardCheck,
   Zap,
-  // HandHeart, // Already imported for HODL
   Gauge,
   Droplets,
-  Shapes, // Added for Altcoin
-  Banknote // Added for Fiat
+  Shapes, 
+  Banknote
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import type { ActiveTabType } from '@/app/page';
 
+interface CryptoTerminologyPanelProps {
+  activeTab: ActiveTabType;
+}
 
 const terminologyList = [
   {
     id: "cryptocurrency",
     term: "Cryptocurrency",
-    icon: <Coins className="h-5 w-5 mr-2 text-primary" />,
+    icon: <Coins className="h-5 w-5 mr-2 text-primary" />, // Default, will be overridden by tab theme
     explanation: [
       "A digital or virtual currency that is secured by cryptography, which makes it nearly impossible to counterfeit or double-spend.",
       "Many cryptocurrencies are decentralized networks based on blockchain technology—a distributed ledger enforced by a disparate network of computers. A defining feature of cryptocurrencies is that they are generally not issued by any central authority, rendering them theoretically immune to government interference or manipulation."
@@ -164,12 +167,39 @@ const terminologyList = [
   }
 ];
 
-export function CryptoTerminologyPanel() {
+export function CryptoTerminologyPanel({ activeTab }: CryptoTerminologyPanelProps) {
+
+  const titleTextColor = 
+    activeTab === 'profitGoal' ? 'text-accent' :
+    activeTab === 'memeFlip' ? 'text-[hsl(var(--orange-hsl))]' :
+    'text-primary';
+
+  const itemGlowClass = 
+    activeTab === 'profitGoal' ? 'default-glow-accent' :
+    activeTab === 'memeFlip' ? 'default-glow-orange' :
+    'default-glow-primary';
+
+  const getIconClass = (termId: string) => {
+    // Default to tab color for all icons in this panel for simplicity
+    if (activeTab === 'profitGoal') return 'text-accent';
+    if (activeTab === 'memeFlip') return 'text-[hsl(var(--orange-hsl))]';
+    
+    // Specific overrides if needed, otherwise defaults to primary or a specific color for that term
+    // For now, making them all match tab color when not primary tab
+     switch (termId) {
+      case "stop-loss": return "text-red-500"; // Keep critical colors
+      case "target-price": return "text-green-500"; // Keep critical colors
+      case "fomo": return "text-orange-500";
+      case "hodl": return "text-purple-500";
+      default: return 'text-primary'; // Default to primary for the primary tab
+    }
+  };
+
   return (
     <section className="mt-16 mb-8">
       <div className="text-center mb-10">
-        <h2 className="text-3xl font-bold tracking-tight flex items-center justify-center">
-          <BookOpenText className="h-8 w-8 mr-3 text-primary" />
+        <h2 className={cn("text-3xl font-bold tracking-tight flex items-center justify-center", titleTextColor)}>
+          <BookOpenText className={cn("h-8 w-8 mr-3", titleTextColor)} />
           Crypto Lingo Decoded
         </h2>
         <p className="text-muted-foreground mt-2 md:text-lg">
@@ -183,13 +213,14 @@ export function CryptoTerminologyPanel() {
             key={item.id} 
             value={item.id} 
             className={cn(
-              "glass-effect default-glow-primary glass-effect-interactive-hover",
+              "glass-effect default-glow-primary glass-effect-interactive-hover", // Base classes
+              itemGlowClass, // Dynamic glow based on activeTab
               "!border-border/50 !rounded-xl overflow-hidden"
             )}
           >
             <AccordionTrigger className="p-4 text-left hover:no-underline">
-              <div className="flex items-center text-base md:text-lg font-medium text-primary-foreground">
-                {item.icon}
+              <div className={cn("flex items-center text-base md:text-lg font-medium", titleTextColor === 'text-primary' ? 'text-primary-foreground' : titleTextColor)}>
+                {React.cloneElement(item.icon, { className: cn("h-5 w-5 mr-2", getIconClass(item.id)) })}
                 {item.term}
               </div>
             </AccordionTrigger>

@@ -41,6 +41,19 @@ export function AiCoachAvatarPanel({ tipData, isLoading, className, activeTab }:
     activeTab === 'memeFlip' ? 'default-glow-orange' :
     'default-glow-primary';
 
+  const avatarBorderColor =
+    activeTab === 'profitGoal' ? 'border-accent/50' :
+    activeTab === 'memeFlip' ? 'border-[hsl(var(--orange-hsl))]/50' :
+    'border-primary/50';
+  
+  const avatarImageBgColor =
+    activeTab === 'profitGoal' ? '20A0F0' : // Blue
+    activeTab === 'memeFlip' ? 'F97316' :   // Orange
+    'A020F0'; // Purple (default)
+  
+  const avatarImageUrl = `https://placehold.co/150x150/${avatarImageBgColor}/FFFFFF.png?text=QL&font=roboto`;
+
+
   return (
     <div className={cn(
         "p-4 rounded-xl glass-effect glass-effect-interactive-hover max-w-md w-full mx-auto", 
@@ -48,9 +61,12 @@ export function AiCoachAvatarPanel({ tipData, isLoading, className, activeTab }:
         className
       )}>
       <div className="flex items-center space-x-3">
-        <div className="relative h-16 w-16 md:h-20 md:w-20 rounded-full overflow-hidden border-2 border-primary/50 shadow-lg">
+        <div className={cn(
+            "relative h-16 w-16 md:h-20 md:w-20 rounded-full overflow-hidden border-2 shadow-lg",
+            avatarBorderColor
+            )}>
           <Image
-            src="https://placehold.co/150x150/A020F0/FFFFFF.png?text=QL&font=roboto"
+            src={avatarImageUrl}
             alt="AI Coach Avatar"
             data-ai-hint="AI assistant robot"
             width={80}

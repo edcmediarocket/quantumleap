@@ -1,3 +1,4 @@
+
 // src/app/page.tsx
 "use client";
 
@@ -480,8 +481,8 @@ export default function QuantumLeapPage() {
             </div>
         )}
 
-        <HowItWorksPanel />
-        <CryptoTerminologyPanel />
+        <HowItWorksPanel activeTab={activeTab} />
+        <CryptoTerminologyPanel activeTab={activeTab} />
 
       </main>
        <footer className="mt-12 py-4 text-center text-xs text-muted-foreground/70 border-t border-border/20">
