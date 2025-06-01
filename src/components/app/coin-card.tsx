@@ -75,13 +75,13 @@ const formatPrice = (price: number | undefined | null): string => {
 
   if (absPrice >= 1) {
     return `$${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  } else { 
-    let priceStr = price.toFixed(20); 
+  } else {
+    let priceStr = price.toFixed(20);
     priceStr = priceStr.replace(/0+$/, "");
     if (priceStr.endsWith('.')) {
       priceStr = priceStr.slice(0, -1);
     }
-    if (priceStr === "0") { 
+    if (priceStr === "0") {
       return "$0.00";
     }
     const parts = priceStr.split('.');
@@ -117,7 +117,7 @@ const parseCountdownTextToSeconds = (text: string | undefined): number | null =>
     const numMatch = text.match(/(\d+)/);
     if (numMatch) {
       const num = parseInt(numMatch[1], 10);
-      if (num <= 120) totalSeconds += num * 60; 
+      if (num <= 120) totalSeconds += num * 60;
       else return null;
     }
   }
@@ -132,7 +132,7 @@ const formatSecondsToCountdown = (totalSeconds: number): string => {
   let parts = [];
   if (hours > 0) parts.push(`${hours}h`);
   if (minutes > 0) parts.push(`${minutes}m`);
-  if (hours === 0 && minutes < 30) { 
+  if (hours === 0 && minutes < 30) {
     parts.push(`${seconds}s`);
   }
   return parts.join(' ') || "Calculating...";
@@ -223,7 +223,7 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
   useEffect(() => {
     if (entryPriceRange?.low && entryPriceRange?.high) {
       const avgEntry = (entryPriceRange.low + entryPriceRange.high) / 2;
-      setAverageEntryPrice(avgEntry > 0 ? avgEntry : entryPriceRange.low); 
+      setAverageEntryPrice(avgEntry > 0 ? avgEntry : entryPriceRange.low);
     } else if (entryPriceRange?.low) {
        setAverageEntryPrice(entryPriceRange.low);
     } else {
@@ -238,7 +238,7 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
         const totalRevenue = purchaseQuantity * estimatedSellPrice;
         setCalculatedProfit(totalRevenue - (purchaseQuantity * averageEntryPrice));
       } else {
-        setCalculatedProfit(null); 
+        setCalculatedProfit(null);
       }
     } else if (type === 'memeFlip') {
       setTotalBuyCost(null);
@@ -276,7 +276,7 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
           if (prevSeconds === null || prevSeconds <= 1) {
             if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
              toast({ title: `${name} Entry Window`, description: "AI-suggested entry window is now active or has passed." });
-            return 0; 
+            return 0;
           }
           return prevSeconds - 1;
         });
@@ -301,9 +301,16 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
     if (!canShowCoach) return;
     setIsLoadingCoach(true);
     setCoachError(null);
+    setCoachStrategies(null); // Clear previous strategies
+
     try {
-      if (!entryPriceRange || !exitPriceRange) {
-        throw new Error("Entry or exit price range is missing for AI Coach.");
+      if (!entryPriceRange || typeof entryPriceRange.low !== 'number' || typeof entryPriceRange.high !== 'number' ||
+          !exitPriceRange || typeof exitPriceRange.low !== 'number' || typeof exitPriceRange.high !== 'number') {
+        const errorMsg = "Client Error: Entry or exit price range is incomplete or invalid for AI Coach. Check low/high values.";
+        console.error(errorMsg, { coinName: name, entryPriceRange, exitPriceRange });
+        setCoachError(errorMsg);
+        // setIsLoadingCoach(false); // Done in finally
+        return;
       }
 
       let coachInput: AiCoachStrategiesInput = {
@@ -312,38 +319,47 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
         predictedGainPercentage: gain,
         entryPriceRange: entryPriceRange,
         exitPriceRange: exitPriceRange,
-        estimatedDuration: estimatedDuration || "Short-term", 
+        estimatedDuration: estimatedDuration || "Short-term",
       };
-      
-      if (type === 'aiPick' && riskProfile) { 
+
+      if (type === 'aiPick' && riskProfile) {
          if (riskProfile === 'cautious') coachInput.riskTolerance = 'low';
          else if (riskProfile === 'balanced') coachInput.riskTolerance = 'medium';
          else if (riskProfile === 'aggressive') coachInput.riskTolerance = 'high';
-      } else if (type === 'profitGoal' && riskTolerance) { 
+      } else if (type === 'profitGoal' && riskTolerance) {
         coachInput.riskTolerance = riskTolerance;
       } else if (type === 'memeFlip') {
-        coachInput.riskTolerance = 'high'; 
+        coachInput.riskTolerance = 'high';
         if (!coachInput.estimatedDuration) coachInput.estimatedDuration = "Few hours to 2 days";
       }
 
-
       if (profitTarget) coachInput.profitTarget = profitTarget;
-      
+
       if (stylePref) {
         coachInput.tradingStylePreference = stylePref;
       }
+      
+      console.log("Attempting to fetch AI coach strategies for " + name + " with input:", JSON.stringify(coachInput, null, 2));
 
       const result = await aiCoachStrategies(coachInput);
       setCoachStrategies(result);
     } catch (error) {
-      console.error("Error fetching AI coach strategies:", error);
-      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
-      setCoachError(`Failed to fetch AI coach strategies: ${errorMessage}`);
+      let detailedErrorMessage = "An unknown error occurred.";
+      if (error instanceof Error) {
+        detailedErrorMessage = error.message;
+      } else if (typeof error === 'string') {
+        detailedErrorMessage = error;
+      } else if (error && typeof error === 'object' && 'toString' in error) {
+        detailedErrorMessage = error.toString();
+      }
+      
+      console.error(`Error fetching AI coach strategies for ${name}. Detail:`, detailedErrorMessage, "Raw error object:", error);
+      setCoachError(`Failed to fetch AI coach strategies: ${detailedErrorMessage}`);
     } finally {
       setIsLoadingCoach(false);
     }
   };
-  
+
   useEffect(() => {
     if (isDialogOpen && canShowCoach && !coachStrategies && !isLoadingCoach && !coachError) {
         fetchCoachStrategies(currentTradingStylePreference);
@@ -353,7 +369,7 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
 
   const handleTradingStyleSelect = (style: TradingStyle) => {
     setCurrentTradingStylePreference(style);
-    fetchCoachStrategies(style);
+    fetchCoachStrategies(style); // This will also clear coachStrategies and coachError
   };
 
 
@@ -365,10 +381,10 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
         title: "Simulated Price Dump!",
         description: alertText,
       });
-    }, 3000); 
+    }, 3000);
   };
 
-  const cardTitleColor = 
+  const cardTitleColor =
       type === 'aiPick' ? 'text-primary group-hover:text-primary transition-colors'
     : type === 'profitGoal' ? 'text-accent group-hover:text-accent transition-colors'
     : type === 'memeFlip' ? 'text-[hsl(var(--orange-hsl))] group-hover:text-[hsl(var(--orange-hsl))] transition-colors'
@@ -376,25 +392,25 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
 
 
   const gainColor = gain >= 0 ? (type === 'memeFlip' ? 'text-yellow-400' : 'text-green-400') : 'text-red-400';
-  
+
   const getRiskBasedProgressBg = (score: number | undefined, forRiskProfile: RiskProfile | undefined) => {
     if (score === undefined) return 'bg-muted';
     if (score >= 0.7) return 'bg-green-500/20 [&>div]:bg-gradient-to-r [&>div]:from-green-400 [&>div]:to-green-600';
     if (score >= 0.4) return 'bg-yellow-500/20 [&>div]:bg-gradient-to-r [&>div]:from-yellow-400 [&>div]:to-yellow-600';
     return 'bg-red-500/20 [&>div]:bg-gradient-to-r [&>div]:from-red-400 [&>div]:to-red-600';
   };
-  
-  const riskRoiProgressClass = getRiskBasedProgressBg(riskRoiGaugeValue, undefined); 
-  const riskMatchProgressClass = getRiskBasedProgressBg(riskMatchScoreValue, riskProfile); 
 
-  const confidenceProgressBg = 
+  const riskRoiProgressClass = getRiskBasedProgressBg(riskRoiGaugeValue, undefined);
+  const riskMatchProgressClass = getRiskBasedProgressBg(riskMatchScoreValue, riskProfile);
+
+  const confidenceProgressBg =
       type === 'aiPick' ? 'bg-primary/20 [&>div]:bg-gradient-to-r [&>div]:from-accent [&>div]:to-primary'
     : type === 'profitGoal' ? 'bg-accent/20 [&>div]:bg-gradient-to-r [&>div]:from-blue-400 [&>div]:to-accent'
     : type === 'memeFlip' ? 'bg-orange-500/20 [&>div]:bg-gradient-to-r [&>div]:from-yellow-500 [&>div]:to-red-500'
     : 'bg-primary/20 [&>div]:bg-gradient-to-r [&>div]:from-accent [&>div]:to-primary';
 
   const dialogButtonVariant = type === 'memeFlip' ? 'outline' : 'outline';
-  const dialogButtonTextColor = 
+  const dialogButtonTextColor =
       type === 'aiPick' ? 'border-primary text-primary hover:bg-primary hover:text-primary-foreground'
     : type === 'profitGoal' ? 'border-accent text-accent hover:bg-accent hover:text-accent-foreground'
     : type === 'memeFlip' ? 'border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white'
@@ -413,8 +429,8 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
 
   return (
     <GlassCardRoot className={cn(
-      "glass-effect-interactive-hover", 
-      defaultCardGlowClass 
+      "glass-effect-interactive-hover",
+      defaultCardGlowClass
     )}>
       <GlassCardHeader>
         <div className="flex items-center justify-between">
@@ -452,7 +468,7 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
             <Progress value={confidence * 100} className={`h-2 w-full ${confidenceProgressBg}`} />
           </div>
         )}
-        
+
         {isAiPick(coinData, type) && riskMatchScoreValue !== undefined && riskProfile && (
             <TooltipProvider>
                 <Tooltip delayDuration={100}>
@@ -576,7 +592,7 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
                   />
                 </div>
               </div>
-              
+
               {purchaseQuantity !== null && purchaseQuantity > 0 && averageEntryPrice !== null && averageEntryPrice > 0 && totalBuyCost !== null && (
                  <div className="mt-2 text-center p-2 rounded-md bg-blue-500/10 border border-blue-500/30">
                     <p className="text-xs text-muted-foreground flex items-center justify-center gap-1">
@@ -707,7 +723,7 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
                                     onClick={() => handleTradingStyleSelect(style)}
                                     className={cn(
                                       "text-xs capitalize",
-                                      currentTradingStylePreference === style ? 
+                                      currentTradingStylePreference === style ?
                                         (style === 'short-term' ? 'bg-blue-600 hover:bg-blue-700' : style === 'swing' ? 'bg-purple-600 hover:bg-purple-700' : 'bg-teal-600 hover:bg-teal-700') :
                                         'border-muted-foreground/50 hover:bg-muted/50'
                                     )}
@@ -748,12 +764,12 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
                           <h4 className="font-medium text-primary-foreground/90">Coin-Specific Advice:</h4>
                           <p className="text-sm text-muted-foreground pl-2 border-l-2 border-accent ml-1 py-1 italic">{coachStrategies.coinSpecificAdvice}</p>
                         </div>
-                        
+
                         {coachStrategies.investmentStrategies.map((strategy: InvestmentStrategyFromAICoach, index: number) => (
-                          <div key={index} 
+                          <div key={index}
                                className={cn(
-                                "p-3 rounded-md bg-card/50 border border-border/40 shadow-md space-y-3 glass-effect-interactive-hover", 
-                                strategy.isTopPick ? "default-glow-neon-green" : "border-border/40" 
+                                "p-3 rounded-md bg-card/50 border border-border/40 shadow-md space-y-3 glass-effect-interactive-hover",
+                                strategy.isTopPick ? "default-glow-neon-green" : "border-border/40"
                                )}>
                             {strategy.isTopPick && (
                                 <div className="absolute -top-3 -left-3 bg-[hsl(var(--neon-green-base-hsl))] text-[hsl(var(--neon-green-text-on-base-hsl))] p-1.5 rounded-full shadow-lg">
@@ -777,7 +793,7 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
                                 </div>
                                 {strategy.stopLossSuggestion && <p className="text-xs text-muted-foreground mt-2"><ShieldCheck className="inline h-3.5 w-3.5 mr-1 text-yellow-500"/> <span className="font-medium">Stop-Loss:</span> {strategy.stopLossSuggestion}</p>}
                             </div>
-                            <StrategyBacktestSimulator 
+                            <StrategyBacktestSimulator
                                 coinName={name}
                                 strategy={strategy}
                             />
@@ -808,3 +824,4 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
     </GlassCardRoot>
   );
 }
+
