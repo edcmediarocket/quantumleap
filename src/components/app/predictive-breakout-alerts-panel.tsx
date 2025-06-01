@@ -54,7 +54,7 @@ export function PredictiveBreakoutAlertsPanel() {
 
   return (
     <section className="my-12">
-      <GlassCardRoot className="glass-effect hover-glow-primary w-full max-w-4xl mx-auto p-6 md:p-8">
+      <GlassCardRoot className="glass-effect glass-effect-interactive-hover default-glow-primary w-full max-w-4xl mx-auto p-6 md:p-8">
         <div className="flex flex-col sm:flex-row items-center justify-between mb-6">
           <h2 className="text-3xl font-bold tracking-tight text-primary flex items-center mb-4 sm:mb-0">
             <Zap className="h-8 w-8 mr-3" />
@@ -93,7 +93,7 @@ export function PredictiveBreakoutAlertsPanel() {
                 Last scan: {new Date(alertsOutput.lastScanned).toLocaleString()}. Alerts are based on AI's analysis of simulated market patterns.
             </p>
             {alertsOutput.alerts.map((alert, index) => (
-              <div key={index} className="p-5 rounded-lg border border-border/40 bg-card/50 shadow-lg glass-effect hover-glow-accent transition-all duration-300 hover:scale-[1.01]">
+              <div key={index} className="p-5 rounded-lg border border-border/40 bg-card/50 shadow-lg glass-effect glass-effect-interactive-hover default-glow-accent transition-all duration-300 hover:scale-[1.01]">
                 <AlertTitle className="text-xl font-semibold text-accent flex items-center mb-2">
                   <TrendingUp className="h-6 w-6 mr-2" /> {alert.alertTitle}
                 </AlertTitle>

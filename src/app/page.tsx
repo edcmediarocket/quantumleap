@@ -12,13 +12,18 @@ import { AiCoachAvatarPanel } from "@/components/app/ai-coach-avatar-panel";
 import { HowItWorksPanel } from "@/components/app/how-it-works-panel";
 import { CryptoTerminologyPanel } from "@/components/app/crypto-terminology-panel";
 import { PredictiveBreakoutAlertsPanel } from "@/components/app/predictive-breakout-alerts-panel";
+import { DailySignalsPanel } from "@/components/app/daily-signals-panel";
 import { LoadingDots } from "@/components/ui/loading-dots";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Terminal, TrendingUpIcon, BarChartIcon, RocketIcon, AlertTriangle, ShieldOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { useFeatureTogglesContext } from "@/contexts/FeatureTogglesContext"; // Import context hook
+import { useFeatureTogglesContext } from "@/contexts/FeatureTogglesContext"; 
+import { getAuth } from "firebase/auth";
+import { firebaseConfig } from "@/lib/firebaseConfig";
+import { initializeApp, getApps } from "firebase/app";
+
 
 // AI Flow Imports
 import { aiCoinPicks, type AiCoinPicksInput, type AiCoinPicksOutput } from "@/ai/flows/ai-coin-picks";
@@ -26,6 +31,15 @@ import { recommendCoinsForProfitTarget, type RecommendCoinsForProfitTargetInput,
 import { memeCoinQuickFlip, type MemeCoinQuickFlipInput, type MemeCoinQuickFlipOutput } from "@/ai/flows/meme-coin-quick-flip";
 import { getCoachQuickTip, type GetCoachQuickTipInput, type GetCoachQuickTipOutput } from "@/ai/flows/get-coach-quick-tip";
 
+let app;
+if (!getApps().length) {
+  app = initializeApp(firebaseConfig);
+} else {
+  app = getApps()[0];
+}
+const auth = getAuth(app);
+
+const functionsBaseUrl = process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_URL;
 
 export default function QuantumLeapPage() {
   const { toggles, loadingToggles, errorToggles } = useFeatureTogglesContext();
@@ -48,23 +62,47 @@ export default function QuantumLeapPage() {
   const [currentAiPicksInput, setCurrentAiPicksInput] = useState<AiCoinPicksInput | null>(null);
   const [currentQuickProfitInput, setCurrentQuickProfitInput] = useState<RecommendCoinsForProfitTargetInput | null>(null);
 
-  const [activeTab, setActiveTab] = useState<string>("aiPicks"); // Default to first enabled tab
+  const [activeTab, setActiveTab] = useState<string>("aiPicks"); 
 
   const { toast } = useToast();
 
   useEffect(() => {
-    // Determine the default active tab based on enabled features
     if (!loadingToggles) {
       if (toggles.aiCoinPicksEnabled) setActiveTab("aiPicks");
       else if (toggles.profitGoalEnabled) setActiveTab("profitGoal");
       else if (toggles.memeCoinHunterEnabled) setActiveTab("memeFlip");
-      else setActiveTab("none"); // Or some other fallback
+      else setActiveTab("none"); 
     }
   }, [toggles, loadingToggles]);
   
+  const logAiInteraction = async (userPrompt: string, aiResult: any, flowName: string) => {
+    const user = auth.currentUser;
+    if (!user || !user.uid) {
+      console.warn("User not logged in, cannot log AI interaction for", flowName);
+      return;
+    }
+    if (!functionsBaseUrl) {
+      console.warn("Firebase Functions URL not set. Cannot log AI interaction for", flowName);
+      return;
+    }
+
+    try {
+      await fetch(`${functionsBaseUrl}/investmentCoachAgent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          userId: user.uid, 
+          userPrompt: `(${flowName}): ${userPrompt}`,
+          aiResult: JSON.stringify(aiResult, null, 2) 
+        }),
+      });
+    } catch (error) {
+      console.error("Error logging AI interaction to backend for", flowName, ":", error);
+    }
+  };
 
   useEffect(() => {
-    if (loadingToggles || !toggles.aiCoachEnabled) return; // Only fetch if coach is enabled
+    if (loadingToggles || !toggles.aiCoachEnabled) return; 
 
     const fetchInitialTip = async () => {
       setIsLoadingCoachQuickTip(true);
@@ -72,6 +110,7 @@ export default function QuantumLeapPage() {
       try {
         const initialTip = await getCoachQuickTip({ userActionContext: 'general' });
         setCoachQuickTip(initialTip);
+        await logAiInteraction("Initial App Load", initialTip, "GetCoachQuickTip-General");
       } catch (error) {
         console.error("Error fetching initial coach tip:", error);
         setCoachQuickTipError(error instanceof Error ? error.message : "Failed to load coach wisdom.");
@@ -83,13 +122,14 @@ export default function QuantumLeapPage() {
   }, [loadingToggles, toggles.aiCoachEnabled]);
 
   const fetchAndSetCoachTip = async (context: GetCoachQuickTipInput['userActionContext'], summary?: string) => {
-    if (!toggles.aiCoachEnabled) return; // Don't fetch if coach is disabled
+    if (!toggles.aiCoachEnabled) return; 
 
     setIsLoadingCoachQuickTip(true);
     setCoachQuickTipError(null);
     try {
       const tip = await getCoachQuickTip({ userActionContext: context, lastPicksSummary: summary });
       setCoachQuickTip(tip);
+      await logAiInteraction(`Context: ${context}, Summary: ${summary || 'N/A'}`, tip, "GetCoachQuickTip-Contextual");
     } catch (error) {
       console.error(`Error fetching coach tip for ${context}:`, error);
       setCoachQuickTipError(error instanceof Error ? error.message : "Coach is pondering... tip unavailable.");
@@ -103,11 +143,13 @@ export default function QuantumLeapPage() {
     setIsLoadingAiPicks(true);
     setAiPicksError(null);
     setAiCoinPicksResults(null);
-    setCurrentAiPicksInput(data); // Store the full input including riskProfile
-    await fetchAndSetCoachTip('aiPicks', `Target: $${data.profitTarget}, Strat: ${data.strategy}, Risk: ${data.riskProfile}`);
+    setCurrentAiPicksInput(data); 
+    const promptSummary = `Target: $${data.profitTarget}, Strat: ${data.strategy}, Risk: ${data.riskProfile}`;
+    await fetchAndSetCoachTip('aiPicks', promptSummary);
     try {
       const result = await aiCoinPicks(data);
       setAiCoinPicksResults(result);
+      await logAiInteraction(`AI Coin Picks Request: ${promptSummary}`, result, "AICoinPicks");
       if (!result.picks || result.picks.length === 0) {
         toast({
           title: "AI Coin Picks",
@@ -136,14 +178,15 @@ export default function QuantumLeapPage() {
     setQuickProfitError(null);
     setQuickProfitResults(null);
     setCurrentQuickProfitInput(data);
-    let summary = `Goal: $${data.profitTarget}, Risk: ${data.riskTolerance}`;
+    let promptSummary = `Goal: $${data.profitTarget}, Risk: ${data.riskTolerance}`;
     if (data.investmentAmount) {
-      summary += `, Invest: $${data.investmentAmount}`;
+      promptSummary += `, Invest: $${data.investmentAmount}`;
     }
-    await fetchAndSetCoachTip('profitGoal', summary);
+    await fetchAndSetCoachTip('profitGoal', promptSummary);
     try {
       const result = await recommendCoinsForProfitTarget(data);
       setQuickProfitResults(result);
+      await logAiInteraction(`Quick Profit Goal Request: ${promptSummary}`, result, "RecommendCoinsForProfitTarget");
        if (!result.recommendedCoins || result.recommendedCoins.length === 0) {
         toast({
           title: "Quick Profit Goal",
@@ -171,10 +214,12 @@ export default function QuantumLeapPage() {
     setIsLoadingMemeFlip(true);
     setMemeFlipError(null);
     setMemeFlipResults(null);
-    await fetchAndSetCoachTip('memeFlip', `Hunting for meme coins!`);
+    const promptSummary = `Meme Coin Hunt Triggered`;
+    await fetchAndSetCoachTip('memeFlip', promptSummary);
     try {
       const result = await memeCoinQuickFlip(data);
       setMemeFlipResults(result);
+      await logAiInteraction(promptSummary, result, "MemeCoinQuickFlip");
       if (!result.picks || result.picks.length === 0) {
         toast({
           title: "Meme Coin Hunter",
@@ -232,6 +277,8 @@ export default function QuantumLeapPage() {
       <AppHeader />
       
       {toggles.predictiveAlertsEnabled && <PredictiveBreakoutAlertsPanel />}
+      {toggles.dailySignalsPanelEnabled && <DailySignalsPanel />}
+
 
       {toggles.aiCoachEnabled && (
         <div className="my-8">
@@ -268,7 +315,7 @@ export default function QuantumLeapPage() {
                 </TabsTrigger>
               )}
               {toggles.memeCoinHunterEnabled && (
-                <TabsTrigger value="memeFlip" className="text-xs sm:text-sm data-[state=active]:bg-orange-500 data-[state=active]:text-white">
+                <TabsTrigger value="memeFlip" className="text-xs sm:text-sm data-[state=active]:bg-[hsl(var(--orange-hsl))] data-[state=active]:text-white">
                 <RocketIcon className="mr-1 sm:mr-2 h-4 w-4" /> Meme Hunter
                 </TabsTrigger>
               )}
@@ -279,7 +326,7 @@ export default function QuantumLeapPage() {
                 <div className="flex flex-col items-center gap-12">
                   <div className={cn(
                       "w-full md:max-w-md lg:max-w-lg p-6 shadow-xl",
-                      "glass-effect glass-effect-interactive-hover hover-glow-primary"
+                      "glass-effect glass-effect-interactive-hover default-glow-primary"
                     )}>
                     <h2 className="text-2xl font-semibold mb-6 text-primary flex items-center">
                       <TrendingUpIcon className="mr-2 h-6 w-6" /> Configure AI Picks
@@ -324,7 +371,7 @@ export default function QuantumLeapPage() {
                 <div className="flex flex-col items-center gap-12">
                   <div className={cn(
                       "w-full md:max-w-md lg:max-w-lg p-6 shadow-xl",
-                      "glass-effect glass-effect-interactive-hover hover-glow-accent"
+                      "glass-effect glass-effect-interactive-hover default-glow-accent"
                     )}>
                     <h2 className="text-2xl font-semibold mb-6 text-accent flex items-center">
                       <BarChartIcon className="mr-2 h-6 w-6" /> Set Your Profit Goal
@@ -370,9 +417,9 @@ export default function QuantumLeapPage() {
                 <div className="flex flex-col items-center gap-12">
                   <div className={cn(
                       "w-full md:max-w-md lg:max-w-lg p-6 shadow-xl",
-                      "glass-effect glass-effect-interactive-hover hover-glow-orange"
+                      "glass-effect glass-effect-interactive-hover default-glow-orange"
                     )}>
-                    <h2 className="text-2xl font-semibold mb-6 text-orange-500 flex items-center">
+                    <h2 className="text-2xl font-semibold mb-6 text-[hsl(var(--orange-hsl))] flex items-center">
                       <RocketIcon className="mr-2 h-6 w-6" /> Meme Coin Hunter
                     </h2>
                     <MemeCoinQuickFlipForm onSubmit={handleMemeCoinQuickFlipSubmit} isLoading={isLoadingMemeFlip} />
@@ -443,5 +490,3 @@ export default function QuantumLeapPage() {
     </div>
   );
 }
-
-    

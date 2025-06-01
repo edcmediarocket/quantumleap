@@ -14,7 +14,7 @@
     --popover: 0 0% 3%; /* Even darker for popovers */
     --popover-foreground: 0 0% 95%;
 
-    --primary: 285 87% 53%; /* #A020F0 - Vibrant Purple (remains for accents) */
+    --primary: 285 87% 53%; /* #A020F0 - Vibrant Purple */
     --primary-foreground: 0 0% 98%; 
 
     --secondary: 0 0% 10%; /* Darker secondary for black theme */
@@ -23,7 +23,7 @@
     --muted: 0 0% 8%; /* Dark muted */
     --muted-foreground: 0 0% 60%;
 
-    --accent: 204 87% 53%; /* #20A0F0 - Analogous Blue (remains for accents) */
+    --accent: 204 87% 53%; /* #20A0F0 - Analogous Blue */
     --accent-foreground: 0 0% 98%;
 
     --destructive: 0 70% 50%; 
@@ -39,6 +39,10 @@
     --neon-green-base-hsl: 130 70% 45%;
     --neon-green-text-on-base-hsl: 130 100% 5%;
     --neon-green-soft-bg-hsl: 130 70% 45%; /* For bg with alpha - same base */
+
+    /* Orange HSL (approx. Tailwind's orange-500 #f97316) */
+    --orange-hsl: 24 95% 53%;
+
 
     --chart-1: 285 87% 53%; 
     --chart-2: 204 87% 53%; 
@@ -82,6 +86,9 @@
     --neon-green-text-on-base-hsl: 130 100% 5%;
     --neon-green-soft-bg-hsl: 130 70% 45%;
 
+    /* Orange HSL */
+    --orange-hsl: 24 95% 53%;
+
 
     --chart-1: 285 87% 53%;
     --chart-2: 204 87% 53%;
@@ -112,31 +119,51 @@
 
 /* Custom glassmorphism utility for black theme */
 @layer utilities {
-  .glass-effect {
-    @apply bg-black/50 backdrop-blur-md border border-primary/60 rounded-xl shadow-lg;
-    /* Default neon purple glow */
-    box-shadow: 0 0 10px 0px hsl(var(--primary)/0.4), 0 0 4px 0px hsl(var(--primary)/0.2) inset;
-  }
-  .glass-effect-interactive-hover {
-    @apply transition-all duration-300 hover:scale-[1.01] hover:bg-black/65 hover:border-primary/80;
-  }
-  .glass-effect-interactive-hover:hover {
-     /* Enhanced neon purple glow on hover */
-    box-shadow: 0 0 18px 2px hsl(var(--primary)/0.6), 0 0 8px 1px hsl(var(--primary)/0.3) inset;
+  .glass-effect { /* Base style for glass cards */
+    @apply bg-black/50 backdrop-blur-md border border-neutral-700/40 rounded-xl shadow-lg;
+    /* Subtle generic shadow for depth, no specific color glow by default */
+    box-shadow: 0 0 8px 0px hsla(0, 0%, 50%, 0.1);
   }
 
-  /* Contextual Neon Glow Hovers - These will add to the base glow */
-  .hover-glow-primary { 
-    @apply hover:shadow-[0_0_25px_3px_hsl(var(--primary)/0.5),_0_0_10px_0px_hsl(var(--primary)/0.4),_0_0_4px_0px_hsl(var(--primary)/0.2)_inset];
+  /* Default Glow Styles */
+  .default-glow-primary {
+    @apply border-primary/60;
+    box-shadow: 0 0 10px 0px hsl(var(--primary)/0.4), 0 0 4px 0px hsl(var(--primary)/0.2) inset, 0 0 8px 0px hsla(0, 0%, 50%, 0.1);
   }
-  .hover-glow-accent { 
-    @apply hover:shadow-[0_0_25px_3px_hsl(var(--accent)/0.5),_0_0_10px_0px_hsl(var(--primary)/0.4),_0_0_4px_0px_hsl(var(--primary)/0.2)_inset];
+  .default-glow-accent {
+    @apply border-accent/60;
+    box-shadow: 0 0 10px 0px hsl(var(--accent)/0.4), 0 0 4px 0px hsl(var(--accent)/0.2) inset, 0 0 8px 0px hsla(0, 0%, 50%, 0.1);
   }
-  .hover-glow-orange { 
-    @apply hover:shadow-[0_0_25px_3px_hsl(24_95%_53%/0.5),_0_0_10px_0px_hsl(var(--primary)/0.4),_0_0_4px_0px_hsl(var(--primary)/0.2)_inset];
+  .default-glow-orange {
+    @apply border-[hsl(var(--orange-hsl))]/60;
+    box-shadow: 0 0 10px 0px hsl(var(--orange-hsl)/0.4), 0 0 4px 0px hsl(var(--orange-hsl)/0.2) inset, 0 0 8px 0px hsla(0, 0%, 50%, 0.1);
   }
-   .hover-glow-neon-green { 
-    @apply hover:shadow-[0_0_25px_3px_hsla(var(--neon-green-base-hsl),0.6),_0_0_10px_0px_hsl(var(--neon-green-base-hsl)/0.4),_0_0_4px_0px_hsl(var(--neon-green-base-hsl)/0.2)_inset];
+  .default-glow-neon-green { /* For top pick strategy card */
+    @apply border-[hsl(var(--neon-green-base-hsl))]/70; /* Slightly less transparent border */
+    box-shadow: 0 0 12px 1px hsla(var(--neon-green-base-hsl),0.5), 0 0 5px 0px hsla(var(--neon-green-base-hsl),0.3) inset, 0 0 8px 0px hsla(0, 0%, 50%, 0.1);
+  }
+
+  /* Base Interactive Hover Effect (scaling, background change) */
+  .glass-effect-interactive-hover {
+    @apply transition-all duration-300 hover:scale-[1.01] hover:bg-black/65;
+  }
+
+  /* Hover states for default glows (intensified specific glow) */
+  .default-glow-primary.glass-effect-interactive-hover:hover {
+    @apply border-primary/80;
+    box-shadow: 0 0 18px 2px hsl(var(--primary)/0.6), 0 0 8px 1px hsl(var(--primary)/0.3) inset, 0 0 10px 1px hsla(0, 0%, 60%, 0.15);
+  }
+  .default-glow-accent.glass-effect-interactive-hover:hover {
+    @apply border-accent/80;
+    box-shadow: 0 0 18px 2px hsl(var(--accent)/0.6), 0 0 8px 1px hsl(var(--accent)/0.3) inset, 0 0 10px 1px hsla(0, 0%, 60%, 0.15);
+  }
+  .default-glow-orange.glass-effect-interactive-hover:hover {
+    @apply border-[hsl(var(--orange-hsl))]/80;
+    box-shadow: 0 0 18px 2px hsl(var(--orange-hsl)/0.6), 0 0 8px 1px hsl(var(--orange-hsl)/0.3) inset, 0 0 10px 1px hsla(0, 0%, 60%, 0.15);
+  }
+  .default-glow-neon-green.glass-effect-interactive-hover:hover { /* For top pick strategy card */
+    @apply border-[hsl(var(--neon-green-base-hsl))];
+    box-shadow: 0 0 22px 3px hsla(var(--neon-green-base-hsl),0.7), 0 0 10px 1px hsla(var(--neon-green-base-hsl),0.4) inset, 0 0 10px 1px hsla(0, 0%, 60%, 0.15);
   }
 }
 

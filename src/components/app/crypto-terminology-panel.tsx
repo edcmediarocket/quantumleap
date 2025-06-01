@@ -9,12 +9,8 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import {
-  GlassCardRoot,
-  GlassCardContent,
-} from "./glass-card";
-import { 
   BookOpenText, 
-  Bitcoin, 
+  Coins, // Changed from Bitcoin
   Network, 
   Store, 
   Wallet, 
@@ -24,24 +20,25 @@ import {
   AreaChart, 
   Search, 
   Flame, 
-  Archive, 
+  HandHeart, // Changed from Archive
   Fuel, 
   Waves, 
   LayoutGrid, 
   Landmark,
-  Coins,
-  Blocks,
+  Blocks, // Added for Blockchain
   TrendingDown,
   TrendingUp,
   DollarSign,
   ClipboardCheck,
   Zap,
-  HandHeart, // Corrected icon import
+  // HandHeart, // Already imported for HODL
   Gauge,
   Droplets,
-  Shapes,
-  Banknote
+  Shapes, // Added for Altcoin
+  Banknote // Added for Fiat
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
 
 const terminologyList = [
   {
@@ -135,7 +132,7 @@ const terminologyList = [
   {
     id: "hodl",
     term: "HODL",
-    icon: <HandHeart className="h-5 w-5 mr-2 text-purple-500" />, // Corrected icon usage
+    icon: <HandHeart className="h-5 w-5 mr-2 text-purple-500" />, 
     explanation: [
       "A term originating from a misspelling of 'hold' in an early Bitcoin forum post. It has come to mean holding onto a cryptocurrency for the long term, regardless of short-term price volatility. It represents a belief in the long-term potential of the asset."
     ]
@@ -182,7 +179,14 @@ export function CryptoTerminologyPanel() {
 
       <Accordion type="single" collapsible className="w-full max-w-3xl mx-auto space-y-3">
         {terminologyList.map((item) => (
-          <AccordionItem key={item.id} value={item.id} className="glass-effect !border-border/50 hover-glow-primary !rounded-xl overflow-hidden">
+          <AccordionItem 
+            key={item.id} 
+            value={item.id} 
+            className={cn(
+              "glass-effect default-glow-primary glass-effect-interactive-hover",
+              "!border-border/50 !rounded-xl overflow-hidden"
+            )}
+          >
             <AccordionTrigger className="p-4 text-left hover:no-underline">
               <div className="flex items-center text-base md:text-lg font-medium text-primary-foreground">
                 {item.icon}
@@ -190,7 +194,6 @@ export function CryptoTerminologyPanel() {
               </div>
             </AccordionTrigger>
             <AccordionContent className="p-1">
-                {/* Using a simple div here instead of GlassCardRoot to avoid nested card styles if not desired */}
               <div className="!p-4 !bg-transparent !border-none !shadow-none !backdrop-blur-none">
                 <div className="!text-sm text-muted-foreground space-y-2">
                   {item.explanation.map((paragraph, index) => (
@@ -208,4 +211,3 @@ export function CryptoTerminologyPanel() {
     </section>
   );
 }
-

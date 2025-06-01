@@ -35,7 +35,10 @@ export function AiCoachAvatarPanel({ tipData, isLoading, className }: AiCoachAva
   const theme = tipData?.suggestedActionTheme || 'ENGAGE';
 
   return (
-    <div className={cn("p-4 rounded-xl glass-effect max-w-md w-full mx-auto", className)}>
+    <div className={cn(
+        "p-4 rounded-xl glass-effect default-glow-primary glass-effect-interactive-hover max-w-md w-full mx-auto", 
+        className
+      )}>
       <div className="flex items-center space-x-3">
         <div className="relative h-16 w-16 md:h-20 md:w-20 rounded-full overflow-hidden border-2 border-primary/50 shadow-lg">
           <Image
@@ -66,4 +69,3 @@ export function AiCoachAvatarPanel({ tipData, isLoading, className }: AiCoachAva
     </div>
   );
 }
-

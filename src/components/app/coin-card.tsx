@@ -384,20 +384,27 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
   const confidenceProgressBg = type === 'memeFlip' ? 'bg-orange-500/20 [&>div]:bg-gradient-to-r [&>div]:from-yellow-500 [&>div]:to-red-500' : 'bg-primary/20 [&>div]:bg-gradient-to-r [&>div]:from-accent [&>div]:to-primary';
 
   const dialogButtonVariant = type === 'memeFlip' ? 'outline' : 'outline';
-  const dialogButtonTextColor = type === 'memeFlip' ? 'text-orange-500 border-orange-500 hover:bg-orange-500 hover:text-white' : 'border-accent text-accent hover:bg-accent hover:text-accent-foreground';
+  const dialogButtonTextColor = 
+      type === 'aiPick' ? 'border-primary text-primary hover:bg-primary hover:text-primary-foreground'
+    : type === 'profitGoal' ? 'border-accent text-accent hover:bg-accent hover:text-accent-foreground'
+    : type === 'memeFlip' ? 'border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white'
+    : 'border-primary text-primary hover:bg-primary hover:text-primary-foreground';
+
   const dialogTitleIcon = type === 'memeFlip' ? <RocketIcon className="h-6 w-6"/> : <Brain className="h-6 w-6"/>;
   const dialogTitleText = `AI Analysis & Strategies for ${name}`;
   const dialogDescriptionText = type === 'memeFlip' ? `Speculative insights and coaching strategies for this meme coin. EXTREME RISK!` : `Detailed insights and coaching strategies powered by AI.`;
 
-  const glowClass = type === 'aiPick' ? 'hover-glow-primary'
-                  : type === 'profitGoal' ? 'hover-glow-accent'
-                  : 'hover-glow-orange';
+  const defaultCardGlowClass =
+      type === 'aiPick' ? 'default-glow-primary'
+    : type === 'profitGoal' ? 'default-glow-accent'
+    : type === 'memeFlip' ? 'default-glow-orange'
+    : 'default-glow-primary'; // Fallback for safety
 
 
   return (
     <GlassCardRoot className={cn(
-      type === 'memeFlip' ? 'border-orange-500/30' : '',
-      glowClass
+      "glass-effect-interactive-hover", // This provides hover scaling
+      defaultCardGlowClass // This provides the default, theme-specific glow and border
     )}>
       <GlassCardHeader>
         <div className="flex items-center justify-between">
@@ -647,7 +654,7 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
           </DialogTrigger>
           <DialogContent className="sm:max-w-xl md:max-w-2xl lg:max-w-4xl xl:max-w-5xl max-h-[90vh] overflow-y-auto bg-popover text-popover-foreground glass-effect !rounded-xl">
             <DialogHeader>
-              <DialogTitle className={`${type === 'memeFlip' ? 'text-orange-500' : 'text-primary'} flex items-center gap-2`}>
+              <DialogTitle className={`${type === 'memeFlip' ? 'text-orange-500' : type === 'profitGoal' ? 'text-accent' : 'text-primary'} flex items-center gap-2`}>
                 {dialogTitleIcon} {dialogTitleText}
               </DialogTitle>
               <DialogDescription className="text-muted-foreground pt-2 text-left">
@@ -657,7 +664,7 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
 
             <div className="py-4 space-y-6">
               <div>
-                <h3 className={`text-lg font-semibold mb-2 ${type === 'memeFlip' ? 'text-orange-400' : 'text-accent'}`}>In-depth Rationale</h3>
+                <h3 className={`text-lg font-semibold mb-2 ${type === 'memeFlip' ? 'text-orange-400' : type === 'profitGoal' ? 'text-accent' : 'text-primary'}`}>In-depth Rationale</h3>
                  {isMemeFlipCoin(coinData, type) && (
                   <Alert variant="destructive" className="mb-3 text-xs">
                     <AlertTriangle className="h-4 w-4" />
@@ -718,7 +725,7 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
                     {coachStrategies && !isLoadingCoach && (
                       <div className="space-y-4">
                         {coachStrategies.topPickRationale && (
-                          <div className="p-4 rounded-lg bg-[hsla(var(--neon-green-soft-bg-hsl),0.1)] border-2 border-[hsl(var(--neon-green-base-hsl))] shadow-lg mb-6 hover-glow-neon-green">
+                           <div className="p-4 rounded-lg bg-[hsla(var(--neon-green-soft-bg-hsl),0.05)] border default-glow-neon-green glass-effect-interactive-hover shadow-lg mb-6">
                             <div className="flex items-center gap-2 mb-2">
                                <StarIcon className="h-6 w-6 text-[hsl(var(--neon-green-base-hsl))] fill-[hsl(var(--neon-green-base-hsl))]" />
                               <h4 className="text-md font-semibold text-[hsl(var(--neon-green-base-hsl))]">AI's Top Strategy Rationale</h4>
@@ -735,8 +742,8 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
                         {coachStrategies.investmentStrategies.map((strategy: InvestmentStrategyFromAICoach, index: number) => (
                           <div key={index} 
                                className={cn(
-                                "p-3 rounded-md bg-card/50 border border-border/40 shadow-md space-y-3",
-                                strategy.isTopPick && "border-2 border-[hsl(var(--neon-green-base-hsl))] ring-2 ring-[hsl(var(--neon-green-base-hsl))] ring-opacity-50 bg-[hsla(var(--neon-green-soft-bg-hsl),0.1)] relative hover-glow-neon-green"
+                                "p-3 rounded-md bg-card/50 border border-border/40 shadow-md space-y-3 glass-effect-interactive-hover", // Added glass-effect-interactive-hover
+                                strategy.isTopPick ? "default-glow-neon-green" : "border-border/40" // Apply neon green glow if top pick
                                )}>
                             {strategy.isTopPick && (
                                 <div className="absolute -top-3 -left-3 bg-[hsl(var(--neon-green-base-hsl))] text-[hsl(var(--neon-green-text-on-base-hsl))] p-1.5 rounded-full shadow-lg">
@@ -791,4 +798,3 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
     </GlassCardRoot>
   );
 }
-

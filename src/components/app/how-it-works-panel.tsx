@@ -16,6 +16,7 @@ import {
   GlassCardDescription,
 } from "./glass-card";
 import { Brain, Search, Users, LineChart, Rss, Bot } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const aiLogicTopics = [
   {
@@ -117,7 +118,14 @@ export function HowItWorksPanel() {
 
       <Accordion type="single" collapsible className="w-full max-w-3xl mx-auto space-y-3">
         {aiLogicTopics.map((topic) => (
-          <AccordionItem key={topic.id} value={topic.id} className="glass-effect !border-border/50 hover-glow-primary !rounded-xl overflow-hidden">
+          <AccordionItem 
+            key={topic.id} 
+            value={topic.id} 
+            className={cn(
+              "glass-effect default-glow-primary glass-effect-interactive-hover",
+              "!border-border/50 !rounded-xl overflow-hidden"
+            )}
+          >
             <AccordionTrigger className="p-4 text-left hover:no-underline">
               <div className="flex items-center text-base md:text-lg font-medium text-primary-foreground">
                 {topic.icon}
@@ -125,14 +133,15 @@ export function HowItWorksPanel() {
               </div>
             </AccordionTrigger>
             <AccordionContent className="p-1">
-              <GlassCardRoot className="!p-4 !bg-transparent !border-none !shadow-none !backdrop-blur-none">
-                <GlassCardContent className="!text-sm">
+              {/* Using a simple div for content wrapper, no nested GlassCardRoot */}
+              <div className="!p-4 !bg-transparent !border-none !shadow-none !backdrop-blur-none">
+                <div className="!text-sm text-muted-foreground space-y-2">
                   <p className="text-muted-foreground mb-3 italic">{topic.description}</p>
                   {topic.content.map((paragraph, index) => (
                     <p key={index} className="mb-2 last:mb-0">{paragraph}</p>
                   ))}
-                </GlassCardContent>
-              </GlassCardRoot>
+                </div>
+              </div>
             </AccordionContent>
           </AccordionItem>
         ))}
