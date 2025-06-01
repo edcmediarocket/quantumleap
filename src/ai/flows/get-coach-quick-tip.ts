@@ -42,30 +42,39 @@ Current user context: User is interacting with the '{{{userActionContext}}}' sec
 
 Based on this context, provide:
 1.  **quickTip**: A concise, advanced-sounding, and actionable tip reflecting deep market understanding. Keep it under 150 characters.
-    *   If 'memeFlip', emphasize excitement, extreme caution, and rapid decision-making. Use emojis like 🚀, 🎲, 🔥, ⚠️, ⚡. Examples: "Meme market's wild, {{{userName}}}! ⚡ Speed & conviction are key, but manage that risk! 🎲", "Spot a meme trend, {{{userName}}}? Timing is everything. High risk, high reward! 🚀", "Meme momentum can shift in seconds, {{{userName}}}! Secure profits quickly & don't chase waterfalls. 🌊"
-    *   If 'aiPicks' or 'profitGoal', sound knowledgeable, strategic, and encouraging. Use emojis like 📈, 🎯, 💡, 🧠. Examples: "AI Picks are in, {{{userName}}}! Align these with your macro view for max impact. 🧠", "Profit goal set, {{{userName}}}! Remember, discipline in execution turns targets into reality. 🎯", "When evaluating picks, {{{userName}}}, consider the Risk/ROI gauge. Is it aligned with your current strategy? 🤔"
-    *   If 'general', provide a welcoming or a nugget of advanced trading wisdom. Examples: "Welcome, {{{userName}}}! Ready to dissect the market's latest moves? 🧐", "Mastering risk isn't just defense, {{{userName}}}; it's the foundation of aggressive offense. 🛡️", "The best traders adapt, {{{userName}}}. Is your strategy flexible enough for today's market? 💡"
+    *   If 'memeFlip', emphasize excitement, extreme caution, and rapid decision-making. Use emojis like 🚀, 🎲, 🔥, ⚠️, ⚡.
+        *   Example (CAUTION): "Meme market's wild, {{{userName}}}! ⚡ Speed & conviction are key, but manage that risk! 🎲"
+        *   Example (STRATEGY): "Meme momentum can shift in seconds, {{{userName}}}! Secure profits quickly & don't chase waterfalls. 🌊"
+    *   If 'aiPicks' or 'profitGoal', sound knowledgeable, strategic, and encouraging. Use emojis like 📈, 🎯, 💡, 🧠.
+        *   Example (STRATEGY for aiPicks): "AI Picks are in, {{{userName}}}! Align these with your macro view for max impact. 🧠"
+        *   Example (STRATEGY for profitGoal): "Profit goal set, {{{userName}}}! Remember, discipline in execution turns targets into reality. 🎯"
+        *   Example (ACTION for aiPicks): "When evaluating picks, {{{userName}}}, consider the Risk/ROI gauge. Is it aligned with your current strategy? 🤔"
+    *   If 'general', provide a welcoming or a nugget of advanced trading wisdom.
+        *   Example (ENGAGE): "Welcome, {{{userName}}}! Ready to dissect the market's latest moves? 🧐"
+        *   Example (STRATEGY): "Mastering risk isn't just defense, {{{userName}}}; it's the foundation of aggressive offense. 🛡️"
+        *   Example (INFO): "The best traders adapt, {{{userName}}}. Is your strategy flexible enough for today's market? 💡"
     *   Make it feel like a quick interjection from a helpful, expert coach.
 2.  **suggestedActionTheme**: Classify the tip's theme.
     *   'INFO': General market/trading information or observation.
     *   'CAUTION': Warning or advice for risky situations (especially for 'memeFlip').
     *   'ACTION': Encouraging the user to use features, explore, or consider a move.
     *   'ENGAGE': Friendly, welcoming, or motivational.
-    *   'STRATEGY': A tactical hint or strategic consideration.
+    *   'STRATEGY': A tactical hint or strategic consideration (like planning, risk management ideas, execution discipline).
 
-Example for 'memeFlip' context:
+Example for 'memeFlip' context with STRATEGY theme:
 quickTip: "Meme heat is on, {{{userName}}}! 🔥 Analyze sentiment spikes & on-chain data for those quick flips. Trade smart! ⚠️"
 suggestedActionTheme: STRATEGY
 
-Example for 'aiPicks' context:
+Example for 'aiPicks' context with STRATEGY theme:
 quickTip: "Exploring AI Picks, {{{userName}}}? Cross-reference with key support/resistance levels for stronger entries. 💡"
 suggestedActionTheme: STRATEGY
 
-Example for 'general' context at app start:
+Example for 'general' context at app start with ENGAGE theme:
 quickTip: "Welcome back, {{{userName}}}! The market never sleeps. What opportunities are we hunting today? 🚀"
 suggestedActionTheme: ENGAGE
 
 Respond strictly in the GetCoachQuickTipOutputSchema format. Ensure tips are insightful and provide genuine value.
+Select the most appropriate 'suggestedActionTheme' based on the tip's content.
 `,
 });
 

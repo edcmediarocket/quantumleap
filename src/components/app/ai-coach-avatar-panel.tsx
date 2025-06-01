@@ -23,7 +23,7 @@ export function AiCoachAvatarPanel({ tipData, isLoading, className }: AiCoachAva
         return <Rocket className="h-5 w-5 text-accent mr-2" />;
       case "ENGAGE":
         return <Sparkles className="h-5 w-5 text-primary mr-2" />;
-      case "STRATEGY": // New case
+      case "STRATEGY": 
         return <Brain className="h-5 w-5 text-purple-400 mr-2" />;
       case "INFO":
       default:
