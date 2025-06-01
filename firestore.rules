@@ -3,16 +3,35 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Admin settings for feature toggles
-    // Allow public read so the app can fetch toggles for all users
-    // Restrict write access to the specific admin UID
-    match /adminSettings/featureToggles {
-      allow read: if true; // All users can read
-      allow write: if request.auth != null && request.auth.uid == 'qRJOtYXWqLbpQ1yx6qRdwSGwGyl1'; // Only admin can write
+
+    // Allow public read access to dailySignals for all users
+    match /dailySignals/{signalId} {
+      allow read: if true;
+      allow write: if false; // Write access should be restricted (e.g., only by backend functions)
     }
 
-    // This is a default rule, denying all access to any other collections
-    // Add rules for other collections your app uses above this line
+    // Allow users to read and write their own preferences
+    match /users/{userId}/preferences/{prefDoc} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Allow admin settings to be read by anyone (for feature toggles)
+    // but only written by authenticated users (further restricted by admin UID check in code).
+    // Consider making this admin-only read if not all settings are public.
+    match /adminSettings/{settingId} {
+      allow read: if true; // Or restrict to authenticated users: if request.auth != null;
+      allow write: if request.auth != null; // Further checks for admin UID should be in your Cloud Functions or admin panel logic
+    }
+
+    // Coach logs should ideally be written by your backend (Firebase Functions)
+    // and read access might be restricted (e.g., only admin or specific backend services).
+    // For now, let's assume writes are handled by backend and reads are restricted.
+    match /coachLogs/{logId} {
+      allow read: if false; // Example: Restrict client-side reads, admin/backend can access directly
+      allow write: if false; // Example: Restrict client-side writes
+    }
+
+    // Default deny all other access
     match /{document=**} {
       allow read, write: if false;
     }
