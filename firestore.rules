@@ -4,31 +4,30 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Allow public read access to dailySignals for all users
+    // Daily Signals: Publicly readable, but writable only by backend functions.
     match /dailySignals/{signalId} {
       allow read: if true;
-      allow write: if false; // Write access should be restricted (e.g., only by backend functions)
+      allow write: if false; // Writes should come from backend functions
     }
 
-    // Allow users to read and write their own preferences
-    match /users/{userId}/preferences/{prefDoc} {
+    // User-specific data: Typically, users can read/write their own data.
+    match /users/{userId}/{document=**} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Allow admin settings to be read by anyone (for feature toggles)
-    // but only written by authenticated users (further restricted by admin UID check in code).
-    // Consider making this admin-only read if not all settings are public.
+    // Admin Settings: Readable by authenticated users (for feature toggles),
+    // writable only by authenticated users (admin UID check done in app/functions).
+    // For stricter security, you might restrict read to specific admin roles via custom claims.
     match /adminSettings/{settingId} {
-      allow read: if true; // Or restrict to authenticated users: if request.auth != null;
-      allow write: if request.auth != null; // Further checks for admin UID should be in your Cloud Functions or admin panel logic
+      allow read: if request.auth != null;
+      allow write: if request.auth != null; // Further admin checks should be in your Cloud Functions or app logic
     }
 
-    // Coach logs should ideally be written by your backend (Firebase Functions)
-    // and read access might be restricted (e.g., only admin or specific backend services).
-    // For now, let's assume writes are handled by backend and reads are restricted.
+    // Coach Logs: Generally, these should only be writable by your backend functions.
+    // Read access might be restricted to admins or users for their own logs.
+    // This rule assumes writes only from backend and denies client reads/writes.
     match /coachLogs/{logId} {
-      allow read: if false; // Example: Restrict client-side reads, admin/backend can access directly
-      allow write: if false; // Example: Restrict client-side writes
+      allow read, write: if false; // Writes from backend, client reads TBD based on needs
     }
 
     // Default deny all other access
