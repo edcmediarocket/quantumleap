@@ -47,10 +47,12 @@ type AnyCoinData = AiPick | ProfitGoalCoin | MemeFlipCoin;
 type PriceRange = { low: number; high: number };
 type TradingStyle = 'short-term' | 'swing' | 'scalp';
 type RiskProfile = AiCoinPicksInput['riskProfile'];
+export type CoinCardType = 'aiPick' | 'profitGoal' | 'memeFlip';
+
 
 interface CoinCardProps {
   coinData: AnyCoinData;
-  type: 'aiPick' | 'profitGoal' | 'memeFlip';
+  type: CoinCardType;
   profitTarget?: number;
   riskTolerance?: 'low' | 'medium' | 'high';
   investmentAmount?: number;
@@ -301,7 +303,7 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
     if (!canShowCoach) return;
     setIsLoadingCoach(true);
     setCoachError(null);
-    setCoachStrategies(null); // Clear previous strategies
+    setCoachStrategies(null); 
 
     try {
       if (!entryPriceRange || typeof entryPriceRange.low !== 'number' || typeof entryPriceRange.high !== 'number' ||
@@ -309,7 +311,6 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
         const errorMsg = "Client Error: Entry or exit price range is incomplete or invalid for AI Coach. Check low/high values.";
         console.error(errorMsg, { coinName: name, entryPriceRange, exitPriceRange });
         setCoachError(errorMsg);
-        // setIsLoadingCoach(false); // Done in finally
         return;
       }
 
@@ -339,7 +340,7 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
         coachInput.tradingStylePreference = stylePref;
       }
       
-      console.log("Attempting to fetch AI coach strategies for " + name + " with input:", JSON.stringify(coachInput, null, 2));
+      console.log(`Attempting to fetch AI coach strategies for ${name} with input:`, JSON.stringify(coachInput, null, 2));
 
       const result = await aiCoachStrategies(coachInput);
       setCoachStrategies(result);
@@ -369,7 +370,7 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
 
   const handleTradingStyleSelect = (style: TradingStyle) => {
     setCurrentTradingStylePreference(style);
-    fetchCoachStrategies(style); // This will also clear coachStrategies and coachError
+    fetchCoachStrategies(style); 
   };
 
 
@@ -424,7 +425,7 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
       type === 'aiPick' ? 'default-glow-primary'
     : type === 'profitGoal' ? 'default-glow-accent'
     : type === 'memeFlip' ? 'default-glow-orange'
-    : 'default-glow-primary'; // Fallback for safety
+    : 'default-glow-primary'; 
 
 
   return (
@@ -796,6 +797,7 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
                             <StrategyBacktestSimulator
                                 coinName={name}
                                 strategy={strategy}
+                                cardType={type} 
                             />
                           </div>
                         ))}
@@ -824,4 +826,3 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
     </GlassCardRoot>
   );
 }
-
