@@ -5,3 +5,7 @@ runConfig:
   # Increase this value if you'd like to automatically spin up
   # more instances in response to increased traffic.
   maxInstances: 1
+
+env:
+  - variable: NEXT_PUBLIC_FIREBASE_FUNCTIONS_URL
+    value: "https://YOUR_REGION-YOUR_PROJECT_ID.cloudfunctions.net" # IMPORTANT: Replace with your actual functions URL
