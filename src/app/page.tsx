@@ -84,12 +84,18 @@ export default function QuantumLeapPage() {
       return;
     }
     if (!functionsBaseUrl) {
-      console.warn("Firebase Functions URL not set. Cannot log AI interaction for", flowName);
+      console.warn("Firebase Functions URL not set. Cannot log AI interaction for", flowName, ". URL:", functionsBaseUrl);
+      toast({
+        title: "Logging Error",
+        description: "AI interaction logging service is not configured.",
+        variant: "destructive",
+      });
       return;
     }
 
+    console.log(`Attempting to log to: ${functionsBaseUrl} for flow: ${flowName}`);
     try {
-      await fetch(`${functionsBaseUrl}/investmentCoachAgent`, {
+      const response = await fetch(functionsBaseUrl, { // Corrected: Use functionsBaseUrl directly
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -98,8 +104,22 @@ export default function QuantumLeapPage() {
           aiResult: JSON.stringify(aiResult, null, 2) 
         }),
       });
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error(`Error logging AI interaction: ${response.status} ${response.statusText}`, errorData);
+        throw new Error(`Server error ${response.status}: ${errorData || response.statusText}`);
+      }
+      // console.log("AI Interaction logged successfully for", flowName);
+
     } catch (error) {
-      console.error("Error logging AI interaction to backend for", flowName, ":", error);
+      console.error(`Error logging AI interaction to backend for "${flowName}" :`, error);
+      // Avoid showing too many toasts for background logging failures
+      // toast({
+      //   title: "Logging Issue",
+      //   description: `Could not log AI interaction for ${flowName}.`,
+      //   variant: "default", 
+      // });
     }
   };
 
@@ -121,7 +141,8 @@ export default function QuantumLeapPage() {
       }
     };
     fetchInitialTip();
-  }, [loadingToggles, toggles.aiCoachEnabled]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadingToggles, toggles.aiCoachEnabled]); // Removed logAiInteraction from deps
 
   const fetchAndSetCoachTip = async (context: GetCoachQuickTipInput['userActionContext'], summary?: string) => {
     if (!toggles.aiCoachEnabled) return; 
