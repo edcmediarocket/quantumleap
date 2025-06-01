@@ -3,41 +3,56 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Admin settings (e.g., feature toggles at /adminSettings/featureToggles)
-    // - Publicly readable
-    // - Writable only by the specified admin UID
-    match /adminSettings/{adminDocId} {
-      allow read: if true;
-      allow write: if request.auth != null && request.auth.uid == 'qRJOtYXWqLbpQ1yx6qRdwSGwGyl1';
-    }
-
-    // Daily signals
-    // - Publicly readable (this covers queries on the collection, e.g., by DailySignalsPanel)
-    // - Not writable from the client (only by backend functions)
-    match /dailySignals/{signalDoc=**} {
-      allow read: if true;
-      allow write: if false;
-    }
-
-    // Coach logs
-    // - Readable by admin (this covers queries/reads on the collection)
-    // - Not writable from the client (only by backend functions)
-    match /coachLogs/{logDoc=**} {
-      allow read: if request.auth != null && request.auth.uid == 'qRJOtYXWqLbpQ1yx6qRdwSGwGyl1';
-      allow write: if false;
-    }
-
-    // User-specific data (e.g., preferences, fcmTokens stored under /users/{userId}/...)
-    // - Users can read and write their own data.
-    match /users/{userId}/{userDoc=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-
-    // Default deny all other access.
-    // This rule is crucial and must be the last one for non-explicitly matched paths.
+    // Default deny all
     match /{document=**} {
       allow read, write: if false;
     }
+
+    // Allow authenticated users to create logs
+    // Restrict read access to coachLogs to the admin user only
+    match /coachLogs/{logId} {
+      allow read: if request.auth != null && request.auth.uid == 'qRJOtYXWqLbpQ1yx6qRdwSGwGyl1';
+      allow create: if request.auth != null; // Allow any authenticated user (or your function's service account) to create logs
+      // Deny update and delete for now unless specifically needed
+      allow update, delete: if false;
+    }
+
+    // Admin settings: only admin can read and write
+    match /adminSettings/{settingId} {
+      allow read, write: if request.auth != null && request.auth.uid == 'qRJOtYXWqLbpQ1yx6qRdwSGwGyl1';
+    }
+     match /adminSettings/featureToggles {
+        allow read: if true; // Allow all users to read feature toggles
+        allow write: if request.auth != null && request.auth.uid == 'qRJOtYXWqLbpQ1yx6qRdwSGwGyl1'; // Only admin can write
+    }
+
+
+    // Users collection
+    match /users/{userId} {
+      // Allow users to read and write their own data
+      allow read, update, delete: if request.auth != null && request.auth.uid == userId;
+      // Allow anyone to create a user document (e.g., on sign up)
+      allow create: if request.auth != null; 
+      // Specific rule for admin to read all user data for push notifications
+      // This should be more granular if only specific fields are needed.
+      // For getAllUsers to work for admin for push notifications:
+      allow list: if request.auth != null && request.auth.uid == 'qRJOtYXWqLbpQ1yx6qRdwSGwGyl1';
+    }
+     match /users/{document=**} {
+      allow read: if request.auth != null && request.auth.uid == 'qRJOtYXWqLbpQ1yx6qRdwSGwGyl1';
+    }
+
+
+    // Daily Signals: Allow all users to read, only admin (or backend function) to write/create
+    match /dailySignals/{signalId} {
+      allow read: if true; // Anyone can read daily signals
+      // Assuming only backend function with admin privileges or a specific admin writes these
+      allow create, write, delete: if request.auth != null && request.auth.uid == 'qRJOtYXWqLbpQ1yx6qRdwSGwGyl1'; // Or specific admin/function role
+    }
+    match /dailySignals/{docId=**} {
+        allow read: if true;
+        allow write: if request.auth != null && request.auth.uid == 'qRJOtYXWqLbpQ1yx6qRdwSGwGyl1';
+    }
+
   }
 }
