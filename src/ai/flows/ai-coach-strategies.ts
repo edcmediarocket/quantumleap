@@ -38,11 +38,13 @@ const InvestmentStrategySchema = z.object({
   actionableSteps: z.array(z.string()).min(2).max(4), // Include indicator examples. Prices must be full decimals.
   stopLossSuggestion: z.string().optional(), // Concrete suggestion, justified. Prices must be full decimals.
   tradingStyleAlignment: z.string().optional(),
+  isTopPick: z.boolean().optional(), // AI will set this to true for its single best strategy recommendation
 });
 
 const AiCoachStrategiesOutputSchema = z.object({
   coinSpecificAdvice: z.string(), // Advanced advice: volatility patterns, catalysts, on-chain metrics for this coin.
   investmentStrategies: z.array(InvestmentStrategySchema).min(1).max(3),
+  topPickRationale: z.string().optional(), // AI's reasoning for selecting the top recommended strategy
   overallCoachSOutlook: z.string(), // Outlook & advanced risk management for profit maximization.
   disclaimer: z.string().default('Remember, these AI-generated insights are for informational purposes... DYOR.'),
 });
@@ -56,16 +58,17 @@ const prompt = ai.definePrompt({
   name: 'aiCoachStrategiesPrompt',
   input: {schema: AiCoachStrategiesInputSchema},
   output: {schema: AiCoachStrategiesOutputSchema},
-  prompt: `You are an elite AI crypto investment coach. For the given coin, {{{coinName}}}, you will provide advanced trading strategies.
-Your analysis and strategy formulation MUST be guided by your deep understanding of:
-1.  **Volatility Optimization**: How does this coin's volatility profile (e.g., ATR, Bollinger Bands) inform strategy?
-2.  **Sentiment Intelligence**: What is the current social/news sentiment, and how can it be leveraged?
-3.  **Whale & Insider Tracking**: Are there recent whale activities or on-chain signals relevant to this coin?
-4.  **Narrative Pulse Engine**: Is this coin part of a trending narrative? How does that affect strategy?
-5.  **Cycle Timing Engine**: What are the ideal entry/exit considerations based on its typical cycle or momentum waves?
-6.  **Risk Layering**: How does the coin's intrinsic risk (liquidity, tokenomics) and the user's risk tolerance (if provided: {{{riskTolerance}}}) shape the strategy?
-7.  **Profit Strategy Design**: How can we maximize profit for {{{coinName}}} given its current context?
-8.  **Adaptive AI Logic**: (Conceptual) Apply learned patterns.
+  prompt: `You are an elite AI crypto investment coach trained to identify high-potential meme and altcoins for fast-profit opportunities (1–7 days). Your purpose is to scan live market data, on-chain metrics, social sentiment, and whale activity to generate real-time, risk-adjusted investment strategies for short-term gains.
+
+Your decision-making engine should include:
+1.  **Volatility Optimization** — Recommend coins that show breakout volatility with risk-reward ratios above 2.0, using Bollinger Band squeezes, sudden volume surges, and RSI trends.
+2.  **Sentiment Intelligence** — Analyze social media (Crypto Twitter, Telegram, Reddit) and sentiment APIs to detect rising hype, community strength, and FOMO signals.
+3.  **Whale & Insider Tracking** — Monitor wallets with over $100k+ transactions using Whale Alert APIs or on-chain data. Prioritize coins being accumulated by smart money.
+4.  **Narrative Pulse Engine** — Detect trending themes (e.g., dog coins, politics, AI tokens) and recommend coins aligned with surging narratives for viral upside.
+5.  **Cycle Timing Engine** — Estimate ideal entry/exit times based on fractal analysis, momentum waves, and meme coin seasonal behaviors (weekends, airdrop hype windows).
+6.  **Risk Layering** — Rate each coin on a 1–5 scale for risk (liquidity, slippage, tokenomics, recent rug history) and only recommend when reward > risk.
+7.  **Profit Strategy Design** — Output a clear plan: Coin to buy, allocation size (%, risk-adjusted), entry price range, target price, stop loss, and time horizon.
+8.  **Adaptive AI Logic** — Learn from past wins/losses, optimize strategies in real-time. If a prediction misses, adjust logic for future cases.
 
 Coin Details:
 -   Name: {{{coinName}}}
@@ -93,19 +96,23 @@ Based on the coin's details and your analytical engine, provide the following, f
     *   **optimalBuyPrice**: (Optional) Precise, justified optimal buy price. Why is it optimal? (e.g., confluence of support and 0.618 Fib).
     *   **targetSellPrices**: (Array of numbers, min 1) Strategically determined target sell prices for profit taking. Justify each.
     *   **actionableSteps**: (Array of 2-4 strings) Concrete steps. Example: "Set limit buy at $X.XXX, with secondary at $Y.YYY. Place tiered take-profit: 30% at $T1, 50% at $T2. Monitor [advanced indicator] for confirmation."
-        IMPORTANT: Any prices or monetary values in these steps MUST be written as full decimal numbers (e.g., "$0.000000075") and NOT in scientific notation (e.g., "7.5e-8").
+        IMPORTANT: When specifying any prices or monetary values in these steps, you MUST write them as full decimal numbers (e.g., "$0.000000075") and NOT in scientific notation (e.g., "7.5e-8"). Be precise with the number of decimal places relevant to the coin's price.
     *   **stopLossSuggestion**: (Optional string) Concrete stop-loss price or dynamic strategy, justified.
         IMPORTANT: Prices here MUST be full decimal numbers (e.g., "$0.000000060") and NOT scientific notation.
     *   **tradingStyleAlignment**: (Optional string) {{#if tradingStylePreference}}How does this strategy align with '{{{tradingStylePreference}}}' for {{{coinName}}}?{{else}}General strategy note.{{/if}}
+    *   **isTopPick**: (boolean, optional) You will set this to true for exactly ONE strategy that you determine is the overall best for profit maximization, considering all factors.
 
-3.  **Overall Coach's Outlook (overallCoachSOutlook)**: Summarize your outlook for {{{coinName}}} with a profit maximization focus. Include sophisticated risk management tips for aggressive strategies (e.g., position sizing, dynamic stop-loss adjustment, scaling in/out, when to cut losses based on invalidation signals).
+3.  **Top Pick Rationale (topPickRationale)**: After generating the strategies, evaluate them. Select the SINGLE strategy you believe offers the highest profit potential for {{{coinName}}} given the current context, user preferences (if any), and your 8-point decision engine. Clearly explain in 2-3 sentences WHY this specific strategy is your top recommendation. This explanation should be distinct from the individual 'reasoning' field of the strategy itself.
 
-4.  **Disclaimer (disclaimer)**: Include the standard disclaimer.
+4.  **Overall Coach's Outlook (overallCoachSOutlook)**: Summarize your outlook for {{{coinName}}} with a profit maximization focus. Include sophisticated risk management tips for aggressive strategies (e.g., position sizing, dynamic stop-loss adjustment, scaling in/out, when to cut losses based on invalidation signals).
+
+5.  **Disclaimer (disclaimer)**: Include the standard disclaimer.
 
 Your tone is confident, data-driven, and profit-hungry. Help users outperform the market.
 Ensure actionableSteps and stopLossSuggestion use full decimal numbers for prices.
 Ensure reasoning is in-depth and connects to your analytical engine's principles.
 If a tradingStylePreference is provided, ensure at least one strategy clearly addresses it.
+You MUST select exactly one strategy and mark its 'isTopPick' field as true, and provide the 'topPickRationale'.
 `,
 });
 
@@ -128,6 +135,19 @@ const aiCoachStrategiesFlow = ai.defineFlow(
             strategy.actionableSteps.push("Review market conditions before executing.", "Set alerts for key price levels.");
         }
     });
+    // Ensure at least one strategy is marked as top pick, or if none, mark the first one by default.
+    const hasTopPick = output.investmentStrategies.some(s => s.isTopPick);
+    if (!hasTopPick && output.investmentStrategies.length > 0) {
+        output.investmentStrategies[0].isTopPick = true;
+        if (!output.topPickRationale) {
+            output.topPickRationale = `The AI selected '${output.investmentStrategies[0].name}' as a primary strategy due to its general alignment with the coin's profile. Further analysis is recommended.`;
+        }
+    } else if (hasTopPick && !output.topPickRationale) {
+        const topStrategy = output.investmentStrategies.find(s => s.isTopPick);
+        output.topPickRationale = `The AI identified '${topStrategy?.name || 'the selected strategy'}' as the top pick based on its comprehensive analysis, but did not provide a specific separate rationale. Review its individual reasoning.`;
+    }
+
+
     return output;
   }
 );

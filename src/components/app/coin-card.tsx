@@ -27,7 +27,7 @@ import { Separator } from "@/components/ui/separator";
 import { LoadingDots } from "@/components/ui/loading-dots";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { TrendingUp, HelpCircle, Gauge, Target, Clock, DollarSign, Info, Brain, Terminal, RocketIcon, AlertTriangle, Calculator, TimerIcon, BellIcon, ShoppingCart, LineChart, ShieldCheck, Zap, TrendingDown, BarChartBig, PlayCircle } from "lucide-react";
+import { TrendingUp, HelpCircle, Gauge, Target, Clock, DollarSign, Info, Brain, Terminal, RocketIcon, AlertTriangle, Calculator, TimerIcon, BellIcon, ShoppingCart, LineChart, ShieldCheck, Zap, TrendingDown, BarChartBig, PlayCircle, Award, StarIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -334,16 +334,18 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
         exitPriceRange: exitPriceRange,
         estimatedDuration: estimatedDuration || "Short-term", // Default for meme if undefined
       };
-
-      if (type === 'aiPick' || type === 'profitGoal') {
-        if (profitTarget) coachInput.profitTarget = profitTarget;
-        if (riskTolerance) coachInput.riskTolerance = riskTolerance;
+      
+      if (type === 'aiPick' && riskProfile) { // Use riskProfile from aiPick
+         if (riskProfile === 'cautious') coachInput.riskTolerance = 'low';
+         else if (riskProfile === 'balanced') coachInput.riskTolerance = 'medium';
+         else if (riskProfile === 'aggressive') coachInput.riskTolerance = 'high';
+      } else if (type === 'profitGoal' && riskTolerance) { // Use riskTolerance from profitGoal
+        coachInput.riskTolerance = riskTolerance;
       } else if (type === 'memeFlip') {
-        // For meme flips, risk is inherently high.
-        // We can set it or let the coach infer.
-        // The coach prompt is already geared for advanced users and profit maximization.
-        coachInput.riskTolerance = 'high'; // Explicitly set for meme context if desired
+        coachInput.riskTolerance = 'high'; // Meme coins are inherently high risk
       }
+
+      if (profitTarget) coachInput.profitTarget = profitTarget;
       
       if (stylePref) {
         coachInput.tradingStylePreference = stylePref;
@@ -364,7 +366,7 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
     if (isDialogOpen && canShowCoach && !coachStrategies && !isLoadingCoach && !coachError) {
         fetchCoachStrategies(currentTradingStylePreference);
     }
-  }, [isDialogOpen, canShowCoach, coachStrategies, isLoadingCoach, coachError, currentTradingStylePreference, name, rationale, gain, entryPriceRange, exitPriceRange, estimatedDuration, profitTarget, riskTolerance, type]);
+  }, [isDialogOpen, canShowCoach, coachStrategies, isLoadingCoach, coachError, currentTradingStylePreference, name, rationale, gain, entryPriceRange, exitPriceRange, estimatedDuration, profitTarget, riskTolerance, riskProfile, type]);
 
 
   const handleTradingStyleSelect = (style: TradingStyle) => {
@@ -736,14 +738,34 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
                     )}
                     {coachStrategies && !isLoadingCoach && (
                       <div className="space-y-4">
+                        {coachStrategies.topPickRationale && (
+                          <div className="p-4 rounded-lg bg-primary/10 border-2 border-yellow-400 shadow-lg mb-6">
+                            <div className="flex items-center gap-2 mb-2">
+                               <StarIcon className="h-6 w-6 text-yellow-400 fill-yellow-400" />
+                              <h4 className="text-md font-semibold text-yellow-300">AI's Top Strategy Rationale</h4>
+                            </div>
+                            <p className="text-sm text-primary-foreground/90 italic">{coachStrategies.topPickRationale}</p>
+                          </div>
+                        )}
+
                         <div>
                           <h4 className="font-medium text-primary-foreground/90">Coin-Specific Advice:</h4>
                           <p className="text-sm text-muted-foreground pl-2 border-l-2 border-primary ml-1 py-1 italic">{coachStrategies.coinSpecificAdvice}</p>
                         </div>
+                        
                         {coachStrategies.investmentStrategies.map((strategy: InvestmentStrategyFromAICoach, index: number) => (
-                          <div key={index} className="p-3 rounded-md bg-card/50 border border-border/40 shadow-md space-y-3">
+                          <div key={index} 
+                               className={cn(
+                                "p-3 rounded-md bg-card/50 border border-border/40 shadow-md space-y-3",
+                                strategy.isTopPick && "border-2 border-yellow-400 ring-2 ring-yellow-400/50 bg-primary/5 relative"
+                               )}>
+                            {strategy.isTopPick && (
+                                <div className="absolute -top-3 -left-3 bg-yellow-400 text-black p-1.5 rounded-full shadow-lg">
+                                    <StarIcon className="h-5 w-5" />
+                                </div>
+                            )}
                             <div>
-                                <h4 className="font-semibold text-primary-foreground">{strategy.name}</h4>
+                                <h4 className={cn("font-semibold text-primary-foreground", strategy.isTopPick && "text-yellow-300")}>{strategy.name} {strategy.isTopPick && "(Top Pick)"}</h4>
                                 <p className="text-xs text-muted-foreground mt-1">{strategy.description}</p>
                                 {strategy.optimalBuyPrice && <p className="text-xs text-muted-foreground mt-1"><span className="font-medium text-green-400">Optimal Buy:</span> {formatPrice(strategy.optimalBuyPrice)}</p>}
                                 {strategy.targetSellPrices && strategy.targetSellPrices.length > 0 && <p className="text-xs text-muted-foreground mt-1"><span className="font-medium text-red-400">Target Sells:</span> {strategy.targetSellPrices.map(p => formatPrice(p)).join(', ')}</p>}
@@ -759,9 +781,8 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
                                 </div>
                                 {strategy.stopLossSuggestion && <p className="text-xs text-muted-foreground mt-2"><ShieldCheck className="inline h-3.5 w-3.5 mr-1 text-yellow-500"/> <span className="font-medium">Stop-Loss:</span> {strategy.stopLossSuggestion}</p>}
                             </div>
-                             {/* Strategy Backtest Simulator Integration */}
                             <StrategyBacktestSimulator 
-                                coinName={name} // Pass coinName from CoinCard props
+                                coinName={name}
                                 strategy={strategy}
                             />
                           </div>
@@ -775,7 +796,7 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
                     )}
                      {!coachStrategies && !isLoadingCoach && !coachError && (
                         <div className="text-center py-6 text-muted-foreground">
-                            Select a trading style or click "Get AI Strategies" if no strategies are loaded.
+                            Select a trading style or wait for AI strategies to load.
                         </div>
                      )}
                   </div>
@@ -791,5 +812,3 @@ export function CoinCard({ coinData, type, profitTarget, riskTolerance, investme
     </GlassCardRoot>
   );
 }
-
-    
