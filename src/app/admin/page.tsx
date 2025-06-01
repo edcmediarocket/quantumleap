@@ -47,6 +47,7 @@ export interface FeatureToggles {
   memeCoinHunterEnabled: boolean;
   predictiveAlertsEnabled: boolean;
   aiCoachEnabled: boolean;
+  dailySignalsPanelEnabled: boolean; // Added toggle
 }
 
 const initialFeatureTogglesState: FeatureToggles = {
@@ -57,6 +58,7 @@ const initialFeatureTogglesState: FeatureToggles = {
   memeCoinHunterEnabled: true,
   predictiveAlertsEnabled: true,
   aiCoachEnabled: true,
+  dailySignalsPanelEnabled: true, // Added toggle
 };
 
 const AdminDashboard = () => {

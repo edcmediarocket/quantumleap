@@ -37,6 +37,7 @@ const defaultFeatureTogglesState: FeatureToggles = {
   memeCoinHunterEnabled: true,
   predictiveAlertsEnabled: true,
   aiCoachEnabled: true,
+  dailySignalsPanelEnabled: true, // Added toggle
 };
 
 export function useFeatureToggles() {

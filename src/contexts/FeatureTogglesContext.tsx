@@ -26,6 +26,7 @@ const defaultContextValue: FeatureTogglesContextType = {
     memeCoinHunterEnabled: true,
     predictiveAlertsEnabled: true,
     aiCoachEnabled: true,
+    dailySignalsPanelEnabled: true, // Added toggle
   },
   loadingToggles: true,
   errorToggles: null,
@@ -59,5 +60,3 @@ export const FeatureTogglesProvider = ({ children }: FeatureTogglesProviderProps
     </FeatureTogglesContext.Provider>
   );
 };
-
-    
