@@ -11,6 +11,7 @@ import '@/ai/flows/get-coach-quick-tip.ts';
 import '@/ai/flows/simulate-strategy-backtest.ts'; 
 import '@/ai/flows/predictive-breakout-alerts.ts'; 
 import '@/ai/flows/ai-coach-chat.ts'; // New AI Coach Chat flow
+import '@/ai/tools/get-coin-price-tool.ts'; // Import the new tool
     
 
     

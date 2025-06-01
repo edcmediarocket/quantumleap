@@ -11,9 +11,10 @@
 import {ai} from '@/ai/genkit';
 import {generate} from 'genkit/generate';
 import {z} from 'genkit';
+import { getCoinPriceTool } from '@/ai/tools/get-coin-price-tool'; // Import the new tool
 
 const MessageSchema = z.object({
-  role: z.enum(['user', 'model']),
+  role: z.enum(['user', 'model', 'tool_code', 'tool_response']), // Added tool roles
   content: z.string(),
 });
 export type Message = z.infer<typeof MessageSchema>;
@@ -49,6 +50,10 @@ Key Instructions:
 8.  **Use Markdown:** Utilize markdown for formatting (bold, italics, lists, code blocks for examples if applicable) to make your responses easy to read and structured.
 9.  **Personalization:** Address the user as '{{{userName}}}' when appropriate to make the interaction more engaging.
 10. **Contextual Responses:** Pay close attention to the provided CHAT HISTORY to understand the flow of conversation and provide relevant follow-up responses. Avoid repeating information unnecessarily if it's clear from the history that the user already understands it.
+11. **Fetching Coin Prices:** If {{{userName}}} asks for the current price of a cryptocurrency (e.g., "What's the price of Bitcoin?", "Current ETH price?"), you MUST use the 'getCoinPrice' tool to fetch this information. The tool accepts common coin names or ticker symbols (e.g., "Bitcoin", "BTC", "Ethereum", "ETH").
+    *   When you receive the price from the tool, state it clearly, for example: "The current price of Bitcoin (BTC) is $X,XXX.XX USD." or "I found that Ethereum (ETH) is currently trading at $Y,YYY.YY USD."
+    *   If the tool returns an error (e.g., coin not found, API issue), inform {{{userName}}} gracefully, for example: "I couldn't fetch the price for [Coin Name] at the moment. It might be an unsupported coin or there could be a temporary issue with the price service." or "Sorry, I wasn't able to find a price for [Coin Name]. Could you try a different name or symbol?"
+    *   Do not attempt to guess or provide outdated prices. Only provide prices obtained directly from the tool.
 
 You are helping {{{userName}}}.
 `;
@@ -69,21 +74,25 @@ const aiCoachChatFlow = ai.defineFlow(
   async (input) => {
     const { userMessage, chatHistory = [], userName } = input;
 
-    // Pre-process chatHistory into a formatted string
+    // Pre-process chatHistory into a formatted string for the prompt context
     let formattedChatHistoryString = "";
     if (chatHistory.length > 0) {
       formattedChatHistoryString = chatHistory
         .map(msg => {
-          if (msg.role === 'user') {
-            return `USER: ${msg.content}`;
-          } else {
-            return `MODEL: ${msg.content}`;
-          }
+          // For tool messages, we might want a more structured representation or just skip them in this simple string.
+          // For now, just prefixing them.
+          if (msg.role === 'user') return `USER: ${msg.content}`;
+          if (msg.role === 'model') return `MODEL: ${msg.content}`;
+          if (msg.role === 'tool_code') return `TOOL_CALL: ${msg.content}`; // Representing tool call details
+          if (msg.role === 'tool_response') return `TOOL_RESPONSE: ${msg.content}`; // Representing tool response
+          return `${msg.role.toUpperCase()}: ${msg.content}`; // Fallback for any other roles
         })
         .join('\n');
     }
-
+    
     // Construct the Handlebars prompt string
+    // Note: The system prompt already instructs about userName.
+    // The Handlebars template for the prompt itself will combine system, history, and new message.
     const handlebarsPrompt = `
 ${systemPrompt}
 
@@ -100,25 +109,24 @@ LATEST USER MESSAGE from {{{userName}}}:
 MODEL RESPONSE:
 `;
     
-    // Define the prompt instance using the new schema for its input
     const promptInstance = ai.definePrompt({
         name: 'aiCoachChatDynamicPrompt',
-        input: { schema: DynamicPromptInputDataSchema },
+        input: { schema: DynamicPromptInputDataSchema }, // Uses the specific schema for handlebars data
         prompt: handlebarsPrompt,
+        tools: [getCoinPriceTool], // Make the tool available to the prompt
         // No output schema here for this specific dynamic prompt as we're expecting a raw string back
+        // Model config can be added here if needed (e.g., temperature)
     });
 
     // Prepare data for the prompt instance
     const promptData = {
         userMessage,
         userName,
-        formattedChatHistoryString: formattedChatHistoryString || undefined, // Pass undefined if empty to work with {{#if}}
+        formattedChatHistoryString: formattedChatHistoryString || undefined,
     };
     
     const generationResponse = await promptInstance(promptData);
     
-    // In Genkit 1.x, when a prompt doesn't have an output.schema,
-    // the model's text response is accessed via the .text property.
     const aiTextResponse = generationResponse.text || "I'm sorry, I couldn't generate a response at this moment. Please try again.";
     
     return { aiResponse: aiTextResponse };
