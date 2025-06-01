@@ -115,10 +115,11 @@ MODEL RESPONSE:
         formattedChatHistoryString: formattedChatHistoryString || undefined, // Pass undefined if empty to work with {{#if}}
     };
     
-    const llmResponse = await promptInstance(promptData);
-    // Assuming llmResponse.output will be the text or an object with text.
-    // Accessing output directly might be the string if no output schema is defined for the prompt.
-    const aiTextResponse = (typeof llmResponse.output === 'string' ? llmResponse.output : llmResponse.output?.toString()) || "I'm sorry, I couldn't generate a response at this moment. Please try again.";
+    const generationResponse = await promptInstance(promptData);
+    
+    // In Genkit 1.x, when a prompt doesn't have an output.schema,
+    // the model's text response is accessed via the .text property.
+    const aiTextResponse = generationResponse.text || "I'm sorry, I couldn't generate a response at this moment. Please try again.";
     
     return { aiResponse: aiTextResponse };
   }
