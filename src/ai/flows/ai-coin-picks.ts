@@ -27,21 +27,21 @@ const AiCoinPicksInputSchema = z.object({
 export type AiCoinPicksInput = z.infer<typeof AiCoinPicksInputSchema>;
 
 const AiCoinPickSchema = z.object({
-  coin: z.string(),
-  predictedGainPercentage: z.number(),
-  entryPriceRange: PriceRangeSchema,
-  exitPriceRange: PriceRangeSchema,
+  coin: z.string(), // e.g., "Bitcoin (BTC)"
+  predictedGainPercentage: z.number(), // e.g., 25.5 for 25.5%
+  entryPriceRange: PriceRangeSchema, // {low: 100, high: 102}
+  exitPriceRange: PriceRangeSchema, // {low: 125, high: 128}
   optimalBuyPrice: z.number().optional(),
   targetSellPrices: z.array(z.number()).optional(),
-  confidenceMeter: z.number(), 
-  rationale: z.string(),
-  estimatedDuration: z.string(),
-  riskRoiGauge: z.number(),
-  riskMatchScore: z.number(),
+  confidenceMeter: z.number(), // 0.0 to 1.0
+  rationale: z.string(), // "### Why This Coin?\n- Reason 1\n- Reason 2\nSuggested Stop Loss: X%"
+  estimatedDuration: z.string(), // e.g., "1 day", "3 days"
+  riskRoiGauge: z.number(), // 0.0 to 1.0
+  riskMatchScore: z.number(), // 0.0 to 1.0
   predictedEntryWindowDescription: z.string().optional(),
   predictedExitWindowDescription: z.string().optional(),
-  simulatedEntryCountdownText: z.string().optional(),
-  simulatedPostBuyDropAlertText: z.string().optional(),
+  simulatedEntryCountdownText: z.string().optional(), // e.g., "approx. 30m"
+  simulatedPostBuyDropAlertText: z.string().optional(), // e.g., "If {{coin}} drops 10%..."
 });
 
 const AiCoinPicksOutputSchema = z.object({
@@ -76,29 +76,28 @@ User Inputs to Consider:
 -   Strategy Preference: {{{strategy}}} (Your core logic already focuses on short-term/fast flips. Align if possible.)
 -   User Risk Profile: {{{riskProfile}}} (Crucial for your Risk Layering and overall recommendation suitability.)
 
-Response format guidance for the AI (internal thought process, map this to AiCoinPicksOutputSchema below):
+Your internal thought process might follow this response format:
 -   🔍 Coin Pick: [Name]
 -   💡 Why: [3 bullet points based on the above systems]
 -   📈 Entry: $[price range]
 -   🎯 Target: $[price or %]
-  (Note: Price ranges for entry and exit should be objects with 'low' and 'high' numeric values. E.g., entryPriceRange: {low: 100, high: 102})
 -   🛑 Stop Loss: $[value or %]
--   🧠 Risk Level: [Correlate to user's '{{{riskProfile}}}' and your 1-5 scale. Map this general risk assessment to the 'riskMatchScore' and 'riskRoiGauge' fields, which are numbers from 0.0 to 1.0.]
+-   🧠 Risk Level: [Low / Med / High] (This is your internal assessment, map it to riskMatchScore and riskRoiGauge)
 -   ⏱️ Exit Window: [1D / 3D / 7D]
 
 IMPORTANT: Your output MUST strictly follow the AiCoinPicksOutputSchema structure provided by the system.
 Map your findings to the schema as follows:
--   'coin': (string) Use the coin name and ticker, e.g., "Bitcoin (BTC)".
--   'predictedGainPercentage': (number) The target percentage gain from your "Target" field. If your target is a price, calculate the percentage gain from your entry price.
--   'entryPriceRange': (object with 'low':number, 'high':number) Based on your "Entry: $[price range]". If it's a single price, set low and high to be very close or equal. Must be numeric.
--   'exitPriceRange': (object with 'low':number, 'high':number) Based on your "Target: $[price or %]". This should represent the price range where the target gain is achieved. Must be numeric.
+-   'coin': (string) Use the coin name and ticker, e.g., "Bitcoin (BTC)". From your "🔍 Coin Pick".
+-   'predictedGainPercentage': (number) The target percentage gain. If your target is a price, calculate the percentage gain from your entry price. From your "🎯 Target".
+-   'entryPriceRange': (object with 'low':number, 'high':number) Based on your "📈 Entry: $[price range]". Must be numeric. Convert string range to this object.
+-   'exitPriceRange': (object with 'low':number, 'high':number) Based on your "🎯 Target: $[price or %]". This should represent the price range where the target gain is achieved. Must be numeric.
 -   'optimalBuyPrice': (number, optional) If your analysis yields a very specific optimal entry price, provide it here.
 -   'targetSellPrices': (array of numbers, optional) If you have multiple price targets for profit-taking, list them here.
--   'confidenceMeter': (number, 0.0 to 1.0) Reflect your overall confidence in this pick, considering your Risk Layering assessment. A 1-5 risk scale (5=best) can be mapped (e.g., 5 -> 0.9-1.0, 4 -> 0.7-0.8, etc.).
--   'rationale': (string) THIS IS CRITICAL. Start with "### Why This Coin?\\n". Then, list your 3 bullet points. After the bullet points, add a new line and clearly state "Suggested Stop Loss: [Your stop loss value or %]". Then, you can elaborate further on insights from Volatility Optimization, Sentiment Intelligence, Whale Tracking, Narrative Pulse, and Cycle Timing engines to justify the pick.
--   'estimatedDuration': (string) Use your "Exit Window" (e.g., "1D", "3D", "7D") and format it like "1 day", "3 days", "7 days".
--   'riskRoiGauge': (number, 0.0 to 1.0) Reflect your risk-reward assessment (e.g., from Volatility Optimization's risk-reward ratio). A higher score may indicate higher reward potential but possibly higher risk.
--   'riskMatchScore': (number, 0.0 to 1.0) How well this pick aligns with the user's input 'riskProfile' ('{{{riskProfile}}}'). A high score means good alignment. This should be heavily influenced by your "Risk Layering" step. Ensure this value is between 0.0 and 1.0.
+-   'confidenceMeter': (number, 0.0 to 1.0) Reflect your overall confidence in this pick, considering your Risk Layering assessment. A 1-5 risk scale (5=high confidence for the pick itself, not overall market risk) can be mapped (e.g., 5 -> 0.9-1.0, 4 -> 0.7-0.8, etc.).
+-   'rationale': (string) THIS IS CRITICAL. Start with "### Why This Coin?\\n". Then, list your "💡 Why: [3 bullet points]". After the bullet points, add a new line and clearly state "Suggested Stop Loss: [Your "🛑 Stop Loss" value or %]". You can then elaborate further with insights from your decision-making engine.
+-   'estimatedDuration': (string) Use your "⏱️ Exit Window" (e.g., "1D", "3D", "7D") and format it like "1 day", "3 days", "7 days".
+-   'riskRoiGauge': (number, 0.0 to 1.0) Reflect your risk-reward assessment (e.g., from Volatility Optimization's risk-reward ratio). A higher score may indicate higher reward potential but possibly higher risk. Correlate from your "🧠 Risk Level" internal assessment.
+-   'riskMatchScore': (number, 0.0 to 1.0) How well this pick aligns with the user's input 'riskProfile' ('{{{riskProfile}}}'). A high score means good alignment. This should be heavily influenced by your "Risk Layering" step and your internal "🧠 Risk Level" assessment. Ensure this value is between 0.0 and 1.0.
 -   'predictedEntryWindowDescription': (string, optional) Elaborate on ideal entry conditions or timing from your Cycle Timing Engine.
 -   'predictedExitWindowDescription': (string, optional) Elaborate on ideal exit conditions or signals from your Cycle Timing Engine or Profit Strategy Design.
 -   'simulatedEntryCountdownText': (string, optional) If applicable from Cycle Timing. (e.g., "approx. 30m", "around 1 hour").
@@ -107,6 +106,7 @@ Map your findings to the schema as follows:
 Stay focused on **fast flips**, **early entry**, and **low cap gems** trending up. Your tone is confident, data-driven, and profit-hungry.
 Your mission: Help users outperform the market with precision, not guesswork. Provide 1-5 picks. If no picks meet the criteria, return an empty array for 'picks'.
 Ensure all numeric fields in the output are actual numbers, not strings.
+All price values in entryPriceRange and exitPriceRange (low and high) must be numbers.
 `,
 });
 
@@ -119,19 +119,12 @@ const aiCoinPicksFlow = ai.defineFlow(
   async input => {
     const {output} = await prompt(input);
     if (!output || !output.picks) {
-        // If AI returns an empty object or picks is not an array, treat as no valid picks.
-        // This also handles cases where AI might return an empty picks array if no suitable coins found.
         return { picks: [] };
     }
     output.picks.forEach(pick => {
-      if (pick.confidenceMeter === undefined) pick.confidenceMeter = 0.5; // Default if missing
-      if (pick.riskRoiGauge === undefined) pick.riskRoiGauge = 0.5; // Default if missing
-      if (pick.riskMatchScore === undefined) pick.riskMatchScore = 0.5; // Default if missing
-      
-      // Post-hoc validation for scores, ensuring they are within 0-1 range
-      pick.confidenceMeter = Math.max(0, Math.min(1, pick.confidenceMeter));
-      pick.riskRoiGauge = Math.max(0, Math.min(1, pick.riskRoiGauge));
-      pick.riskMatchScore = Math.max(0, Math.min(1, pick.riskMatchScore));
+      pick.confidenceMeter = Math.max(0, Math.min(1, pick.confidenceMeter === undefined ? 0.5 : pick.confidenceMeter));
+      pick.riskRoiGauge = Math.max(0, Math.min(1, pick.riskRoiGauge === undefined ? 0.5 : pick.riskRoiGauge));
+      pick.riskMatchScore = Math.max(0, Math.min(1, pick.riskMatchScore === undefined ? 0.5 : pick.riskMatchScore));
 
       if (!pick.rationale.includes("### Why This Coin?")) {
         pick.rationale = "### Why This Coin?\n- AI analysis suggests potential.\n- Market conditions appear favorable for this type of asset.\n- Monitor closely.\n" + pick.rationale;
@@ -143,4 +136,3 @@ const aiCoinPicksFlow = ai.defineFlow(
     return output;
   }
 );
-

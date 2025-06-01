@@ -12,24 +12,24 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const PredictiveBreakoutAlertsInputSchema = z.object({
-  triggerScan: z.boolean().describe('A simple trigger to initiate the scan.'),
+  triggerScan: z.boolean(),
 });
 export type PredictiveBreakoutAlertsInput = z.infer<typeof PredictiveBreakoutAlertsInputSchema>;
 
 const BreakoutAlertSchema = z.object({
-  coinName: z.string().describe('The name and ticker of the coin (e.g., "Avalanche (AVAX)").'),
-  alertTitle: z.string().describe('A catchy title for the alert (e.g., "AVAX - Breakout Momentum Building!").'),
-  confidenceScore: z.number().min(0).max(1).describe('AI confidence in this breakout potential (0.0 to 1.0).'),
-  keySignals: z.array(z.string()).min(2).describe('List of 2-4 key observed signals (e.g., "Bullish divergence on RSI (4H)", "Whale wallet X just accumulated Y tokens", "Social sentiment turned sharply positive in last hour").'),
-  potentialUpsidePercentage: z.number().optional().describe('Estimated potential percentage gain if breakout materializes.'),
-  suggestedWatchWindow: z.string().describe('Actionable timeframe or price level to monitor (e.g., "Watch for break above $X.XX in next 2-6 hours", "If volume confirms above Y, next target Z").'),
-  briefRationale: z.string().describe('Short rationale explaining why a breakout is likely, emphasizing early detection before widespread hype. Highlight confluence of signals.'),
-  riskWarning: z.string().default('Predictive alerts are speculative and based on AI analysis of simulated data patterns. Not financial advice. High risk involved, and breakouts may not occur as predicted. DYOR.').describe('Standard risk warning for this alert type.'),
+  coinName: z.string(), // e.g., "Avalanche (AVAX)"
+  alertTitle: z.string(), // e.g., "AVAX - Breakout Momentum Building!"
+  confidenceScore: z.number(), // 0.0 to 1.0
+  keySignals: z.array(z.string()).min(2), // 2-4 key signals (e.g., "Bullish RSI div (4H)", "Whale X accumulated Y")
+  potentialUpsidePercentage: z.number().optional(), // Est. % gain if breakout
+  suggestedWatchWindow: z.string(), // Actionable timeframe/price level (e.g., "Watch for break above $X.XX in next 2-6h")
+  briefRationale: z.string(), // Why breakout likely, emphasizing early detection.
+  riskWarning: z.string().default('Predictive alerts are speculative... DYOR.'),
 });
 
 const PredictiveBreakoutAlertsOutputSchema = z.object({
-  alerts: z.array(BreakoutAlertSchema).min(0).max(3).describe('An array of 0 to 3 breakout alerts. If no strong signals, array can be empty.'),
-  lastScanned: z.string().describe('Timestamp of when the scan was performed (ISO string).'),
+  alerts: z.array(BreakoutAlertSchema).min(0).max(3), // 0-3 alerts
+  lastScanned: z.string(), // ISO timestamp
 });
 export type PredictiveBreakoutAlertsOutput = z.infer<typeof PredictiveBreakoutAlertsOutputSchema>;
 
@@ -41,28 +41,29 @@ const prompt = ai.definePrompt({
   name: 'predictiveBreakoutAlertsPrompt',
   input: {schema: PredictiveBreakoutAlertsInputSchema},
   output: {schema: PredictiveBreakoutAlertsOutputSchema},
-  prompt: `You are an expert "Predictive Breakout Analyst" AI. Your primary goal is to identify 1-3 cryptocurrencies that are showing strong early signs of a potential major price pump or breakout *before* it becomes mainstream news or widespread hype.
+  prompt: `You are an elite AI crypto investment coach, serving as a "Predictive Breakout Analyst." Your mission is to identify 1-3 cryptocurrencies showing strong early signs of a potential major price pump or breakout *before* it becomes mainstream news or widespread hype. Your tone is confident, data-driven, and profit-hungry.
 
-Analyze the current (simulated) market conditions looking for a confluence of the following signals for each coin:
-1.  **Bullish Volume Divergence:** Price making lower lows while an oscillator (like RSI or MACD) makes higher lows, often accompanied by increasing volume on up-moves or specific volume patterns indicating accumulation.
-2.  **Social Media Trend Spikes:** A significant, recent, and positive shift in social media sentiment (e.g., on X/Twitter, Reddit) combined with a rapid increase in discussion volume for the coin. This should be organic-looking or driven by credible new information, not just random shilling.
-3.  **Whale Wallet Accumulation:** Plausible signs of large wallet addresses (whales) accumulating the coin, such as significant outflows from exchanges to private wallets, or notable buy-side pressure on order books if that data were available (simulate this based on pattern recognition).
+Your decision-making engine MUST consider:
+1.  **Volatility Optimization**: Look for coins building breakout volatility (e.g., Bollinger Band squeezes, pre-breakout volume patterns).
+2.  **Sentiment Intelligence**: Identify significant, recent, positive shifts in social media sentiment (X/Twitter, Reddit) and discussion volume that appear organic or driven by credible news.
+3.  **Whale & Insider Tracking**: Detect plausible signs of whale accumulation (e.g., large exchange outflows, notable buy-side pressure).
+4.  **Narrative Pulse Engine**: Consider if the coin aligns with any newly surging narratives.
+5.  **Cycle Timing Engine**: Factor in if the coin is in a typical accumulation phase or showing early momentum wave signs.
+6.  **Risk Layering**: (Internal assessment) Prioritize signals where potential reward outweighs immediate risk.
 
-For each identified coin (max 3, can be 0 if no strong signals found):
--   **coinName**: Full name and ticker (e.g., "Chainlink (LINK)").
--   **alertTitle**: Create a compelling title (e.g., "LINK - Poised for Upward Surge!").
--   **confidenceScore**: Your confidence (0.0 to 1.0) in this breakout potential based on the strength and confluence of signals.
--   **keySignals**: List 2-4 specific, actionable key signals observed (e.g., "Bullish divergence on MACD (1D)", "Whale address 0xabc... added 1M LINK", "Dev team AMA positively received, sparking discussion", "Sustained buying volume above $X support"). Be specific if possible.
--   **potentialUpsidePercentage**: (Optional) A realistic estimated percentage gain if the breakout occurs.
--   **suggestedWatchWindow**: Provide an actionable timeframe or key price level to monitor (e.g., "Monitor for a daily close above $Y.YY within next 48 hours", "Key resistance at $Z.ZZ, breakout above could confirm").
--   **briefRationale**: Synthesize WHY these combined signals suggest an imminent breakout. Emphasize that this is an attempt to act *before the widespread hype* and how this confluence makes it a smart potential pick for fast gains or better exit timing on existing positions.
--   **riskWarning**: Include the default risk warning.
+For each identified coin (max 3, can be 0 if no strong signals found), map your findings to the BreakoutAlertSchema:
+-   'coinName': (string) Full name and ticker (e.g., "Chainlink (LINK)").
+-   'alertTitle': (string) Create a compelling title (e.g., "LINK - Poised for Upward Surge!").
+-   'confidenceScore': (number, 0.0-1.0) Your confidence in this breakout potential based on the strength and confluence of signals from your engine.
+-   'keySignals': (array of 2-4 strings) Specific, actionable key signals observed (e.g., "Bullish divergence on MACD (1D) with volume confirmation", "Whale address 0xabc... added 1M LINK in last 24h", "Dev team AMA positively received, sparking organic discussion increase", "Sustained buying volume above $X key support level, forming consolidation"). Be specific.
+-   'potentialUpsidePercentage': (number, optional) A realistic estimated percentage gain if the breakout materializes.
+-   'suggestedWatchWindow': (string) Provide an actionable timeframe or key price level to monitor (e.g., "Monitor for a daily close above $Y.YY within next 48 hours", "Key resistance at $Z.ZZ; breakout above with volume could confirm trend").
+-   'briefRationale': (string) Synthesize WHY these combined signals suggest an imminent breakout. Emphasize early detection before widespread hype and how this confluence makes it a smart potential pick.
+-   'riskWarning': (string) Include the default risk warning.
 
 If no coins exhibit a strong confluence of these specific signals, return an empty array for 'alerts'.
-Provide 'lastScanned' as the current ISO timestamp.
-
-Strive to provide genuinely insightful and actionable alerts for an advanced trader.
-Output strictly follows the PredictiveBreakoutAlertsOutputSchema.
+Provide 'lastScanned' as the current ISO timestamp when the flow is run.
+Output strictly follows the PredictiveBreakoutAlertsOutputSchema. Ensure all numeric fields are numbers.
 `,
 });
 
@@ -75,15 +76,22 @@ const predictiveBreakoutAlertsFlow = ai.defineFlow(
   async (input: PredictiveBreakoutAlertsInput) => {
     const {output} = await prompt(input);
     if (!output) {
-      throw new Error('AI failed to generate breakout alerts.');
+      // If AI returns nothing, construct a default empty response.
+      return {
+        alerts: [],
+        lastScanned: new Date().toISOString(),
+      };
     }
     // Ensure lastScanned is always present
     output.lastScanned = new Date().toISOString();
     
-    // Ensure each alert has a risk warning if AI misses it
     output.alerts.forEach(alert => {
+        alert.confidenceScore = Math.max(0, Math.min(1, alert.confidenceScore === undefined ? 0.5 : alert.confidenceScore));
         if (!alert.riskWarning) {
             alert.riskWarning = 'Predictive alerts are speculative and based on AI analysis of simulated data patterns. Not financial advice. High risk involved, and breakouts may not occur as predicted. DYOR.';
+        }
+        if (alert.keySignals.length < 2) {
+            alert.keySignals.push("Monitor market sentiment closely.", "Watch for volume spikes.");
         }
     });
 
