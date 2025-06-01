@@ -4,39 +4,38 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Daily Signals: Publicly readable, only backend (functions) can write
-    match /dailySignals/{signalId} {
+    // Admin settings (e.g., feature toggles at /adminSettings/featureToggles)
+    // - Publicly readable
+    // - Writable only by the specified admin UID
+    match /adminSettings/{adminDocId} {
       allow read: if true;
-      allow write: if false; // Deny client-side writes
+      allow write: if request.auth != null && request.auth.uid == 'qRJOtYXWqLbpQ1yx6qRdwSGwGyl1';
     }
 
-    // User Preferences: Only authenticated users can read/write their own preferences
-    match /users/{userId}/preferences/{prefId} {
+    // Daily signals
+    // - Publicly readable (this covers queries on the collection, e.g., by DailySignalsPanel)
+    // - Not writable from the client (only by backend functions)
+    match /dailySignals/{signalDoc=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Coach logs
+    // - Readable by admin (this covers queries/reads on the collection)
+    // - Not writable from the client (only by backend functions)
+    match /coachLogs/{logDoc=**} {
+      allow read: if request.auth != null && request.auth.uid == 'qRJOtYXWqLbpQ1yx6qRdwSGwGyl1';
+      allow write: if false;
+    }
+
+    // User-specific data (e.g., preferences, fcmTokens stored under /users/{userId}/...)
+    // - Users can read and write their own data.
+    match /users/{userId}/{userDoc=**} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
-    
-    // User-specific data (general, if you store more under /users/{userId})
-    match /users/{userId}/{document=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
 
-    // Admin Settings: Publicly readable for feature toggles, only specific admin UID can write
-    match /adminSettings/{settingId} {
-      allow read: if true; // Feature toggles can be public
-      allow write: if request.auth != null && request.auth.uid == 'qRJOtYXWqLbpQ1yx6qRdwSGwGyl1'; // Replace with your actual admin UID
-    }
-
-    // Coach Logs: Only authenticated users can write their own logs. 
-    // Read access might be restricted further (e.g., only admin or only user reads own)
-    // For now, allow authenticated users to write. Consider read rules carefully.
-    match /coachLogs/{logId} {
-      allow create: if request.auth != null; // Any authenticated user can create a log entry
-      allow read, update, delete: if request.auth != null && request.auth.uid == 'qRJOtYXWqLbpQ1yx6qRdwSGwGyl1'; // Example: Only admin can manage/read all logs
-      // Or, if users should read their own logs:
-      // allow read: if request.auth != null && (request.auth.uid == resource.data.userId || request.auth.uid == 'YOUR_ADMIN_UID_HERE');
-    }
-
-    // Default deny all other access
+    // Default deny all other access.
+    // This rule is crucial and must be the last one for non-explicitly matched paths.
     match /{document=**} {
       allow read, write: if false;
     }
