@@ -53,32 +53,43 @@ Key Instructions:
 You are helping {{{userName}}}.
 `;
 
+// Define a Zod schema specifically for the dynamic prompt's input data.
+const DynamicPromptInputDataSchema = z.object({
+  userMessage: z.string(),
+  userName: z.string().optional().default('Trader'),
+  formattedChatHistoryString: z.string().optional(),
+});
+
 const aiCoachChatFlow = ai.defineFlow(
   {
     name: 'aiCoachChatFlow',
-    inputSchema: AiCoachChatInputSchema,
+    inputSchema: AiCoachChatInputSchema, // Flow's external input remains the same
     outputSchema: AiCoachChatOutputSchema,
   },
   async (input) => {
     const { userMessage, chatHistory = [], userName } = input;
 
-    const messages: Message[] = [
-      ...chatHistory,
-      { role: 'user', content: userMessage },
-    ];
+    // Pre-process chatHistory into a formatted string
+    let formattedChatHistoryString = "";
+    if (chatHistory.length > 0) {
+      formattedChatHistoryString = chatHistory
+        .map(msg => {
+          if (msg.role === 'user') {
+            return `USER: ${msg.content}`;
+          } else {
+            return `MODEL: ${msg.content}`;
+          }
+        })
+        .join('\n');
+    }
 
-    // Construct the prompt for the LLM
-    // We'll use a specific handlebars prompt to ensure the system message is included
-    // and the history/user message are clearly delineated.
-
+    // Construct the Handlebars prompt string
     const handlebarsPrompt = `
 ${systemPrompt}
 
 CHAT HISTORY:
-{{#if chatHistory}}
-{{#each chatHistory}}
-{{#if (eq this.role "user") }}USER: {{this.content}}{{else}}MODEL: {{this.content}}{{/if}}
-{{/each}}
+{{#if formattedChatHistoryString}}
+{{{formattedChatHistoryString}}}
 {{else}}
 (No previous messages in this session)
 {{/if}}
@@ -88,19 +99,27 @@ LATEST USER MESSAGE from {{{userName}}}:
 
 MODEL RESPONSE:
 `;
-
+    
+    // Define the prompt instance using the new schema for its input
     const promptInstance = ai.definePrompt({
         name: 'aiCoachChatDynamicPrompt',
-        input: { schema: AiCoachChatInputSchema }, // For validation/consistency, though we use handlebars
+        input: { schema: DynamicPromptInputDataSchema },
         prompt: handlebarsPrompt,
-        // No output schema here as we're expecting a string response that we'll wrap
+        // No output schema here for this specific dynamic prompt as we're expecting a raw string back
     });
 
-    const llmResponse = await promptInstance({userMessage, chatHistory, userName});
-    const aiTextResponse = llmResponse.output?.toString() || "I'm sorry, I couldn't generate a response at this moment. Please try again.";
+    // Prepare data for the prompt instance
+    const promptData = {
+        userMessage,
+        userName,
+        formattedChatHistoryString: formattedChatHistoryString || undefined, // Pass undefined if empty to work with {{#if}}
+    };
+    
+    const llmResponse = await promptInstance(promptData);
+    // Assuming llmResponse.output will be the text or an object with text.
+    // Accessing output directly might be the string if no output schema is defined for the prompt.
+    const aiTextResponse = (typeof llmResponse.output === 'string' ? llmResponse.output : llmResponse.output?.toString()) || "I'm sorry, I couldn't generate a response at this moment. Please try again.";
     
     return { aiResponse: aiTextResponse };
   }
 );
-
-    
