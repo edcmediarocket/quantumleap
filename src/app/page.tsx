@@ -92,9 +92,7 @@ export default function QuantumLeapPage() {
     
      if (!user || !user.uid) {
       console.warn(`User not logged in or UID missing. Cannot log AI interaction for "${flowName}". Interaction details: Prompt - "${userPrompt}"`);
-      // Optionally, you could show a toast here to inform the user, but it might be too noisy.
-      // For now, just a console warning.
-      return; // Do not proceed with the fetch call if user is not authenticated
+      return; 
     }
     
     console.log(`logAiInteraction: Using functionsBaseUrl: ${functionsBaseUrl}`);
@@ -116,7 +114,6 @@ export default function QuantumLeapPage() {
         console.error(`Error logging AI interaction: ${response.status} ${response.statusText}`, errorData);
         throw new Error(`Server error ${response.status}: ${errorData || response.statusText}. Full URL was: ${functionsBaseUrl}`);
       }
-      // console.log("AI Interaction logged successfully for", flowName);
 
     } catch (error) {
       console.error(`Client-side error in logAiInteraction for "${flowName}". URL: ${functionsBaseUrl}. Error object:`, error);
@@ -298,6 +295,11 @@ export default function QuantumLeapPage() {
     toggles.profitGoalEnabled,
     toggles.memeCoinHunterEnabled
   ].filter(Boolean).length;
+
+  const chatTitleColor = 
+    activeTab === 'profitGoal' ? 'text-accent' :
+    activeTab === 'memeFlip' ? 'text-[hsl(var(--orange-hsl))]' :
+    'text-primary';
 
   return (
     <div className="container mx-auto min-h-screen px-4 py-8 selection:bg-primary/30 selection:text-primary-foreground">
@@ -510,8 +512,11 @@ export default function QuantumLeapPage() {
         {toggles.aiCoachChatboxEnabled && (
           <section className="mt-16 mb-8">
             <div className="text-center mb-10">
-              <h2 className="text-3xl font-bold tracking-tight text-primary flex items-center justify-center gap-3">
-                <MessageSquare className="h-8 w-8" />
+              <h2 className={cn(
+                "text-3xl font-bold tracking-tight flex items-center justify-center gap-3",
+                chatTitleColor
+              )}>
+                <MessageSquare className={cn("h-8 w-8", chatTitleColor)} />
                 Chat with Quantum AI Coach
               </h2>
               <p className="text-muted-foreground mt-2 md:text-lg">
