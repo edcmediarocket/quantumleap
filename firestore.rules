@@ -4,32 +4,45 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Daily Signals: Allow public read, no client-side writes
+    // Daily Signals: Publicly readable, only backend can write.
     match /dailySignals/{signalId} {
       allow read: if true;
-      allow write: if false; // Writes should only come from backend/admin
+      allow write: if false; // Writes should come from backend/admin functions
     }
 
-    // User Preferences (Example: if users can set notification preferences)
-    // Users can read and write their own preferences document
-    match /users/{userId}/preferences/{prefId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+    // Admin Settings (e.g., Feature Toggles)
+    // - featureToggles document is publicly readable for app config
+    // - Only specific admin UID can write to any document in adminSettings
+    match /adminSettings/featureToggles {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == 'qRJOtYXWqLbpQ1yx6qRdwSGwGyl1';
     }
-
-    // Admin Settings: Make feature toggles publicly readable for simplicity.
-    // Writes are restricted to the specific Admin UID.
     match /adminSettings/{settingId} {
-      allow read: if true; // Feature toggles can be public
-      allow write: if request.auth != null && request.auth.uid == 'qRJOtYXWqLbpQ1yx6qRdwSGwGyl1'; // Specific Admin UID
+      allow read: if request.auth != null && request.auth.uid == 'qRJOtYXWqLbpQ1yx6qRdwSGwGyl1'; // Only admin can read other settings
+      allow write: if request.auth != null && request.auth.uid == 'qRJOtYXWqLbpQ1yx6qRdwSGwGyl1';
     }
 
-    // Coach Logs: Only backend writes (via function) and no client reads by default.
+    // User-specific data (e.g., preferences, FCM tokens)
+    // Users can read and write their own data.
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      
+      // Example: User preferences subcollection
+      match /preferences/{prefId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      // Add other subcollections for the user if needed
+    }
+
+    // Coach Logs: Allow authenticated users to create logs (via backend function passing UID).
+    // Only admin can read all logs. Users should not typically read these directly.
     match /coachLogs/{logId} {
-      allow read: if false;
-      allow write: if false; // Writes are from backend
+      allow create: if request.auth != null; // Assumes backend function authenticates and passes UID
+      allow read: if request.auth != null && request.auth.uid == 'qRJOtYXWqLbpQ1yx6qRdwSGwGyl1';
+      allow update, delete: if request.auth != null && request.auth.uid == 'qRJOtYXWqLbpQ1yx6qRdwSGwGyl1'; // Only admin can modify/delete
     }
 
-    // Default deny all other access to prevent unintended open collections
+    // Fallback: Deny all other access by default
     match /{document=**} {
       allow read, write: if false;
     }
