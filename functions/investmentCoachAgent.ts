@@ -9,6 +9,18 @@ if (admin.apps.length === 0) {
 }
 
 export const investmentCoachAgent = onRequest(async (req, res) => {
+  // Set CORS headers
+  // For development, '*' is often used. For production, restrict this to your app's domain.
+  res.set('Access-Control-Allow-Origin', '*'); 
+  res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization'); // Added Authorization if you plan to use it
+
+  // Handle preflight OPTIONS requests
+  if (req.method === 'OPTIONS') {
+    res.status(204).send('');
+    return;
+  }
+
   console.log('investmentCoachAgent function invoked. Request body keys:', Object.keys(req.body).join(', '));
   try {
     const { userId, userPrompt, aiResult } = req.body;
@@ -51,6 +63,7 @@ export const investmentCoachAgent = onRequest(async (req, res) => {
     } else {
         console.error("Unknown error structure:", error);
     }
+    // Ensure CORS headers are also set on error responses
     res.status(500).send({ error: 'Failed to log AI interaction due to an internal server error.' });
   }
 });
