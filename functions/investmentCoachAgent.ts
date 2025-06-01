@@ -1,36 +1,56 @@
 
 // --- functions/investmentCoachAgent.ts ---
 import { onRequest } from 'firebase-functions/v2/https';
-import { HttpsError } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
-admin.initializeApp();
+
+// Ensure Firebase Admin is initialized only once
+if (admin.apps.length === 0) {
+  admin.initializeApp();
+}
 
 export const investmentCoachAgent = onRequest(async (req, res) => {
+  console.log('investmentCoachAgent function invoked. Request body keys:', Object.keys(req.body).join(', '));
   try {
-    const { userId, prompt } = req.body;
-    const result = await generateAIResponse(prompt); // mock
+    const { userId, userPrompt, aiResult } = req.body;
 
+    // More detailed logging for received data
+    console.log(`Received userId: ${userId ? `Present (value: ${userId})` : 'MISSING!'}`);
+    console.log(`Received userPrompt: ${userPrompt ? 'Present' : 'MISSING!'}`);
+    // For aiResult, which can be large, just log its presence or a snippet if needed
+    console.log(`Received aiResult: ${aiResult ? `Present (type: ${typeof aiResult}, length: ${String(aiResult).length})` : 'MISSING!'}`);
+
+
+    if (!userId || !userPrompt || !aiResult) {
+      console.error('Validation Error: Missing required fields in request body.', {
+          bodyReceived: req.body, // Log the whole body for debugging missing fields
+          userIdProvided: !!userId,
+          userPromptProvided: !!userPrompt,
+          aiResultProvided: !!aiResult
+      });
+      res.status(400).send({ error: 'Missing required fields: userId, userPrompt, or aiResult.' });
+      return;
+    }
+
+    console.log(`Attempting to log to coachLogs for userId: ${userId}`);
     await admin.firestore().collection('coachLogs').add({
       userId,
-      prompt,
-      result,
+      userPrompt, // What the user initiated/configured
+      aiResult,   // The stringified JSON result from Genkit
       timestamp: new Date().toISOString(),
     });
+    console.log('Successfully logged to coachLogs.');
 
-    res.status(200).send({ result });
+    res.status(200).send({ success: true, message: 'Log received and processed.' });
+
   } catch (error) {
-    console.error("Error in investmentCoachAgent:", error);
-    // It's good practice to log the actual error on the server
-    // And throw a more generic HttpsError to the client
-    if (error instanceof HttpsError) {
-      throw error;
+    console.error("Critical Error in investmentCoachAgent during Firestore operation:", error);
+    if (error instanceof Error) {
+        console.error("Error Name:", error.name);
+        console.error("Error Message:", error.message);
+        console.error("Error Stack:", error.stack);
+    } else {
+        console.error("Unknown error structure:", error);
     }
-    throw new HttpsError('internal', 'Failed to run agent');
+    res.status(500).send({ error: 'Failed to log AI interaction due to an internal server error.' });
   }
 });
-
-async function generateAIResponse(prompt: string): Promise<string> {
-  // In a real scenario, this would call your Genkit flows or another AI service
-  console.log(`Generating AI response for prompt: ${prompt}`);
-  return `AI response for: ${prompt}`;
-}
