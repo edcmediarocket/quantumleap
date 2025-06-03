@@ -2,42 +2,41 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-P">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quantum Leap - AI Crypto Trading Insights</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <!-- PayPal SDK -->
+    <script src="https://www.paypal.com/sdk/js?client-id=ARUoeNaKXQSkIduK2pJxkyyd3x4TfH7juIJ27fboNFXgfxhy6JqsUKsCbgo9_HpXxVWOR6Efy9G7B771&components=buttons&vault=true&intent=subscription"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&family=Orbitron:wght@400;700&display=swap');
-
         :root {
             --primary-color: #A020F0; /* Vibrant Purple */
             --secondary-color: #20A0F0; /* Analogous Blue */
-            --accent-color: #00FF7F; /* Spring Green for accents/buttons */
-            --background-color: #0a0a0a; /* Very dark gray, near black */
-            --text-color: #e0e0e0; /* Light gray for text */
-            --card-background: rgba(20, 20, 25, 0.8); /* Dark, slightly transparent */
-            --glow-color: rgba(160, 32, 240, 0.5); /* Purple glow */
+            --accent-color: #F97316; /* Orange for contrast */
+            --text-color: #EAEAEA;
+            --bg-color-dark: #0A0A0A;
+            --bg-color-medium: #1A1A1A;
+            --bg-color-light: #2A2A2A;
         }
 
         body {
             font-family: 'Roboto', sans-serif;
             margin: 0;
             padding: 0;
-            background-color: var(--background-color);
+            background-color: var(--bg-color-dark);
             color: var(--text-color);
-            line-height: 1.6;
             overflow-x: hidden;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
+            line-height: 1.6;
         }
 
-        #splash-screen {
+        .splash-screen {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-image: url('/assets/bg-stars.gif');
+            background-color: var(--bg-color-dark);
+            background-image: url('https://placehold.co/1920x1080.png'); /* Updated path */
             background-size: cover;
             background-position: center;
             display: flex;
@@ -47,16 +46,12 @@
             opacity: 1;
             transition: opacity 1s ease-out;
         }
-
-        #splash-screen.hidden {
+        .splash-screen.hidden {
             opacity: 0;
             pointer-events: none;
         }
-
-        #splash-logo {
-            max-width: 80%;
-            max-height: 80%;
-            width: 300px; /* Adjust as needed */
+        .splash-logo {
+            max-width: 200px;
             animation: pulse 2s infinite;
         }
 
@@ -66,350 +61,428 @@
             100% { transform: scale(1); }
         }
 
-        #main-content {
+        .main-content {
             display: none; /* Hidden initially */
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-            padding-top: 20px;
-            position: relative;
-            z-index: 1;
-            background: rgba(10, 10, 10, 0.7); /* Dark overlay for better text readability */
-            backdrop-filter: blur(3px);
+            opacity: 0;
+            transition: opacity 1s ease-in;
         }
-        
-        #main-content.visible {
-            display: flex;
+        .main-content.visible {
+            display: block;
+            opacity: 1;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            padding: 20px 0;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        .logo {
+            max-width: 200px;
+            margin-bottom: 10px;
+        }
+        header h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.8em;
+            margin: 0;
+            color: #fff;
+            text-shadow: 2px 2px 8px rgba(0,0,0,0.5);
+        }
+        header p {
+            font-size: 1.2em;
+            color: rgba(255,255,255,0.9);
         }
 
         .container {
             width: 90%;
             max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-            text-align: center;
+            margin: auto;
+            padding: 30px 0;
         }
 
-        header {
-            padding: 20px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        section {
+            padding: 40px 20px;
             margin-bottom: 30px;
+            background-color: var(--bg-color-medium);
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.1);
         }
-
-        .logo {
-            width: 80px; /* Smaller logo for header */
-            height: auto;
-            margin-bottom: 10px;
-        }
-
-        header h1 {
+        section h2 {
             font-family: 'Orbitron', sans-serif;
-            font-size: 2.8em;
+            font-size: 2.2em;
             color: var(--primary-color);
-            margin: 0;
-            text-shadow: 0 0 10px var(--glow-color), 0 0 20px var(--glow-color);
-        }
-
-        header p {
-            font-size: 1.2em;
-            color: var(--secondary-color);
-        }
-
-        .cta-section {
-            margin: 40px 0;
-        }
-
-        .cta-button {
-            display: inline-block;
-            background-color: var(--accent-color);
-            color: #000;
-            padding: 15px 30px;
-            text-decoration: none;
-            font-size: 1.1em;
-            font-weight: bold;
-            border-radius: 8px;
-            transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0, 255, 127, 0.3);
-        }
-
-        .cta-button:hover {
-            background-color: #00e66a;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 255, 127, 0.5);
+            text-align: center;
+            margin-bottom: 30px;
         }
 
         .features-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 30px;
-            margin: 50px 0;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
         }
-
-        .feature-card {
-            background-color: var(--card-background);
+        .feature-item {
+            background-color: var(--bg-color-light);
             padding: 25px;
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.3), 0 0 15px var(--glow-color) inset;
+            border-radius: 10px;
+            text-align: center;
             transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 1px solid rgba(255,255,255,0.05);
         }
-
-        .feature-card:hover {
-            transform: translateY(-5px) scale(1.02);
-            box-shadow: 0 8px 35px rgba(0, 0, 0, 0.4), 0 0 25px var(--glow-color) inset, 0 0 10px var(--glow-color);
+        .feature-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.6);
         }
-
-        .feature-card h3 {
-            font-family: 'Orbitron', sans-serif;
-            color: var(--primary-color);
-            font-size: 1.6em;
-            margin-top: 0;
-            margin-bottom: 10px;
-        }
-
-        .feature-card p {
-            font-size: 0.95em;
-            color: var(--text-color);
-            opacity: 0.9;
-        }
-
-        .feature-card img.screenshot {
+        .feature-item img {
             width: 100%;
-            max-width: 300px;
+            max-width: 400px;
             height: auto;
             border-radius: 8px;
-            margin-top: 15px;
+            margin-bottom: 15px;
             border: 2px solid var(--secondary-color);
-            box-shadow: 0 4px 10px rgba(32, 160, 240, 0.3);
         }
-
-        .pricing-section {
-            margin: 50px 0;
-            padding: 30px;
-            background-color: var(--card-background);
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .pricing-section h2 {
+        .feature-item h3 {
             font-family: 'Orbitron', sans-serif;
-            color: var(--accent-color);
-            font-size: 2.2em;
-            margin-bottom: 30px;
+            font-size: 1.5em;
+            color: var(--secondary-color);
+            margin-bottom: 10px;
         }
 
         .pricing-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 30px;
-            align-items: stretch; /* Make cards same height */
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            align-items: stretch; /* Make plans same height */
         }
-
-        .pricing-tier {
-            background-color: rgba(30, 30, 35, 0.85);
-            padding: 25px;
+        .pricing-plan {
+            background-color: var(--bg-color-light);
+            padding: 30px;
             border-radius: 10px;
-            border: 1px solid var(--secondary-color);
+            text-align: center;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
+            border: 1px solid var(--primary-color);
             transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
-        
-        .pricing-tier:hover {
+        .pricing-plan:hover {
             transform: scale(1.03);
-            box-shadow: 0 0 20px var(--secondary-color);
+            box-shadow: 0 0 25px var(--primary-color);
         }
-
-        .pricing-tier h3 {
+        .pricing-plan.premium-plan {
+            border-color: var(--accent-color);
+        }
+         .pricing-plan.premium-plan:hover {
+            box-shadow: 0 0 25px var(--accent-color);
+        }
+        .plan-title {
             font-family: 'Orbitron', sans-serif;
-            color: var(--secondary-color);
             font-size: 1.8em;
-            margin-top: 0;
+            color: var(--primary-color);
+            margin-bottom: 15px;
         }
-
-        .pricing-tier .price {
-            font-size: 2.5em;
-            font-weight: bold;
+        .pricing-plan.premium-plan .plan-title {
             color: var(--accent-color);
-            margin: 15px 0;
         }
-        
-        .pricing-tier .price .term {
-            font-size: 0.5em;
+        .plan-price {
+            font-size: 2.5em;
+            font-weight: 700;
             color: var(--text-color);
-            opacity: 0.8;
+            margin-bottom: 20px;
         }
-
-        .pricing-tier ul {
+        .plan-price span {
+            font-size: 0.5em;
+            font-weight: 400;
+            color: var(--text-color);
+        }
+        .plan-features {
             list-style: none;
             padding: 0;
-            margin: 20px 0;
+            margin-bottom: 30px;
             text-align: left;
             flex-grow: 1;
         }
-
-        .pricing-tier ul li {
+        .plan-features li {
             margin-bottom: 10px;
             padding-left: 25px;
             position: relative;
         }
-
-        .pricing-tier ul li::before {
+        .plan-features li::before {
             content: '✓';
-            color: var(--accent-color);
+            color: var(--primary-color);
             position: absolute;
             left: 0;
             font-weight: bold;
         }
+         .pricing-plan.premium-plan .plan-features li::before {
+            color: var(--accent-color);
+        }
+
+
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--accent-color), var(--primary-color));
+            color: #fff;
+            padding: 15px 30px;
+            text-decoration: none;
+            font-size: 1.1em;
+            font-weight: 700;
+            border-radius: 8px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+        }
         
-        .paypal-button-container {
+        /* PayPal button container styling */
+        [id^="paypal-button-container-"] {
             margin-top: 20px;
+            min-height: 100px; /* Ensure space for button */
         }
 
         footer {
             text-align: center;
-            padding: 30px 20px;
-            margin-top: auto; /* Pushes footer to bottom */
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            background-color: var(--bg-color-dark);
+            border-top: 1px solid rgba(255,255,255,0.1);
+            margin-top: 40px;
+        }
+        footer p {
+            margin: 5px 0;
             font-size: 0.9em;
-            color: var(--text-color);
-            opacity: 0.8;
+            color: rgba(255,255,255,0.7);
         }
-        
-        /* Responsive adjustments */
-        @media (max-width: 768px) {
-            header h1 {
-                font-size: 2.2em;
-            }
-            header p {
-                font-size: 1em;
-            }
-            .cta-button {
-                padding: 12px 25px;
-                font-size: 1em;
-            }
-            .features-grid, .pricing-grid {
-                grid-template-columns: 1fr; /* Stack on smaller screens */
-            }
+         @media (max-width: 768px) {
+            header h1 { font-size: 2.2em; }
+            header p { font-size: 1em; }
+            section h2 { font-size: 1.8em; }
+            .splash-logo { max-width: 150px; }
         }
-
     </style>
 </head>
 <body>
 
-    <div id="splash-screen">
-        <img src="/assets/logo-splash.png" alt="Quantum Leap Loading" id="splash-logo" data-ai-hint="futuristic app logo">
+    <div class="splash-screen" id="splashScreen">
+        <img src="https://placehold.co/200x200.png" data-ai-hint="Quantum Leap app icon" alt="Quantum Leap Loading..." class="splash-logo">
     </div>
 
-    <div id="main-content">
+    <div class="main-content" id="mainContent">
+        <header>
+            <img src="https://placehold.co/150x50.png" data-ai-hint="Quantum Leap logo" alt="Quantum Leap Logo" class="logo">
+            <h1>Quantum Leap</h1>
+            <p>Your AI Co-Pilot for Smarter Crypto Trading & Quicker Profits</p>
+        </header>
+
         <div class="container">
-            <header>
-                <img src="/assets/logo.png" alt="Quantum Leap Logo" class="logo" data-ai-hint="futuristic app logo">
-                <h1>Quantum Leap</h1>
-                <p>AI-Powered Crypto Insights for Quick Profits</p>
-            </header>
-
-            <section class="cta-section">
-                <h2>Ready to Revolutionize Your Trading?</h2>
-                <p>Leverage the power of AI to get ahead in the crypto market. Instant insights, predictive analysis, and strategic advantage.</p>
-                <a href="#pricing" class="cta-button">Get Started Now</a>
-            </section>
-
-            <section class="features-grid">
-                <div class="feature-card">
-                    <h3>AI-Driven Predictions</h3>
-                    <p>Our advanced AI analyzes market trends, sentiment, and on-chain data to provide highly accurate coin predictions. Maximize your profit potential with actionable insights.</p>
-                    <img src="/assets/screens/ai-predict.png" alt="Screenshot of AI coin prediction interface with charts and data" class="screenshot" data-ai-hint="AI crypto prediction">
-                </div>
-                <div class="feature-card">
-                    <h3>Real-Time Whale Alerts</h3>
-                    <p>Stay informed about significant market movements. Get instant notifications for large transactions (whale activity) that can impact coin prices.</p>
-                    <img src="/assets/screens/whale-alerts.png" alt="Screenshot of whale alert notifications for large crypto transactions" class="screenshot" data-ai-hint="crypto whale alert">
-                </div>
-                <div class="feature-card">
-                    <h3>Customizable Watchlist & Alerts</h3>
-                    <p>Track your favorite coins and set personalized alerts for price movements, news, and AI signals. Never miss an opportunity.</p>
-                    <img src="/assets/screens/watchlist.png" alt="Screenshot of a customizable crypto watchlist feature" class="screenshot" data-ai-hint="crypto watchlist interface">
+            <section id="about">
+                <h2>Unlock the Future of Crypto Trading</h2>
+                <p style="text-align: center; max-width: 800px; margin: 0 auto 30px auto;">
+                    Quantum Leap leverages cutting-edge Artificial Intelligence to analyze market trends, identify high-potential coins, and provide actionable insights. Stop guessing and start making data-driven decisions with your personal AI trading coach.
+                </p>
+                <div style="text-align:center;">
+                     <a href="#pricing" class="cta-button">Choose Your Plan</a>
                 </div>
             </section>
 
-            <section class="pricing-section" id="pricing">
-                <h2>Choose Your Plan</h2>
+            <section id="features">
+                <h2>Core Features</h2>
+                <div class="features-grid">
+                    <div class="feature-item">
+                        <img src="https://placehold.co/600x400.png" data-ai-hint="AI crypto prediction" alt="Screenshot of AI coin prediction interface with charts and data">
+                        <h3>AI Coin Predictions</h3>
+                        <p>Discover coins poised for quick gains with our AI's advanced analytical models. Get entry/exit price suggestions and rationale.</p>
+                    </div>
+                    <div class="feature-item">
+                        <img src="https://placehold.co/600x400.png" data-ai-hint="crypto whale alert" alt="Screenshot of whale alert notifications for large crypto transactions">
+                        <h3>Whale & Sentiment Tracking</h3>
+                        <p>Stay ahead with real-time alerts on significant whale movements and shifts in market sentiment analyzed by our AI.</p>
+                    </div>
+                    <div class="feature-item">
+                        <img src="https://placehold.co/600x400.png" data-ai-hint="crypto watchlist interface" alt="Screenshot of a customizable crypto watchlist feature">
+                        <h3>Personalized AI Coach</h3>
+                        <p>Chat with your AI coach, set profit goals, and get tailored strategies. Learn crypto with expert guidance.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="pricing">
+                <h2>Subscription Plans</h2>
                 <div class="pricing-grid">
-                    <div class="pricing-tier">
+                    <!-- Basic Plan -->
+                    <div class="pricing-plan">
                         <div>
-                            <h3>Quantum Pro</h3>
-                            <p class="price">$9.99 <span class="term">/ month</span></p>
-                            <ul>
-                                <li>Advanced AI Coin Picks</li>
-                                <li>Profit Goal Setting Tools</li>
-                                <li>Predictive Breakout Alerts</li>
-                                <li>Limited AI Coach Chat</li>
-                                <li>Email Support</li>
+                            <h3 class="plan-title">Basic</h3>
+                            <p class="plan-price">$9<span>/month</span></p>
+                            <ul class="plan-features">
+                                <li>AI Coin Picks (Limited Daily)</li>
+                                <li>Basic Predictive Alerts</li>
+                                <li>Standard Market Sentiment Analysis</li>
+                                <li>Community Forum Access</li>
                             </ul>
                         </div>
-                        <!-- IMPORTANT: Replace YOUR_PAYPAL_PRO_BUTTON_ID_HERE with your actual PayPal button ID -->
-                        <div id="paypal-button-container-pro" class="paypal-button-container">
-                            <!-- PayPal Button will be rendered here by PayPal's SDK -->
-                            <!-- Ensure you replace "YOUR_PAYPAL_PRO_BUTTON_ID_HERE" with your actual hosted button ID -->
-                            <form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_top">
-                                <input type="hidden" name="cmd" value="_s-xclick">
-                                <input type="hidden" name="hosted_button_id" value="YOUR_PAYPAL_PRO_BUTTON_ID_HERE">
-                                <input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_subscribeCC_LG.gif" name="submit" alt="PayPal - The safer, easier way to pay online!">
-                                <img alt="" src="https://www.paypalobjects.com/en_US/i/scr/pixel.gif" width="1" height="1">
-                            </form>
+                        <div>
+                            <!-- PayPal Button Container for Basic Plan -->
+                            <div id="paypal-button-container-P-1G079065XJ172161KNAQPHQQ"></div>
+                            <script>
+                              if (typeof paypal !== 'undefined') {
+                                paypal.Buttons({
+                                  style: { shape: 'rect', color: 'blue', layout: 'vertical', label: 'subscribe' },
+                                  createSubscription: function(data, actions) {
+                                    return actions.subscription.create({
+                                      'plan_id': 'P-1G079065XJ172161KNAQPHQQ' // YOUR BASIC PLAN ID
+                                    });
+                                  },
+                                  onApprove: function(data, actions) {
+                                    alert('You have successfully subscribed to Basic Plan! Subscription ID: ' + data.subscriptionID);
+                                    // Optionally, redirect or update UI
+                                  },
+                                  onError: function(err) {
+                                    console.error("PayPal Basic Plan Button Error:", err);
+                                    alert("An error occurred with your subscription. Please try again.");
+                                  }
+                                }).render('#paypal-button-container-P-1G079065XJ172161KNAQPHQQ');
+                              } else {
+                                console.error("PayPal SDK not loaded when trying to render Basic Plan button.");
+                              }
+                            </script>
                         </div>
                     </div>
-                    <div class="pricing-tier">
+
+                    <!-- Pro Plan -->
+                    <div class="pricing-plan">
                         <div>
-                            <h3>Quantum Premium</h3>
-                            <p class="price">$19.99 <span class="term">/ month</span></p>
-                            <ul>
-                                <li>All Pro Features</li>
-                                <li>Meme Coin Hunter AI</li>
-                                <li>Unlimited AI Coach Chat & Full Access</li>
-                                <li>Daily Signal Push Notifications</li>
-                                <li>Priority Support</li>
-                                <li>Early Access to New Features</li>
+                            <h3 class="plan-title">Pro</h3>
+                            <p class="plan-price">$29<span>/month</span></p>
+                            <ul class="plan-features">
+                                <li>AI Coin Picks (Standard Daily)</li>
+                                <li>AI Profit Goal Planner</li>
+                                <li>Whale Movement Alerts</li>
+                                <li>Predictive Breakout Alerts (Standard)</li>
+                                <li>Advanced Market Sentiment</li>
+                                <li>Priority Community Support</li>
                             </ul>
                         </div>
-                        <!-- IMPORTANT: Replace YOUR_PAYPAL_PREMIUM_BUTTON_ID_HERE with your actual PayPal button ID -->
-                        <div id="paypal-button-container-premium" class="paypal-button-container">
-                            <!-- PayPal Button will be rendered here by PayPal's SDK -->
-                            <!-- Ensure you replace "YOUR_PAYPAL_PREMIUM_BUTTON_ID_HERE" with your actual hosted button ID -->
-                            <form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_top">
-                                <input type="hidden" name="cmd" value="_s-xclick">
-                                <input type="hidden" name="hosted_button_id" value="YOUR_PAYPAL_PREMIUM_BUTTON_ID_HERE">
-                                <input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_subscribeCC_LG.gif" name="submit" alt="PayPal - The safer, easier way to pay online!">
-                                <img alt="" src="https://www.paypalobjects.com/en_US/i/scr/pixel.gif" width="1" height="1">
-                            </form>
+                        <div>
+                            <!-- PayPal Button Container for Pro Plan -->
+                            <div id="paypal-button-container-P-5GK21636B1377881VNAQPMFA"></div>
+                             <script>
+                              if (typeof paypal !== 'undefined') {
+                                paypal.Buttons({
+                                  style: { shape: 'rect', color: 'gold', layout: 'vertical', label: 'subscribe' },
+                                  createSubscription: function(data, actions) {
+                                    return actions.subscription.create({
+                                      'plan_id': 'P-5GK21636B1377881VNAQPMFA' // YOUR PRO PLAN ID
+                                    });
+                                  },
+                                  onApprove: function(data, actions) {
+                                    alert('You have successfully subscribed to Pro Plan! Subscription ID: ' + data.subscriptionID);
+                                  },
+                                  onError: function(err) {
+                                    console.error("PayPal Pro Plan Button Error:", err);
+                                    alert("An error occurred with your subscription. Please try again.");
+                                  }
+                                }).render('#paypal-button-container-P-5GK21636B1377881VNAQPMFA');
+                              } else {
+                                console.error("PayPal SDK not loaded when trying to render Pro Plan button.");
+                              }
+                            </script>
+                        </div>
+                    </div>
+
+                    <!-- Premium Plan -->
+                    <div class="pricing-plan premium-plan">
+                         <div>
+                            <h3 class="plan-title">Premium</h3>
+                            <p class="plan-price">$59<span>/month</span></p>
+                            <ul class="plan-features">
+                                <li>AI Coin Picks (Unlimited & Early Access)</li>
+                                <li>AI Profit Goal Planner</li>
+                                <li>Meme Coin Hunter Tool</li>
+                                <li>Real-Time Whale Alerts</li>
+                                <li>Predictive Breakout Alerts (Advanced)</li>
+                                <li>AI Trading Coach Chat Access</li>
+                                <li>Exclusive Market Reports & Insights</li>
+                                <li>VIP Support & Community Channels</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <!-- PayPal Button Container for Premium Plan -->
+                            <div id="paypal-button-container-P-66R88029R2506591NNAQPPKQ"></div>
+                            <script>
+                              if (typeof paypal !== 'undefined') {
+                                paypal.Buttons({
+                                  style: { shape: 'rect', color: 'silver', layout: 'vertical', label: 'subscribe' },
+                                  createSubscription: function(data, actions) {
+                                    return actions.subscription.create({
+                                      'plan_id': 'P-66R88029R2506591NNAQPPKQ' // YOUR PREMIUM PLAN ID
+                                    });
+                                  },
+                                  onApprove: function(data, actions) {
+                                    alert('You have successfully subscribed to Premium Plan! Subscription ID: ' + data.subscriptionID);
+                                  },
+                                  onError: function(err) {
+                                    console.error("PayPal Premium Plan Button Error:", err);
+                                    alert("An error occurred with your subscription. Please try again.");
+                                  }
+                                }).render('#paypal-button-container-P-66R88029R2506591NNAQPPKQ');
+                              } else {
+                                console.error("PayPal SDK not loaded when trying to render Premium Plan button.");
+                              }
+                            </script>
                         </div>
                     </div>
                 </div>
+            </section>
+
+            <section id="contact">
+                <h2>Get in Touch</h2>
+                <p style="text-align: center; max-width: 700px; margin: 0 auto 20px auto;">
+                    Have questions or need support? Reach out to us!
+                    <br>Email: <a href="mailto:support@quantumleapcrypto.ai" style="color: var(--secondary-color);">support@quantumleapcrypto.ai</a>
+                </p>
             </section>
         </div>
 
         <footer>
-            <p>&copy; 2025 Quantum Leap AI. All Rights Reserved. Not Financial Advice. DYOR.</p>
-            <p>Designed By Corey Dean</p>
+            <p>&copy; 2024 Quantum Leap AI. All Rights Reserved.</p>
+            <p>Cryptocurrency investment is subject to high market risk. Please trade cautiously.</p>
         </footer>
     </div>
 
     <script>
-        // Basic script to hide splash and show main content
-        window.addEventListener('load', function() {
-            const splashScreen = document.getElementById('splash-screen');
-            const mainContent = document.getElementById('main-content');
+        // Splash screen logic
+        window.addEventListener('load', () => {
+            const splashScreen = document.getElementById('splashScreen');
+            const mainContent = document.getElementById('mainContent');
 
-            // Ensure images in main content are loaded or give some time for them
-            setTimeout(function() {
-                if(splashScreen) splashScreen.classList.add('hidden');
-                if(mainContent) mainContent.classList.add('visible');
-            }, 1500); // Adjust delay as needed (e.g., 1500ms = 1.5 seconds)
+            // Ensure elements exist
+            if (splashScreen && mainContent) {
+                 setTimeout(() => {
+                    splashScreen.classList.add('hidden');
+                    mainContent.classList.add('visible');
+                }, 1500); // Show splash for 1.5 seconds
+            } else {
+                // Fallback if elements are not found, immediately show main content
+                if (mainContent) mainContent.style.display = 'block'; // Ensure main content is visible
+                 if (mainContent) mainContent.style.opacity = '1';
+            }
+
+            // Smooth scroll for internal links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const targetId = this.getAttribute('href');
+                    const targetElement = document.querySelector(targetId);
+                    if (targetElement) {
+                         targetElement.scrollIntoView({
+                            behavior: 'smooth'
+                        });
+                    }
+                });
+            });
         });
     </script>
-
 </body>
 </html>
-
