@@ -1,4 +1,3 @@
-
 // src/app/page.tsx
 "use client";
 
@@ -14,7 +13,7 @@ import { CryptoTerminologyPanel } from "@/components/app/crypto-terminology-pane
 import { PredictiveBreakoutAlertsPanel } from "@/components/app/predictive-breakout-alerts-panel";
 import { DailySignalsPanel } from "@/components/app/daily-signals-panel";
 import { AiCoachChatbox } from "@/components/app/ai-coach-chatbox"; // New Chatbox import
-import { LoadingDots } from "@/components/ui/loading-dots";
+import { InitialLoadingSplash } from '@/components/app/initial-loading-splash'; // Import the new splash screen
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Terminal, TrendingUpIcon, BarChartIcon, RocketIcon, AlertTriangle, ShieldOff, MessageSquare } from "lucide-react";
@@ -268,12 +267,7 @@ export default function QuantumLeapPage() {
   };
 
   if (loadingToggles) {
-    return (
-      <div className="flex flex-col justify-center items-center min-h-screen bg-background text-center p-4">
-        <LoadingDots size="lg" />
-        <p className="text-muted-foreground mt-4">Loading Quantum Leap features...</p>
-      </div>
-    );
+    return <InitialLoadingSplash />;
   }
 
   if (errorToggles) {
@@ -363,7 +357,7 @@ export default function QuantumLeapPage() {
                     <AiCoinPicksForm onSubmit={handleAiCoinPicksSubmit} isLoading={isLoadingAiPicks} />
                   </div>
                   <div className="w-full">
-                    {isLoadingAiPicks && <LoadingDots className="mt-10" size="lg" />}
+                    {isLoadingAiPicks && <InitialLoadingSplash />} 
                     {aiPicksError && (
                       <Alert variant="destructive" className="mt-6 max-w-2xl mx-auto">
                         <Terminal className="h-4 w-4" />
@@ -408,7 +402,7 @@ export default function QuantumLeapPage() {
                     <QuickProfitGoalForm onSubmit={handleQuickProfitGoalSubmit} isLoading={isLoadingQuickProfit} />
                   </div>
                   <div className="w-full">
-                    {isLoadingQuickProfit && <LoadingDots className="mt-10" size="lg" />}
+                    {isLoadingQuickProfit && <InitialLoadingSplash />}
                     {quickProfitError && (
                       <Alert variant="destructive" className="mt-6 max-w-2xl mx-auto">
                         <Terminal className="h-4 w-4" />
@@ -461,7 +455,7 @@ export default function QuantumLeapPage() {
                       </Alert>
                   </div>
                   <div className="w-full">
-                    {isLoadingMemeFlip && <LoadingDots className="mt-10" size="lg" />}
+                    {isLoadingMemeFlip && <InitialLoadingSplash />}
                     {memeFlipError && (
                       <Alert variant="destructive" className="mt-6 max-w-2xl mx-auto">
                         <Terminal className="h-4 w-4" />
