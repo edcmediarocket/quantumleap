@@ -54,6 +54,7 @@ Key Instructions:
     *   When you receive the price from the tool, state it clearly, for example: "The current price of Bitcoin (BTC) is $X,XXX.XX USD." or "I found that Ethereum (ETH) is currently trading at $Y,YYY.YY USD."
     *   If the tool returns an error (e.g., coin not found, API issue), inform {{{userName}}} gracefully, for example: "I couldn't fetch the price for [Coin Name] at the moment. It might be an unsupported coin or there could be a temporary issue with the price service." or "Sorry, I wasn't able to find a price for [Coin Name]. Could you try a different name or symbol?"
     *   Do not attempt to guess or provide outdated prices. Only provide prices obtained directly from the tool.
+12. **Discussing Automated Strategies (Hypothetically):** If relevant to the conversation or if {{{userName}}} asks, you can discuss how different types of automated trading bots (e.g., trend-following, arbitrage, mean reversion, sentiment-based bots like those conceptually offered by services like CryptoHopper or 3Commas) might hypothetically approach a trading scenario for a given coin. For example, you could say, 'A trend-following bot might look for a sustained break above the 50-day moving average with increasing volume before considering an entry for Bitcoin.' Or, 'For a coin like Pepe on a low-liquidity exchange, an arbitrage bot would be constantly scanning for price discrepancies with larger exchanges, aiming to buy low on one and sell high on another almost instantly.' When discussing these, also explain the core logic of that bot type. **Always emphasize these are hypothetical discussions for educational purposes, and you are not operating, endorsing, or recommending specific bot configurations or tools.** You can also touch upon best practices for any form of AI or automated trading, such as the importance of thorough backtesting, diligent monitoring of performance, and robust stop-loss mechanisms to manage risk.
 
 You are helping {{{userName}}}.
 `;
@@ -83,16 +84,13 @@ const aiCoachChatFlow = ai.defineFlow(
           // For now, just prefixing them.
           if (msg.role === 'user') return `USER: ${msg.content}`;
           if (msg.role === 'model') return `MODEL: ${msg.content}`;
-          if (msg.role === 'tool_code') return `TOOL_CALL: ${msg.content}`; // Representing tool call details
-          if (msg.role === 'tool_response') return `TOOL_RESPONSE: ${msg.content}`; // Representing tool response
+          if (msg.role === 'tool_code') return `TOOL_CALL: (The AI decided to use a tool with the following details: ${msg.content})`; 
+          if (msg.role === 'tool_response') return `TOOL_RESPONSE: (The tool provided this result: ${msg.content})`; 
           return `${msg.role.toUpperCase()}: ${msg.content}`; // Fallback for any other roles
         })
         .join('\n');
     }
     
-    // Construct the Handlebars prompt string
-    // Note: The system prompt already instructs about userName.
-    // The Handlebars template for the prompt itself will combine system, history, and new message.
     const handlebarsPrompt = `
 ${systemPrompt}
 
@@ -111,14 +109,11 @@ MODEL RESPONSE:
     
     const promptInstance = ai.definePrompt({
         name: 'aiCoachChatDynamicPrompt',
-        input: { schema: DynamicPromptInputDataSchema }, // Uses the specific schema for handlebars data
+        input: { schema: DynamicPromptInputDataSchema }, 
         prompt: handlebarsPrompt,
-        tools: [getCoinPriceTool], // Make the tool available to the prompt
-        // No output schema here for this specific dynamic prompt as we're expecting a raw string back
-        // Model config can be added here if needed (e.g., temperature)
+        tools: [getCoinPriceTool], 
     });
 
-    // Prepare data for the prompt instance
     const promptData = {
         userMessage,
         userName,
@@ -132,3 +127,4 @@ MODEL RESPONSE:
     return { aiResponse: aiTextResponse };
   }
 );
+

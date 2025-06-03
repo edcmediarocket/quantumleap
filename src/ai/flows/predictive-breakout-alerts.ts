@@ -24,6 +24,7 @@ const BreakoutAlertSchema = z.object({
   potentialUpsidePercentage: z.number().optional(), // Est. % gain if breakout
   suggestedWatchWindow: z.string(), // Actionable timeframe/price level (e.g., "Watch for break above $X.XX in next 2-6h")
   briefRationale: z.string(), // Why breakout likely, emphasizing early detection.
+  suggestedManualActions: z.array(z.string()).optional().describe('Concrete manual actions a user might consider based on this alert, e.g., "Set a price alert above its key resistance level at approx $X.XX", "Monitor volume for confirmation before entry".'),
   riskWarning: z.string().default('Predictive alerts are speculative... DYOR.'),
 });
 
@@ -57,15 +58,17 @@ For each identified coin (max 3, can be 0 if no strong signals found), map your 
 -   'coinName': (string) Full name and ticker (e.g., "Chainlink (LINK)").
 -   'alertTitle': (string) Create a compelling title (e.g., "LINK - Poised for Upward Surge!").
 -   'confidenceScore': (number, 0.0-1.0) Your confidence in this breakout potential based on the strength and confluence of signals from your engine.
--   'keySignals': (array of 2-4 strings) Specific, actionable key signals observed (e.g., "Bullish divergence on MACD (1D) with volume confirmation", "Whale address 0xabc... reportedly added significant LINK in last 24h (based on on-chain pattern analysis)", "Dev team AMA positively received, sparking organic discussion increase", "Sustained buying volume above an identified key support level, forming consolidation"). Be specific but frame price-related signals appropriately.
+-   'keySignals': (array of 2-4 strings) Specific, actionable key signals observed (e.g., "Bullish divergence on MACD (1D) with volume confirmation", "Whale address 0xabc... reportedly added significant LINK in last 24h (based on on-chain pattern analysis)", "Dev team AMA positively received, sparking organic discussion increase", "Sustained buying volume above an identified key support level, forming consolidation"). Frame these signals to be as actionable as possible, highlighting what a user should look for to confirm the breakout.
 -   'potentialUpsidePercentage': (number, optional) A realistic estimated percentage gain if the breakout materializes.
 -   'suggestedWatchWindow': (string) Provide an actionable timeframe or key technical level to monitor (e.g., "Monitor for a daily close above its identified key resistance level within next 48 hours", "A breakout above the current consolidation pattern with significant volume could confirm the upward trend", "Watch for price action near the 0.618 Fibonacci retracement level").
 -   'briefRationale': (string) Synthesize WHY these combined signals suggest an imminent breakout. Emphasize early detection before widespread hype and how this confluence makes it a smart potential pick.
+-   'suggestedManualActions': (array of 2-3 strings, optional) Concrete manual actions a user might consider based on this alert. Examples: "1. Set a price alert if {{{coinName}}} breaks above its current key resistance level (around $X.XX, check current charts). 2. Watch for a corresponding surge in trading volume to confirm breakout strength. 3. Consider a small initial position if both conditions are met, with a pre-defined stop-loss around $Y.YY." Focus on what the user should *do* or *watch for*.
 -   'riskWarning': (string) Include the default risk warning.
 
 If no coins exhibit a strong confluence of these specific signals, return an empty array for 'alerts'.
 Provide 'lastScanned' as the current ISO timestamp when the flow is run.
 Output strictly follows the PredictiveBreakoutAlertsOutputSchema. Ensure all numeric fields are numbers.
+Ensure any hypothetical prices in 'suggestedManualActions' are clearly indicated as examples or technical levels to be verified by the user.
 `,
 });
 
@@ -94,6 +97,9 @@ const predictiveBreakoutAlertsFlow = ai.defineFlow(
         }
         if (alert.keySignals.length < 2) {
             alert.keySignals.push("Monitor market sentiment closely.", "Watch for volume spikes.");
+        }
+        if (!alert.suggestedManualActions || alert.suggestedManualActions.length === 0) {
+            alert.suggestedManualActions = ["Monitor price action closely.", "Consider setting alerts for significant price movements.", "Always do your own research before trading."];
         }
     });
 

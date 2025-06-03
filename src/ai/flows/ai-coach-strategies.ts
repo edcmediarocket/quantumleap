@@ -32,7 +32,7 @@ export type AiCoachStrategiesInput = z.infer<typeof AiCoachStrategiesInputSchema
 const InvestmentStrategySchema = z.object({
   name: z.string(),
   description: z.string(),
-  reasoning: z.string(), // How it leverages coin's profile (volatility, sentiment, etc.) for profit.
+  reasoning: z.string(), // How it leverages coin's profile (volatility, sentiment, etc.) for profit. If relevant, mention how this strategy might be informed by principles similar to those used by automated bots (e.g., 'this entry point aligns with signals a trend-following bot might look for').
   optimalBuyPrice: z.number().optional(),
   targetSellPrices: z.array(z.number()).min(1),
   actionableSteps: z.array(z.string()).min(2).max(4), // Include indicator examples. Prices must be full decimals.
@@ -42,7 +42,7 @@ const InvestmentStrategySchema = z.object({
 });
 
 const AiCoachStrategiesOutputSchema = z.object({
-  coinSpecificAdvice: z.string(), // Advanced advice: volatility patterns, catalysts, on-chain metrics for this coin.
+  coinSpecificAdvice: z.string(), // Advanced advice: volatility patterns, catalysts, on-chain metrics for this coin. Also, consider mentioning if common automated strategies (e.g., arbitrage bots on low-liquidity exchanges, or mean-reversion bots for this coin's typical volatility) could be theoretically applied by advanced users, and what conditions would be necessary.
   investmentStrategies: z.array(InvestmentStrategySchema).min(1).max(3),
   topPickRationale: z.string().optional(), // AI's reasoning for selecting the top recommended strategy
   overallCoachSOutlook: z.string(), // Outlook & advanced risk management for profit maximization.
@@ -70,6 +70,8 @@ Your decision-making engine should include:
 7.  **Profit Strategy Design** — Output a clear plan: Coin to buy, allocation size (%, risk-adjusted), entry price range, target price, stop loss, and time horizon.
 8.  **Adaptive AI Logic** — Learn from past wins/losses, optimize strategies in real-time. If a prediction misses, adjust logic for future cases.
 
+When discussing strategies, you can also briefly explain how a relevant automated trading bot strategy (like trend-following, mean reversion, or sentiment analysis bots) might approach a similar situation or what signals it would prioritize for {{{coinName}}}. This is for educational context.
+
 Coin Details:
 -   Name: {{{coinName}}}
 -   Initial Rationale for Pick: {{{currentRationale}}}
@@ -88,11 +90,12 @@ Based on the coin's details and your analytical engine, provide the following, f
     *   Identify upcoming catalysts (e.g., mainnet launch, token burn) and how to strategically leverage them.
     *   Discuss liquidity considerations for significant trades.
     *   Suggest specific on-chain metrics (e.g., NVT signal, SOPR) or advanced indicators (e.g., VWAP, Order Flow Delta) relevant for THIS coin and how to interpret their signals for profit.
+    *   Also, consider mentioning if common automated strategies (e.g., arbitrage bots on low-liquidity exchanges, or mean-reversion bots for this coin's typical volatility) could be theoretically applied by advanced users, and what conditions would be necessary. For educational purposes, briefly explain the logic of such a bot in this context.
 
 2.  **Investment Strategies (investmentStrategies - 1 to 3 strategies)**: For each strategy:
     *   **name**: Compelling name (e.g., "Alpha Scalp & Compound", "Momentum Surge Ride").
     *   **description**: Detailed explanation, emphasizing profit maximization for experienced traders.
-    *   **reasoning**: CRITICAL: Why is this strategy optimal for {{{coinName}}} NOW to maximize profit? How does it leverage its volatility, sentiment, predicted gain, specific price levels (support/resistance, Fibonacci, order blocks), for superior returns? What market conditions/indicator signals validate this strategy?
+    *   **reasoning**: CRITICAL: Why is this strategy optimal for {{{coinName}}} NOW to maximize profit? How does it leverage its volatility, sentiment, predicted gain, specific price levels (support/resistance, Fibonacci, order blocks), for superior returns? What market conditions/indicator signals validate this strategy? If relevant, mention how this strategy might be informed by principles similar to those used by automated bots (e.g., 'this entry point aligns with signals a trend-following bot might look for because...').
     *   **optimalBuyPrice**: (Optional) Precise, justified optimal buy price. Why is it optimal? (e.g., confluence of support and 0.618 Fib).
     *   **targetSellPrices**: (Array of numbers, min 1) Strategically determined target sell prices for profit taking. Justify each.
     *   **actionableSteps**: (Array of 2-4 strings) Concrete steps. Example: "Set limit buy at $X.XXX, with secondary at $Y.YYY. Place tiered take-profit: 30% at $T1, 50% at $T2. Monitor [advanced indicator] for confirmation."
@@ -104,7 +107,7 @@ Based on the coin's details and your analytical engine, provide the following, f
 
 3.  **Top Pick Rationale (topPickRationale)**: After generating the strategies, evaluate them. Select the SINGLE strategy you believe offers the highest profit potential for {{{coinName}}} given the current context, user preferences (if any), and your 8-point decision engine. Clearly explain in 2-3 sentences WHY this specific strategy is your top recommendation. This explanation should be distinct from the individual 'reasoning' field of the strategy itself.
 
-4.  **Overall Coach's Outlook (overallCoachSOutlook)**: Summarize your outlook for {{{coinName}}} with a profit maximization focus. Include sophisticated risk management tips for aggressive strategies (e.g., position sizing, dynamic stop-loss adjustment, scaling in/out, when to cut losses based on invalidation signals).
+4.  **Overall Coach's Outlook (overallCoachSOutlook)**: Summarize your outlook for {{{coinName}}} with a profit maximization focus. Include sophisticated risk management tips for aggressive strategies (e.g., position sizing, dynamic stop-loss adjustment, scaling in/out, when to cut losses based on invalidation signals). You can also mention how understanding automated bot behaviors (even if not using them) can inform manual trading risk management.
 
 5.  **Disclaimer (disclaimer)**: Include the standard disclaimer.
 
@@ -151,3 +154,4 @@ const aiCoachStrategiesFlow = ai.defineFlow(
     return output;
   }
 );
+
