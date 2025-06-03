@@ -46,6 +46,7 @@ export type ActiveTabType = 'aiPicks' | 'profitGoal' | 'memeFlip' | 'none';
 
 export default function QuantumLeapPage() {
   const { toggles, loadingToggles, errorToggles } = useFeatureTogglesContext();
+  const { toast } = useToast();
 
   const [aiCoinPicksResults, setAiCoinPicksResults] = useState<AiCoinPicksOutput | null>(null);
   const [quickProfitResults, setQuickProfitResults] = useState<RecommendCoinsForProfitTargetOutput | null>(null);
@@ -67,8 +68,6 @@ export default function QuantumLeapPage() {
 
   const [activeTab, setActiveTab] = useState<ActiveTabType>("aiPicks"); 
 
-  const { toast } = useToast();
-
   useEffect(() => {
     if (!loadingToggles) {
       if (toggles.aiCoinPicksEnabled) setActiveTab("aiPicks");
@@ -81,44 +80,69 @@ export default function QuantumLeapPage() {
   const logAiInteraction = async (userPrompt: string, aiResult: any, flowName: string) => {
     const user = auth.currentUser;
     if (!functionsBaseUrl) {
-      console.warn(`CRITICAL: Firebase Functions URL (NEXT_PUBLIC_FIREBASE_FUNCTIONS_URL) is not set in the environment. Cannot log AI interaction for "${flowName}". URL was: ${functionsBaseUrl}. Prompt: "${userPrompt}"`);
+      const criticalMessage = `CRITICAL: Firebase Functions URL (NEXT_PUBLIC_FIREBASE_FUNCTIONS_URL) is not set in the client-side environment. Cannot log AI interaction for "${flowName}". Please ensure this environment variable is set, possibly in a .env.local file for local development.`;
+      console.warn(criticalMessage, `Prompt: "${userPrompt}"`);
       toast({
         title: "Logging Configuration Error",
-        description: "The AI interaction logging service URL is not configured. Please check environment variables.",
+        description: "The AI interaction logging service URL is not configured. Interaction not logged. Check console (F12) for details.",
         variant: "destructive",
+        duration: 10000,
       });
       return;
     }
     
      if (!user || !user.uid) {
       console.warn(`User not logged in or UID missing. Cannot log AI interaction for "${flowName}". Interaction details: Prompt - "${userPrompt}"`);
+      // Optionally, toast here too if this is unexpected in your app flow
+      // toast({ title: "User Not Authenticated", description: "Cannot log AI interaction without a user session.", variant: "warning" });
       return; 
     }
     
-    console.log(`logAiInteraction: Using functionsBaseUrl: ${functionsBaseUrl}`);
-    console.log(`Attempting to POST to: ${functionsBaseUrl} for flow: ${flowName}`);
+    console.log(`[logAiInteraction] Attempting to log for flow: "${flowName}". Target URL: ${functionsBaseUrl}`);
 
     try {
+      console.log(`[logAiInteraction] Fetching URL: ${functionsBaseUrl}`);
       const response = await fetch(functionsBaseUrl, { 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           userId: user.uid, 
           userPrompt: `(${flowName}): ${userPrompt}`,
-          aiResult: JSON.stringify(aiResult, null, 2) 
+          aiResult: JSON.stringify(aiResult, null, 2) // Ensure aiResult is serializable
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.text();
-        console.error(`Error logging AI interaction: ${response.status} ${response.statusText}`, errorData);
+        console.error(`[logAiInteraction] Error logging AI interaction: ${response.status} ${response.statusText}`, errorData);
         throw new Error(`Server error ${response.status}: ${errorData || response.statusText}. Full URL was: ${functionsBaseUrl}`);
       }
+      console.log(`[logAiInteraction] Successfully logged interaction for flow: "${flowName}"`);
 
     } catch (error) {
-      console.error(`Client-side error in logAiInteraction for "${flowName}". URL: ${functionsBaseUrl}. Error object:`, error);
-      if (error instanceof TypeError && error.message === "Failed to fetch") {
-          console.error("Detailed 'Failed to fetch' info: This often indicates a network issue, CORS misconfiguration on the server, the server not being reachable (check Firebase Function logs in Google Cloud Console for errors), or an issue with the request URL itself. Verify the function is deployed and healthy. Check the browser's Network tab for more details on the failed request.");
+      console.error(`[logAiInteraction] Client-side error in logAiInteraction for "${flowName}". URL: ${functionsBaseUrl}. Error object:`, error);
+      if (error instanceof TypeError && error.message.toLowerCase().includes("failed to fetch")) {
+          console.error("[logAiInteraction] Detailed 'Failed to fetch' info: This often indicates a network issue, CORS misconfiguration on the server, the server not being reachable (check Firebase Function logs in Google Cloud Console for errors), or an issue with the request URL itself. Verify the function is deployed and healthy. Check the browser's Network tab for more details on the failed request.");
+          toast({
+            title: "Network Error",
+            description: `Could not connect to AI logging service for "${flowName}". Please check your internet connection and function status. (Details in console)`,
+            variant: "destructive",
+            duration: 10000,
+          });
+      } else if (error instanceof Error) {
+         toast({
+            title: "Logging Error",
+            description: `Failed to log AI interaction for "${flowName}": ${error.message}. (Details in console)`,
+            variant: "destructive",
+            duration: 10000,
+          });
+      } else {
+         toast({
+            title: "Unknown Logging Error",
+            description: `An unknown error occurred while logging AI interaction for "${flowName}". (Details in console)`,
+            variant: "destructive",
+            duration: 10000,
+          });
       }
     }
   };
@@ -133,7 +157,7 @@ export default function QuantumLeapPage() {
       try {
         const initialTip = await getCoachQuickTip({ userActionContext: 'general' });
         setCoachQuickTip(initialTip);
-        await logAiInteraction("Initial App Load", initialTip, "GetCoachQuickTip-General");
+        await logAiInteraction("Initial App Load (GetCoachQuickTip-General)", initialTip, "GetCoachQuickTip-General");
       } catch (error) {
         console.error("Error fetching initial coach tip:", error);
         setCoachQuickTipError(error instanceof Error ? error.message : "Failed to load coach wisdom.");
@@ -153,7 +177,7 @@ export default function QuantumLeapPage() {
     try {
       const tip = await getCoachQuickTip({ userActionContext: context, lastPicksSummary: summary });
       setCoachQuickTip(tip);
-      await logAiInteraction(`Context: ${context}, Summary: ${summary || 'N/A'}`, tip, "GetCoachQuickTip-Contextual");
+      await logAiInteraction(`Contextual Tip Request (Context: ${context}, Summary: ${summary || 'N/A'})`, tip, "GetCoachQuickTip-Contextual");
     } catch (error) {
       console.error(`Error fetching coach tip for ${context}:`, error);
       setCoachQuickTipError(error instanceof Error ? error.message : "Coach is pondering... tip unavailable.");
