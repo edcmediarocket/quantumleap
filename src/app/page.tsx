@@ -1,3 +1,4 @@
+
 // src/app/page.tsx
 "use client";
 
@@ -13,7 +14,6 @@ import { CryptoTerminologyPanel } from "@/components/app/crypto-terminology-pane
 import { PredictiveBreakoutAlertsPanel } from "@/components/app/predictive-breakout-alerts-panel";
 import { DailySignalsPanel } from "@/components/app/daily-signals-panel";
 import { AiCoachChatbox } from "@/components/app/ai-coach-chatbox"; // New Chatbox import
-import { InitialLoadingSplash } from '@/components/app/initial-loading-splash'; // Import the new splash screen
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Terminal, TrendingUpIcon, BarChartIcon, RocketIcon, AlertTriangle, ShieldOff, MessageSquare } from "lucide-react";
@@ -23,6 +23,7 @@ import { useFeatureTogglesContext } from "@/contexts/FeatureTogglesContext";
 import { getAuth } from "firebase/auth";
 import { firebaseConfig } from "@/lib/firebaseConfig";
 import { initializeApp, getApps } from "firebase/app";
+import { LoadingDots } from "@/components/ui/loading-dots";
 
 
 // AI Flow Imports
@@ -267,7 +268,12 @@ export default function QuantumLeapPage() {
   };
 
   if (loadingToggles) {
-    return <InitialLoadingSplash />;
+    return (
+      <div className="flex flex-col justify-center items-center min-h-screen bg-background text-center p-4">
+        <LoadingDots size="lg" />
+        <p className="text-lg text-primary ml-3 mt-4">Loading Quantum Leap features...</p>
+      </div>
+    );
   }
 
   if (errorToggles) {
@@ -357,7 +363,7 @@ export default function QuantumLeapPage() {
                     <AiCoinPicksForm onSubmit={handleAiCoinPicksSubmit} isLoading={isLoadingAiPicks} />
                   </div>
                   <div className="w-full">
-                    {isLoadingAiPicks && <InitialLoadingSplash />} 
+                    {isLoadingAiPicks && <div className="flex justify-center my-8"><LoadingDots size="lg" /> <p className="ml-3 text-lg text-primary">Fetching AI Picks...</p></div>}
                     {aiPicksError && (
                       <Alert variant="destructive" className="mt-6 max-w-2xl mx-auto">
                         <Terminal className="h-4 w-4" />
@@ -402,7 +408,7 @@ export default function QuantumLeapPage() {
                     <QuickProfitGoalForm onSubmit={handleQuickProfitGoalSubmit} isLoading={isLoadingQuickProfit} />
                   </div>
                   <div className="w-full">
-                    {isLoadingQuickProfit && <InitialLoadingSplash />}
+                    {isLoadingQuickProfit && <div className="flex justify-center my-8"><LoadingDots size="lg" /> <p className="ml-3 text-lg text-accent">Calculating Profit Goal Coins...</p></div>}
                     {quickProfitError && (
                       <Alert variant="destructive" className="mt-6 max-w-2xl mx-auto">
                         <Terminal className="h-4 w-4" />
@@ -455,7 +461,7 @@ export default function QuantumLeapPage() {
                       </Alert>
                   </div>
                   <div className="w-full">
-                    {isLoadingMemeFlip && <InitialLoadingSplash />}
+                    {isLoadingMemeFlip && <div className="flex justify-center my-8"><LoadingDots size="lg" /> <p className="ml-3 text-lg text-[hsl(var(--orange-hsl))]">Hunting for Meme Coins...</p></div>}
                     {memeFlipError && (
                       <Alert variant="destructive" className="mt-6 max-w-2xl mx-auto">
                         <Terminal className="h-4 w-4" />
