@@ -79,6 +79,7 @@ export default function QuantumLeapPage() {
   
   const logAiInteraction = async (userPrompt: string, aiResult: any, flowName: string) => {
     const user = auth.currentUser;
+    
     if (!functionsBaseUrl) {
       const criticalMessage = `CRITICAL: Firebase Functions URL (NEXT_PUBLIC_FIREBASE_FUNCTIONS_URL) is not set in the client-side environment. Cannot log AI interaction for "${flowName}". Please ensure this environment variable is set, possibly in a .env.local file for local development.`;
       console.warn(criticalMessage, `Prompt: "${userPrompt}"`);
@@ -86,15 +87,26 @@ export default function QuantumLeapPage() {
         title: "Logging Configuration Error",
         description: "The AI interaction logging service URL is not configured. Interaction not logged. Check console (F12) for details.",
         variant: "destructive",
-        duration: 10000,
+        duration: 15000, 
+      });
+      return;
+    }
+
+    try {
+      new URL(functionsBaseUrl); // Validate URL structure
+    } catch (urlError) {
+      console.error(`[logAiInteraction] Invalid Firebase Functions URL: "${functionsBaseUrl}". Error: ${urlError instanceof Error ? urlError.message : String(urlError)}`);
+      toast({
+        title: "URL Configuration Error",
+        description: `The AI interaction logging service URL is invalid: "${functionsBaseUrl}". Please check the configuration and ensure it's a complete and valid URL (e.g., https://...).`,
+        variant: "destructive",
+        duration: 15000,
       });
       return;
     }
     
      if (!user || !user.uid) {
       console.warn(`User not logged in or UID missing. Cannot log AI interaction for "${flowName}". Interaction details: Prompt - "${userPrompt}"`);
-      // Optionally, toast here too if this is unexpected in your app flow
-      // toast({ title: "User Not Authenticated", description: "Cannot log AI interaction without a user session.", variant: "warning" });
       return; 
     }
     
@@ -108,7 +120,7 @@ export default function QuantumLeapPage() {
         body: JSON.stringify({ 
           userId: user.uid, 
           userPrompt: `(${flowName}): ${userPrompt}`,
-          aiResult: JSON.stringify(aiResult, null, 2) // Ensure aiResult is serializable
+          aiResult: JSON.stringify(aiResult, null, 2) 
         }),
       });
 
@@ -127,21 +139,21 @@ export default function QuantumLeapPage() {
             title: "Network Error",
             description: `Could not connect to AI logging service for "${flowName}". Please check your internet connection and function status. (Details in console)`,
             variant: "destructive",
-            duration: 10000,
+            duration: 15000,
           });
       } else if (error instanceof Error) {
          toast({
             title: "Logging Error",
             description: `Failed to log AI interaction for "${flowName}": ${error.message}. (Details in console)`,
             variant: "destructive",
-            duration: 10000,
+            duration: 15000,
           });
       } else {
          toast({
             title: "Unknown Logging Error",
             description: `An unknown error occurred while logging AI interaction for "${flowName}". (Details in console)`,
             variant: "destructive",
-            duration: 10000,
+            duration: 15000,
           });
       }
     }
